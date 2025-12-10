@@ -1,0 +1,17 @@
+## Hybrid AI rerank (<=20s target)
+
+- Flow (frontend `/api/recommendations`):
+  - Deprecated; frontend should call backend directly.
+  - Backend endpoints:
+    - `POST /api/recommend/` (baseline matcher)
+    - `POST /api/recommend/rerank/` (baseline + OpenAI; fallback to baseline on timeout/error)
+- Env/config:
+  - `OPENAI_MODEL` (default `gpt-5-nano`)
+  - `OPENAI_API_KEY`
+  - `OPENAI_RERANK_TOP_K` (default `30`)
+  - `OPENAI_RERANK_TIMEOUT_MS` (default `9000`)
+- Response shape:
+  - `{ rankings: [{ id, matchPercentage, reasons[] }], fallback: boolean, elapsedMs }`
+- Notes:
+  - IDs must match backend matcher output; reasons present only when AI rerank succeeds.
+  - Keep total SLA under ~20s by bounding backend (~<1s) + OpenAI (~<9s) + overhead.

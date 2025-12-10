@@ -1,18 +1,61 @@
 from typing import Dict, List
 
-# Mood → representative Persian note tags (tune as needed)
+# Mood → representative Persian note tags (new kiosk moods)
 MOOD_TO_NOTE_TAGS: Dict[str, List[str]] = {
-    "cozy": ["وانیل", "تونکا", "کهربا", "دارچین"],
     "fresh": ["ترنج", "لیمو", "گریپ فروت", "اقیانوسی", "نعنا"],
-    "sexy": ["عود", "کهربا", "مشک", "رز"],
-    "elegant": ["یاس", "چوب صندل", "خس خس"],
-    "playful": ["میوه ای", "توت فرنگی", "تمشک"],
-    "mysterious": ["عود", "بخور", "دودی"],
-    "sporty": ["خنک", "آبی", "اقیانوسی"],
-    "formal": ["خس خس", "چوب صندل", "رز"],
+    "sweet": ["وانیل", "کارامل", "پرالین", "عسل", "تونکا"],
+    "warm": ["دارچین", "فلفل", "کهربا", "ادویه‌ای"],
+    "floral": ["رز", "یاس", "شکوفه پرتقال", "گل صدتومانی"],
+    "woody": ["چوب صندل", "سدر", "عود", "خس خس"],
 }
 
-# Context → supportive note tags
+# Moment → supportive note/occasion tags
+MOMENT_TO_NOTE_TAGS: Dict[str, List[str]] = {
+    "daily": ["خنک", "ملایم", "ترنج"],
+    "evening": ["کهربا", "رز", "عود"],
+    "outdoor": ["اقیانوسی", "نعنا", "لیمو"],
+    "gift": ["وانیل", "رز", "مشک"],
+}
+
+MOMENT_TO_OCCASION_TAGS: Dict[str, List[str]] = {
+    "daily": ["everyday", "office"],
+    "evening": ["night_out", "date"],
+    "outdoor": ["sport", "everyday"],
+    "gift": ["formal", "everyday"],
+}
+
+# Time → optional occasion emphasis
+TIME_TO_OCCASION_TAGS: Dict[str, List[str]] = {
+    "day": ["daytime"],
+    "night": ["night"],
+    "anytime": [],
+}
+
+# Style → gender leaning tokens
+STYLE_TO_GENDER_TOKENS: Dict[str, List[str]] = {
+    "feminine": ["gender_female"],
+    "masculine": ["gender_male"],
+    "unisex": ["gender_unisex"],
+    "any": [],
+}
+
+# Note categories (like/dislike) → representative tags
+NOTE_CATEGORY_TO_TAGS: Dict[str, List[str]] = {
+    "citrus": ["ترنج", "لیمو", "پرتقال", "گریپ فروت"],
+    "floral": ["رز", "یاس", "شمعدانی", "یاسمن"],
+    "woody": ["سدر", "چوب صندل", "عود", "خس خس"],
+    "spicy": ["فلفل", "دارچین", "هل", "میخک"],
+    "sweet": ["وانیل", "کارامل", "پرالین", "عسل"],
+    "green": ["نعنا", "ریحان", "چای سبز", "گیاهی"],
+    "oriental": ["کهربا", "بخور", "لابدانوم"],
+    "musky": ["مشک", "کشمیر", "ایریس"],
+}
+
+# Sweet/fresh axes for legacy sliders
+SWEET_NOTES: List[str] = ["وانیل", "تونکا", "پرالین", "کارامل", "عسل"]
+FRESH_NOTES: List[str] = ["ترنج", "لیمو", "نعنا", "اقیانوسی", "سیب سبز"]
+
+# Legacy mappings retained to keep compatibility with earlier clients
 CONTEXT_TO_NOTE_TAGS: Dict[str, List[str]] = {
     "office": ["خنک", "ملایم"],
     "casual_day": [],
@@ -21,7 +64,6 @@ CONTEXT_TO_NOTE_TAGS: Dict[str, List[str]] = {
     "special_event": ["چوب صندل", "مشک", "کهربا"],
 }
 
-# Context → occasion tags used in perfume vectors
 CONTEXT_TO_OCCASION_TAGS: Dict[str, List[str]] = {
     "office": ["office"],
     "casual_day": ["everyday"],
@@ -29,9 +71,3 @@ CONTEXT_TO_OCCASION_TAGS: Dict[str, List[str]] = {
     "club": ["night_out"],
     "special_event": ["formal"],
 }
-
-# Sweet/fresh axes for slider amplification
-SWEET_NOTES: List[str] = ["وانیل", "تونکا", "پرالین", "کارامل", "عسل"]
-FRESH_NOTES: List[str] = ["ترنج", "لیمو", "نعنا", "اقیانوسی", "سیب سبز"]
-
-

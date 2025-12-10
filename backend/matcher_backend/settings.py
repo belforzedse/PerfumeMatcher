@@ -126,3 +126,7 @@ STATIC_URL = 'static/'
 
 # Admin access key for custom admin API
 ADMIN_ACCESS_KEY = os.getenv("ADMIN_ACCESS_KEY", "admin-key")
+# AI/OpenAI configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-5-nano")
+

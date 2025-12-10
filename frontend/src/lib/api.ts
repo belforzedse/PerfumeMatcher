@@ -1,4 +1,4 @@
-﻿import { getData, type DataFile } from "./data-loader";
+﻿import { getData } from "./data-loader";
 
 export interface PerfumeNotes {
   top: string[];
@@ -16,6 +16,7 @@ export interface Perfume {
   season?: string;
   family?: string;
   character?: string;
+  intensity?: string;
   notes: PerfumeNotes;
   allNotes: string[];
   image?: string;
@@ -30,19 +31,7 @@ const dedupeNotes = (notes: PerfumeNotes): string[] => {
   return Array.from(unique).sort((a, b) => a.localeCompare(b, "en"));
 };
 
-const toPerfume = (
-  perfumeData: DataFile["perfumes"][number],
-  brands: DataFile["brands"],
-  collections: DataFile["collections"]
-): Perfume => {
-  const brand = perfumeData.brand
-    ? brands.find((b) => b.id === perfumeData.brand)?.name
-    : undefined;
-
-  const collection = perfumeData.collection
-    ? collections.find((c) => c.id === perfumeData.collection)?.name
-    : undefined;
-
+const toPerfume = (perfumeData: any): Perfume => {
   const notes: PerfumeNotes = {
     top: Array.isArray(perfumeData.notes?.top) ? [...perfumeData.notes.top] : [],
     middle: Array.isArray(perfumeData.notes?.middle)
@@ -53,33 +42,26 @@ const toPerfume = (
       : [],
   };
 
-  // Handle image URL - if it's a relative path starting with /, it's already correct
-  // If it's an absolute URL, use it as-is
-  // If it's just a filename, assume it's in /public
-  let imageUrl: string | undefined;
-  if (perfumeData.cover?.url) {
-    const url = perfumeData.cover.url.trim();
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      imageUrl = url;
-    } else if (url.startsWith("/")) {
-      imageUrl = url;
-    } else {
-      imageUrl = `/${url}`;
-    }
-  }
+  const imageUrl =
+    Array.isArray(perfumeData.images) && perfumeData.images.length > 0
+      ? perfumeData.images[0]
+      : undefined;
 
   return {
     id: perfumeData.id,
-    nameEn: perfumeData.name_en || "",
-    nameFa: perfumeData.name_fa || "",
-    brand,
-    collection,
+    nameEn: perfumeData.name_en || perfumeData.nameEn || perfumeData.name || "",
+    nameFa: perfumeData.name_fa || perfumeData.nameFa || perfumeData.name || "",
+    brand: perfumeData.brand || undefined,
+    collection: perfumeData.collection || undefined,
     gender: perfumeData.gender || undefined,
     season: perfumeData.season || undefined,
     family: perfumeData.family || undefined,
     character: perfumeData.character || undefined,
+    intensity: perfumeData.intensity || undefined,
     notes,
-    allNotes: dedupeNotes(notes),
+    allNotes: Array.isArray(perfumeData.all_notes)
+      ? perfumeData.all_notes
+      : dedupeNotes(notes),
     image: imageUrl,
   };
 };
@@ -103,20 +85,11 @@ export async function getPerfumes(): Promise<Perfume[]> {
     return perfumeListPromise;
   }
 
-  console.log("[API] Loading perfumes from data file...");
+  console.log("[API] Loading perfumes from backend...");
   perfumeListPromise = (async () => {
     try {
       const data = await getData();
-      console.log("[API] Data loaded, transforming perfumes...");
-      const perfumes = data.perfumes.map((p) =>
-        toPerfume(p, data.brands, data.collections)
-      );
-
-      console.log("[API] Perfumes transformed:", {
-        count: perfumes.length,
-        brands: data.brands.length,
-        collections: data.collections.length,
-      });
+      const perfumes = data.perfumes.map((p) => toPerfume(p));
 
       perfumeListCache = perfumes;
       perfumeListCacheTime = Date.now();
@@ -138,9 +111,9 @@ export async function getPerfumes(): Promise<Perfume[]> {
 
 export async function getScentFamilies(): Promise<string[]> {
   try {
-    const data = await getData();
+    const perfumes = await getPerfumes();
     const families = new Set<string>();
-    data.perfumes.forEach((p) => {
+    perfumes.forEach((p) => {
       if (p.family && p.family.trim().length > 0) {
         families.add(p.family.trim());
       }
@@ -154,9 +127,9 @@ export async function getScentFamilies(): Promise<string[]> {
 
 export async function getOccasions(): Promise<string[]> {
   try {
-    const data = await getData();
+    const perfumes = await getPerfumes();
     const seasons = new Set<string>();
-    data.perfumes.forEach((p) => {
+    perfumes.forEach((p) => {
       if (p.season && p.season.trim().length > 0) {
         seasons.add(p.season.trim());
       }
@@ -170,9 +143,9 @@ export async function getOccasions(): Promise<string[]> {
 
 export async function getIntensities(): Promise<string[]> {
   try {
-    const data = await getData();
+    const perfumes = await getPerfumes();
     const characters = new Set<string>();
-    data.perfumes.forEach((p) => {
+    perfumes.forEach((p) => {
       if (p.character && p.character.trim().length > 0) {
         characters.add(p.character.trim());
       }
@@ -186,9 +159,9 @@ export async function getIntensities(): Promise<string[]> {
 
 export async function getGenders(): Promise<string[]> {
   try {
-    const data = await getData();
+    const perfumes = await getPerfumes();
     const genders = new Set<string>();
-    data.perfumes.forEach((p) => {
+    perfumes.forEach((p) => {
       if (p.gender && p.gender.trim().length > 0) {
         genders.add(p.gender.trim());
       }
@@ -202,11 +175,14 @@ export async function getGenders(): Promise<string[]> {
 
 export async function getBrands(): Promise<string[]> {
   try {
-    const data = await getData();
-    return data.brands
-      .map((b) => b.name)
-      .filter((name) => name.trim().length > 0)
-      .sort((a, b) => a.localeCompare(b, "fa"));
+    const perfumes = await getPerfumes();
+    const brands = new Set<string>();
+    perfumes.forEach((p) => {
+      if (p.brand && p.brand.trim().length > 0) {
+        brands.add(p.brand.trim());
+      }
+    });
+    return Array.from(brands).sort((a, b) => a.localeCompare(b, "fa"));
   } catch (error) {
     console.error("Error loading brands:", error);
     return [];
@@ -215,14 +191,10 @@ export async function getBrands(): Promise<string[]> {
 
 export async function getNoteOptions(): Promise<string[]> {
   try {
-    const data = await getData();
+    const perfumes = await getPerfumes();
     const notes = new Set<string>();
-    data.perfumes.forEach((p) => {
-      const allNotes = [
-        ...(p.notes?.top || []),
-        ...(p.notes?.middle || []),
-        ...(p.notes?.base || []),
-      ];
+    perfumes.forEach((p) => {
+      const allNotes = [...p.notes.top, ...p.notes.middle, ...p.notes.base];
       allNotes.forEach((note) => {
         if (typeof note === "string" && note.trim().length > 0) {
           notes.add(note.trim());

@@ -1,20 +1,23 @@
-import json
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from django.conf import settings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from api.models import Perfume  # use Django model
 from .bridge_config import (
     CONTEXT_TO_NOTE_TAGS,
     CONTEXT_TO_OCCASION_TAGS,
     FRESH_NOTES,
+    MOMENT_TO_NOTE_TAGS,
+    MOMENT_TO_OCCASION_TAGS,
     MOOD_TO_NOTE_TAGS,
+    NOTE_CATEGORY_TO_TAGS,
+    STYLE_TO_GENDER_TOKENS,
     SWEET_NOTES,
+    TIME_TO_OCCASION_TAGS,
 )
-from .models import Perfume
 from .note_normalization import normalize_note_label
 
 
@@ -48,23 +51,19 @@ def perfume_to_text(p: Perfume) -> str:
     if p.family:
         parts.append(f"family_{_normalize_token(p.family)}")
 
-    for acc in p.main_accords:
-        n = _normalize_note(acc)
-        for _ in range(3):
-            parts.append(f"accord_{n}")
-
-    for note in p.top_notes:
+    # Notes
+    for note in p.notes_top:
         n = _normalize_note(note)
         parts.append(f"topnote_{n}")
         parts.append(f"note_{n}")
 
-    for note in p.heart_notes:
+    for note in p.notes_middle:
         n = _normalize_note(note)
         for _ in range(2):
             parts.append(f"heartnote_{n}")
             parts.append(f"note_{n}")
 
-    for note in p.base_notes:
+    for note in p.notes_base:
         n = _normalize_note(note)
         for _ in range(3):
             parts.append(f"basenote_{n}")
@@ -73,11 +72,8 @@ def perfume_to_text(p: Perfume) -> str:
     if p.gender:
         parts.append(f"gender_{p.gender}")
 
-    for s in p.seasons:
-        parts.append(f"season_{s}")
-
-    for o in p.occasions:
-        parts.append(f"occasion_{o}")
+    if p.season:
+        parts.append(f"season_{_normalize_token(p.season)}")
 
     if p.intensity:
         parts.append(f"intensity_{_normalize_token(p.intensity)}")
@@ -87,21 +83,56 @@ def perfume_to_text(p: Perfume) -> str:
 
 def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
     """
-    Convert vibe-based questionnaire into matcher tokens.
-    - moods/contexts map to Persian notes -> note_/accord_ tokens
-    - contexts optionally map to occasion_ tokens
-    - sweetness/freshness become repeated axis tokens with representative notes
-    - strength -> intensity_
-    - gender -> gender_ (if not unisex)
+    Convert questionnaire (new kiosk shape + legacy) into matcher tokens.
+    - moods/moments/times map to notes + occasion tokens
+    - noteLikes expand to note_/accord_ tokens
+    - noteDislikes expand to avoid_ tokens (handled in scoring, still encoded here)
+    - legacy contexts/sweetness/freshness/strength/gender are honored when present
     """
     parts: List[str] = []
 
+    # moods
     for mood in q.get("moods", []):
         for note in MOOD_TO_NOTE_TAGS.get(mood, []):
             n = _normalize_note(note)
             parts.append(f"note_{n}")
             parts.append(f"accord_{n}")
 
+    # moments
+    for moment in q.get("moments", []):
+        for note in MOMENT_TO_NOTE_TAGS.get(moment, []):
+            n = _normalize_note(note)
+            parts.append(f"note_{n}")
+        for occ in MOMENT_TO_OCCASION_TAGS.get(moment, []):
+            parts.append(f"occasion_{occ}")
+
+    # times
+    for time_of_day in q.get("times", []):
+        for occ in TIME_TO_OCCASION_TAGS.get(time_of_day, []):
+            parts.append(f"occasion_{occ}")
+
+    # intensity (new)
+    for intensity in q.get("intensity", []):
+        parts.append(f"intensity_{_normalize_token(intensity)}")
+
+    # styles
+    for style in q.get("styles", []):
+        for token in STYLE_TO_GENDER_TOKENS.get(style, []):
+            parts.append(token)
+
+    # note likes / dislikes (dislikes mainly penalized later)
+    for category in q.get("noteLikes", []):
+        for note in NOTE_CATEGORY_TO_TAGS.get(category, []):
+            n = _normalize_note(note)
+            parts.append(f"note_{n}")
+            parts.append(f"accord_{n}")
+
+    for category in q.get("noteDislikes", []):
+        for note in NOTE_CATEGORY_TO_TAGS.get(category, []):
+            n = _normalize_note(note)
+            parts.append(f"avoid_note_{n}")
+
+    # legacy contexts
     for ctx in q.get("contexts", []):
         for note in CONTEXT_TO_NOTE_TAGS.get(ctx, []):
             n = _normalize_note(note)
@@ -109,6 +140,7 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
         for occ in CONTEXT_TO_OCCASION_TAGS.get(ctx, []):
             parts.append(f"occasion_{occ}")
 
+    # legacy sliders
     sweetness = max(0, min(5, int(q.get("sweetness") or 0)))
     for _ in range(sweetness):
         parts.append("axis_sweet")
@@ -123,6 +155,7 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
             n = _normalize_note(raw)
             parts.append(f"axis_fresh_note_{n}")
 
+    # legacy strength/gender
     strength = q.get("strength")
     if strength:
         parts.append(f"intensity_{_normalize_token(strength)}")
@@ -136,15 +169,13 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
 
 def load_perfumes() -> List[Perfume]:
     """
-    Load perfumes from perfumes.json at the project root.
+    Load perfumes from the database.
     """
-    path: Path = settings.BASE_DIR / "perfumes.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return [Perfume(**item) for item in data]
+    return list(Perfume.objects.all())
 
 
 def _collect_normalized_notes(p: Perfume) -> List[str]:
-    merged = list(p.top_notes) + list(p.heart_notes) + list(p.base_notes) + list(p.main_accords)
+    merged = list(p.notes_top) + list(p.notes_middle) + list(p.notes_base)
     return [_normalize_note(n) for n in merged]
 
 
@@ -185,6 +216,14 @@ class PerfumeEngine:
         avoid_very_sweet = qdata.get("avoid_very_sweet", False)
         avoid_oud = qdata.get("avoid_oud", False)
         contexts = qdata.get("contexts", [])
+        moments = qdata.get("moments", [])
+        intensities = qdata.get("intensity", [])
+
+        # Precompute disliked note tokens
+        disliked_tokens: Set[str] = set()
+        for category in qdata.get("noteDislikes", []):
+            for raw in NOTE_CATEGORY_TO_TAGS.get(category, []):
+                disliked_tokens.add(_normalize_note(raw))
 
         for idx, base_score in enumerate(sims):
             score = float(base_score)
@@ -199,6 +238,21 @@ class PerfumeEngine:
             if "office" in contexts and perfume.intensity:
                 if perfume.intensity in ("strong", "very_strong"):
                     score -= 0.15
+
+            if moments and perfume.occasions:
+                if "night_out" in perfume.occasions and "daily" in moments:
+                    score -= 0.05
+
+            if intensities and perfume.intensity:
+                if "light" in intensities and perfume.intensity in ("strong", "very_strong"):
+                    score -= 0.15
+                if "strong" in intensities and perfume.intensity == "soft":
+                    score -= 0.1
+
+            if disliked_tokens:
+                perfume_tokens = set(_collect_normalized_notes(perfume))
+                if perfume_tokens & disliked_tokens:
+                    score -= 0.2
 
             adjusted_scores.append(score)
 

@@ -1,113 +1,43 @@
-export interface Brand {
-  id: number;
-  name: string;
-}
+import { Perfume } from "./api";
 
-export interface Collection {
-  id: number;
-  name: string;
-  brand?: number;
-}
-
-export interface PerfumeData {
-  id: number;
-  name_en: string;
-  name_fa: string;
-  brand?: number;
-  collection?: number;
-  gender?: string;
-  season?: string;
-  family?: string;
-  character?: string;
+export interface PerfumeResponse extends Perfume {
   notes: {
     top?: string[];
     middle?: string[];
     base?: string[];
   };
-  cover?: {
-    url?: string;
-    alternativeText?: string;
-  };
 }
 
-export interface DataFile {
-  brands: Brand[];
-  collections: Collection[];
-  perfumes: PerfumeData[];
-}
-
-let cachedData: DataFile | null = null;
+let cachedPerfumes: PerfumeResponse[] | null = null;
 let cacheTime = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL ?? "http://localhost:8000";
 
-async function loadDataFile(): Promise<DataFile> {
-  console.log("[Data Loader] loadDataFile called");
+async function loadPerfumes(): Promise<PerfumeResponse[]> {
   const now = Date.now();
-
-  // Return cached data if still valid
-  if (cachedData && now - cacheTime < CACHE_TTL_MS) {
-    console.log("[Data Loader] Returning cached data");
-    return cachedData;
+  if (cachedPerfumes && now - cacheTime < CACHE_TTL_MS) {
+    return cachedPerfumes;
   }
 
-  try {
-    const isServer = typeof window === "undefined";
-    console.log("[Data Loader] Environment:", { isServer });
-
-    if (isServer) {
-      // Server-side: dynamically import Node.js modules
-      const { readFile } = await import("fs/promises");
-      const { join } = await import("path");
-      console.log("[Data Loader] Node.js modules imported successfully");
-      
-      // Server-side: read from data folder in project root
-      const filePath = join(process.cwd(), "data", "data.json");
-      console.log("[Data Loader] Reading from:", filePath);
-      const fileContents = await readFile(filePath, "utf-8");
-      const data = JSON.parse(fileContents) as DataFile;
-      console.log("[Data Loader] File loaded:", {
-        brands: data.brands.length,
-        collections: data.collections.length,
-        perfumes: data.perfumes.length,
-      });
-      cachedData = data;
-      cacheTime = Date.now();
-      return data;
-    } else {
-      // Client-side: fetch from public folder
-      console.log("[Data Loader] Fetching from /data/data.json (client-side)");
-      const response = await fetch("/data/data.json");
-      if (!response.ok) {
-        console.error("[Data Loader] Fetch failed:", response.status);
-        throw new Error(`Failed to load data file: ${response.status}`);
-      }
-      const data = (await response.json()) as DataFile;
-      console.log("[Data Loader] Data fetched:", {
-        brands: data.brands.length,
-        collections: data.collections.length,
-        perfumes: data.perfumes.length,
-      });
-      cachedData = data;
-      cacheTime = Date.now();
-      return data;
-    }
-  } catch (error) {
-    console.error("[Data Loader] Error loading data file:", error);
-    // Return empty structure on error
-    return {
-      brands: [],
-      collections: [],
-      perfumes: [],
-    };
+  const response = await fetch(`${BACKEND_BASE_URL}/api/perfumes/`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to load perfumes: ${response.status}`);
   }
+  const data = (await response.json()) as PerfumeResponse[];
+  cachedPerfumes = data;
+  cacheTime = Date.now();
+  return data;
 }
 
-export async function getData(): Promise<DataFile> {
-  return loadDataFile();
+export async function getData(): Promise<{ perfumes: PerfumeResponse[] }> {
+  const perfumes = await loadPerfumes();
+  return { perfumes };
 }
 
 export function clearCache(): void {
-  cachedData = null;
+  cachedPerfumes = null;
   cacheTime = 0;
 }
 

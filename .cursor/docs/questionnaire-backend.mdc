@@ -1,0 +1,24 @@
+## Questionnaire backend alignment (Django)
+
+- New accepted fields: `moods`, `moments`, `times`, `intensity`, `styles`, `noteLikes`, `noteDislikes`, `limit`.
+- Legacy fields still accepted: `contexts`, `sweetness`, `freshness`, `strength`, `gender`, `avoid_very_sweet`, `avoid_oud`.
+- Validation lives in `backend/api/serializers.py`.
+- Mapping to tokens lives in `backend/matcher/bridge_config.py`; profile builder/penalties are in `backend/matcher/vectorizer.py`.
+- Example request body (POST `/api/recommend/`):
+```json
+{
+  "moods": ["fresh", "sweet"],
+  "moments": ["daily", "evening"],
+  "times": ["day"],
+  "intensity": ["medium"],
+  "styles": ["unisex"],
+  "noteLikes": ["citrus", "woody"],
+  "noteDislikes": ["sweet"],
+  "limit": 8
+}
+```
+- Behavior:
+  - noteLikes expand to note/accord tokens
+  - noteDislikes penalize perfumes sharing those note categories
+  - moments/times add occasion bias; intensity/style add intensity/gender bias
+  - legacy sliders still influence tokens

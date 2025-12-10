@@ -1,0 +1,16 @@
+## Backend-only catalog and rerank
+
+- Catalog source: `frontend/public/data/data.json` imported into SQLite via `python manage.py import_perfumes_from_json --reset`.
+- Model: `api.models.Perfume` now includes name_en, name_fa, brand, collection, family, season, character/intensity, notes_top/middle/base, all_notes, tags, images.
+- APIs:
+  - `GET /api/perfumes/` → DB-backed catalog (ordered by brand/name).
+  - `POST /api/recommend/` → baseline matcher (TF-IDF) using DB data.
+  - `POST /api/recommend/rerank/` → baseline + OpenAI (timeout/fallback; currently returns baseline if AI is unavailable).
+- Env:
+  - `OPENAI_API_KEY`, `OPENAI_MODEL` (default gpt-5-nano), `OPENAI_RERANK_TOP_K` (default 30), `OPENAI_RERANK_TIMEOUT_MS` (default 9000).
+- Frontend:
+  - Do not use local JSON; call backend endpoints directly.
+  - Next.js `/api/recommendations` is deprecated and returns 410.
+- Notes:
+  - Run `python manage.py migrate` before import.
+  - IDs in DB match IDs from `data.json`; brands/collections are resolved to names during import.
