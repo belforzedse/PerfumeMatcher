@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  frontend:
+    container_name: perfume-frontend
+    build:
+      context: .
+      args:
+
+        NEXT_PUBLIC_STRAPI_URL: ${NEXT_PUBLIC_STRAPI_URL}
+        NEXT_PUBLIC_STRAPI_TOKEN: ${NEXT_PUBLIC_STRAPI_TOKEN}
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_STRAPI_URL: ${NEXT_PUBLIC_STRAPI_URL}
+      NEXT_PUBLIC_STRAPI_TOKEN: ${NEXT_PUBLIC_STRAPI_TOKEN}
+    ports:
+      - "3000:3000" # ✅ run on port 80 for production
+    restart: always

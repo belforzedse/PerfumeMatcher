@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.github
+.vscode
+.claude
+npm-debug.log
+README.md
+DEPLOYMENT.md
+.env*.local
+.DS_Store
+*.log

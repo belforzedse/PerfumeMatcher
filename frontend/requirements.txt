@@ -1,0 +1,4 @@
+# Python requirements for CSV to JSON conversion script
+# The script uses only standard library modules (csv, json, os, sys)
+# No external dependencies required
+
