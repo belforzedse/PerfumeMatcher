@@ -1,9 +1,14 @@
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+import os
+import math
+import json
 
 from django.conf import settings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from openai import OpenAI
 
 from api.models import Perfume  # use Django model
 from .bridge_config import (
@@ -165,6 +170,64 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
         parts.append(f"gender_{gender}")
 
     return " ".join(parts)
+
+
+def _ensure_list(val) -> List[str]:
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return [str(x) for x in val if x is not None]
+    if isinstance(val, str):
+        return [val]
+    return []
+
+
+def _adapt_perfume(raw: Dict[str, Any]) -> Perfume:
+    """
+    Normalize raw perfume dict into Perfume dataclass:
+    - Accept alternate field names (nameFa/nameEn, accords/mainAccords, strength).
+    - Coerce scalar fields to lists where needed.
+    - Default missing fields to sensible empties.
+    """
+    pid = str(raw.get("id") or raw.get("slug") or raw.get("pk") or "")
+    name = str(raw.get("nameFa") or raw.get("name_fa") or raw.get("name") or "")
+    brand = str(raw.get("brand") or raw.get("brandFa") or raw.get("brand_fa") or "")
+    gender = raw.get("gender") or None
+    family = raw.get("family") or raw.get("category") or None
+
+    main_accords = _ensure_list(
+        raw.get("main_accords")
+        or raw.get("accords")
+        or raw.get("mainAccords")
+        or raw.get("accordsFa")
+    )
+    top_notes = _ensure_list(raw.get("top_notes") or raw.get("topNotes"))
+    heart_notes = _ensure_list(raw.get("heart_notes") or raw.get("middle_notes") or raw.get("heartNotes"))
+    base_notes = _ensure_list(raw.get("base_notes") or raw.get("baseNotes"))
+
+    # Fallback: if only a flat notes array exists, treat as heart notes
+    if not (top_notes or heart_notes or base_notes):
+        flat_notes = _ensure_list(raw.get("notes") or raw.get("allNotes"))
+        heart_notes = flat_notes
+
+    seasons = _ensure_list(raw.get("seasons") or raw.get("season"))
+    occasions = _ensure_list(raw.get("occasions") or raw.get("context") or raw.get("contexts"))
+    intensity = raw.get("intensity") or raw.get("strength")
+
+    return Perfume(
+        id=pid,
+        name=name,
+        brand=brand,
+        gender=gender,
+        family=family,
+        main_accords=main_accords,
+        top_notes=top_notes,
+        heart_notes=heart_notes,
+        base_notes=base_notes,
+        seasons=seasons,
+        occasions=occasions,
+        intensity=intensity,
+    )
 
 
 def load_perfumes() -> List[Perfume]:

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     # third-party
     'rest_framework',
+    'corsheaders',
 
     # your app
     'api',
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,6 +58,13 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS settings for frontend
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'matcher_backend.urls'
 
@@ -126,7 +135,7 @@ STATIC_URL = 'static/'
 
 # Admin access key for custom admin API
 ADMIN_ACCESS_KEY = os.getenv("ADMIN_ACCESS_KEY", "admin-key")
+
 # AI/OpenAI configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-5-nano")
-

@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-// Frontend API route removed; use backend Django endpoints directly.
 import { NextResponse } from "next/server";
 
+// Frontend API route removed; use backend Django endpoints directly.
 export function GET() {
   return NextResponse.json(
     { error: "Use backend /api/recommend/ and /api/recommend/rerank/ directly" },

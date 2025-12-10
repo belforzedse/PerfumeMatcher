@@ -1,5 +1,8 @@
 ﻿import { getData } from "./data-loader";
 
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
+const PERFUMES_ENDPOINT = `${BACKEND_BASE_URL}/api/perfumes/`;
+
 export interface PerfumeNotes {
   top: string[];
   middle: string[];
@@ -7,7 +10,7 @@ export interface PerfumeNotes {
 }
 
 export interface Perfume {
-  id: number;
+  id: string | number;
   nameEn: string;
   nameFa: string;
   brand?: string;
@@ -31,28 +34,103 @@ const dedupeNotes = (notes: PerfumeNotes): string[] => {
   return Array.from(unique).sort((a, b) => a.localeCompare(b, "en"));
 };
 
-const toPerfume = (perfumeData: any): Perfume => {
+const fetchWithRetry = async (url: string, options: RequestInit & { retries?: number; timeout?: number } = {}) => {
+  const { retries = 2, timeout = 10000, ...fetchOptions } = options;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+      
+      if (attempt < retries) {
+        // Exponential backoff: 500ms, 1000ms
+        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+      }
+    }
+  }
+
+  throw lastError || new Error("Fetch failed");
+};
+
+interface BackendPerfumeData {
+  id: number | string;
+  name_en?: string;
+  name_fa?: string;
+  name?: string;
+  nameEn?: string;
+  nameFa?: string;
+  brand?: string;
+  collection?: string;
+  gender?: string;
+  season?: string;
+  family?: string;
+  character?: string;
+  intensity?: string;
+  notes_top?: string[];
+  notes_middle?: string[];
+  notes_base?: string[];
+  notes?: {
+    top?: string[];
+    middle?: string[];
+    base?: string[];
+  };
+  all_notes?: string[];
+  images?: string[];
+  cover?: {
+    url?: string;
+  };
+}
+
+const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
+  // Backend API returns brand/collection as strings already, not IDs
+  const brand = typeof perfumeData.brand === "string" ? perfumeData.brand : undefined;
+  const collection = typeof perfumeData.collection === "string" ? perfumeData.collection : undefined;
   const notes: PerfumeNotes = {
-    top: Array.isArray(perfumeData.notes?.top) ? [...perfumeData.notes.top] : [],
-    middle: Array.isArray(perfumeData.notes?.middle)
-      ? [...perfumeData.notes.middle]
-      : [],
-    base: Array.isArray(perfumeData.notes?.base)
-      ? [...perfumeData.notes.base]
-      : [],
+    top: Array.isArray(perfumeData.notes_top) ? [...perfumeData.notes_top] : 
+         Array.isArray(perfumeData.notes?.top) ? [...perfumeData.notes.top] : [],
+    middle: Array.isArray(perfumeData.notes_middle) ? [...perfumeData.notes_middle] :
+             Array.isArray(perfumeData.notes?.middle) ? [...perfumeData.notes.middle] : [],
+    base: Array.isArray(perfumeData.notes_base) ? [...perfumeData.notes_base] :
+          Array.isArray(perfumeData.notes?.base) ? [...perfumeData.notes.base] : [],
   };
 
-  const imageUrl =
-    Array.isArray(perfumeData.images) && perfumeData.images.length > 0
-      ? perfumeData.images[0]
-      : undefined;
+  let imageUrl: string | undefined;
+  if (Array.isArray(perfumeData.images) && perfumeData.images.length > 0) {
+    imageUrl = perfumeData.images[0];
+  } else if (perfumeData.cover?.url) {
+    const url = perfumeData.cover.url.trim();
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      imageUrl = url;
+    } else if (url.startsWith("/")) {
+      imageUrl = url;
+    } else {
+      imageUrl = `/${url}`;
+    }
+  }
 
   return {
     id: perfumeData.id,
     nameEn: perfumeData.name_en || perfumeData.nameEn || perfumeData.name || "",
     nameFa: perfumeData.name_fa || perfumeData.nameFa || perfumeData.name || "",
-    brand: perfumeData.brand || undefined,
-    collection: perfumeData.collection || undefined,
+    brand,
+    collection,
     gender: perfumeData.gender || undefined,
     season: perfumeData.season || undefined,
     family: perfumeData.family || undefined,
@@ -88,19 +166,40 @@ export async function getPerfumes(): Promise<Perfume[]> {
   console.log("[API] Loading perfumes from backend...");
   perfumeListPromise = (async () => {
     try {
-      const data = await getData();
-      const perfumes = data.perfumes.map((p) => toPerfume(p));
-
+      // Try backend first
+      console.log("[API] Loading perfumes from backend:", PERFUMES_ENDPOINT);
+      const res = await fetchWithRetry(PERFUMES_ENDPOINT, {
+        cache: "no-store",
+        retries: 2,
+        timeout: 10000,
+      });
+      
+      const backendData = await res.json() as BackendPerfumeData[];
+      console.log("[API] Backend data received:", backendData.length, "items");
+      
+      const perfumes = backendData.map((p) => toPerfume(p));
       perfumeListCache = perfumes;
       perfumeListCacheTime = Date.now();
+      console.log("[API] Perfumes loaded from backend:", perfumes.length);
       return perfumes;
     } catch (error) {
-      perfumeListCache = null;
-      perfumeListCacheTime = 0;
-      console.error("[API] ERROR: Error loading perfumes:", error);
-      throw error instanceof Error
-        ? error
-        : new Error("Unknown error loading perfumes");
+      console.error("[API] ERROR loading perfumes from backend:", error);
+      
+      // Fallback to local data
+      try {
+        console.log("[API] Attempting local fallback...");
+        const data = await getData();
+        const perfumes = data.perfumes.map((p) => toPerfume(p));
+        perfumeListCache = perfumes;
+        perfumeListCacheTime = Date.now();
+        console.log("[API] Fallback successful:", perfumes.length);
+        return perfumes;
+      } catch (fallbackError) {
+        console.error("[API] Fallback failed:", fallbackError);
+        perfumeListCache = null;
+        perfumeListCacheTime = 0;
+        throw error instanceof Error ? error : new Error("Failed to load perfumes");
+      }
     } finally {
       perfumeListPromise = null;
     }
