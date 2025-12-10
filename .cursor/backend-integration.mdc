@@ -1,0 +1,193 @@
+---
+title: Backend Integration Guide
+description: How the frontend connects to the Django backend for AI-powered perfume recommendations
+tags: [backend, api, integration, django, openai]
+---
+
+# Backend Integration
+
+## Architecture Overview
+
+The PerfumeMatcher system uses a hybrid architecture:
+
+**Frontend (Next.js)** → **Backend (Django)** → **OpenAI API**
+
+## Key Components
+
+### 1. Perfume Catalog (`/api/perfumes/`)
+
+**Frontend**: `frontend/src/lib/api.ts` - `getPerfumes()`
+- Fetches perfume catalog from backend
+- Falls back to local data.json if backend unavailable
+- Caches for 5 minutes
+- Includes retry logic (2 retries, 10s timeout)
+
+**Backend**: `backend/api/views.py` - `perfumes()`
+- Serves `perfumes.json` with brands, collections, and perfumes
+- No authentication required
+
+### 2. AI Recommendations (`/api/recommend/`)
+
+**Frontend**: `frontend/src/lib/ai-matcher.ts` - `getAIRankings()`
+- POSTs questionnaire answers to backend
+- 30-second timeout with 1 retry
+- Maps backend response to RankedPerfume format
+
+**Backend**: `backend/api/views.py` - `recommend()`
+- Validates questionnaire using serializer
+- Calls hybrid matcher engine
+
+**Matcher Engine**: `backend/matcher/vectorizer.py` - `PerfumeEngine`
+- **Step 1**: TF-IDF vectorization generates 20 local candidates
+- **Step 2**: OpenAI reranks top candidates based on user preferences
+- **Fallback**: Returns local TF-IDF results if OpenAI unavailable
+
+## Environment Configuration
+
+### Frontend `.env.local`
+```bash
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000/api
+```
+
+### Backend `.env` or environment
+```bash
+OPENAI_API_KEY=sk-your-key-here
+AI_MODEL=gpt-4o-mini
+```
+
+## API Response Formats
+
+### `/api/perfumes/` Response
+```json
+{
+  "perfumes": [
+    {
+      "id": 1,
+      "name_fa": "عطر فارسی",
+      "name_en": "Perfume Name",
+      "brand": 1,
+      "collection": 1,
+      "gender": "Female",
+      "season": "Summer",
+      "family": "Floral",
+      "character": "Romantic",
+      "notes": {
+        "top": ["Rose", "Bergamot"],
+        "middle": ["Jasmine"],
+        "base": ["Vanilla"]
+      },
+      "cover": {
+        "url": "/uploads/image.webp"
+      }
+    }
+  ],
+  "brands": [{"id": 1, "name": "Brand Name"}],
+  "collections": [{"id": 1, "name": "Collection", "brand": 1}]
+}
+```
+
+### `/api/recommend/` Request
+```json
+{
+  "moods": ["cozy", "elegant"],
+  "moments": ["date_night"],
+  "times": ["evening"],
+  "intensity": ["moderate"],
+  "styles": ["classic"],
+  "noteLikes": ["vanilla", "rose"],
+  "noteDislikes": ["oud"],
+  "gender": ["female"]
+}
+```
+
+### `/api/recommend/` Response
+```json
+{
+  "profile_text": "user preferences...",
+  "results": [
+    {
+      "id": "123",
+      "name": "Perfume Name",
+      "brand": "Brand",
+      "matchPercentage": 95,
+      "reasons": [
+        "Perfect match for cozy and elegant mood",
+        "Contains your preferred vanilla and rose notes"
+      ],
+      "score": 0.95
+    }
+  ]
+}
+```
+
+## Error Handling
+
+### Frontend Resilience
+- **Retry Logic**: 2 retries for catalog, 1 for recommendations
+- **Timeouts**: 10s for catalog, 30s for recommendations
+- **Fallbacks**: Local data.json if backend unavailable
+
+### Backend Resilience
+- **OpenAI Fallback**: Returns TF-IDF results if API fails
+- **Timeout**: 12s for OpenAI calls
+- **Validation**: Serializer validates all questionnaire inputs
+
+## CORS Configuration
+
+Backend allows requests from:
+- `http://localhost:3000`
+- `http://127.0.0.1:3000`
+
+Configured in `backend/matcher_backend/settings.py`:
+```python
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+```
+
+## Development Workflow
+
+1. Start backend: `cd backend && python manage.py runserver 8000`
+2. Start frontend: `cd frontend && npm run dev`
+3. Test at: `http://localhost:3000`
+
+## Debugging
+
+### Check Backend Connection
+```bash
+curl http://localhost:8000/api/perfumes/
+```
+
+### Check Recommendations
+```bash
+curl -X POST http://localhost:8000/api/recommend/ \
+  -H "Content-Type: application/json" \
+  -d '{"moods":["cozy"],"moments":["casual_day"]}'
+```
+
+### Frontend Logs
+- Open browser console (F12)
+- Look for `[API]` and `[AI Matcher]` prefixed logs
+
+### Backend Logs
+- Check terminal running `manage.py runserver`
+- Look for OpenAI API errors or TF-IDF fallback messages
+
+## Performance
+
+- **Catalog Load**: ~100-500ms (cached for 5min)
+- **Recommendations**: 5-15s (includes AI processing)
+  - Local TF-IDF: ~100-300ms
+  - OpenAI reranking: 3-10s
+  - Total timeout: 30s
+
+## Admin Panel
+
+Currently uses Next.js API routes with local data.json:
+- `/admin/brands` - Brand management
+- `/admin/collections` - Collection management
+- `/admin/products` - Perfume CRUD
+
+Future: Migrate to Django backend admin endpoints.

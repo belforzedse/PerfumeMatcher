@@ -1,5 +1,8 @@
 ﻿import { getData, type DataFile } from "./data-loader";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const PERFUMES_ENDPOINT = BACKEND_URL ? `${BACKEND_URL}/perfumes/` : "";
+
 export interface PerfumeNotes {
   top: string[];
   middle: string[];
@@ -7,7 +10,7 @@ export interface PerfumeNotes {
 }
 
 export interface Perfume {
-  id: number;
+  id: string | number;
   nameEn: string;
   nameFa: string;
   brand?: string;
@@ -28,6 +31,41 @@ const dedupeNotes = (notes: PerfumeNotes): string[] => {
     ...notes.base,
   ]);
   return Array.from(unique).sort((a, b) => a.localeCompare(b, "en"));
+};
+
+const fetchWithRetry = async (url: string, options: RequestInit & { retries?: number; timeout?: number } = {}) => {
+  const { retries = 2, timeout = 10000, ...fetchOptions } = options;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+      
+      if (attempt < retries) {
+        // Exponential backoff: 500ms, 1000ms
+        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+      }
+    }
+  }
+
+  throw lastError || new Error("Fetch failed");
 };
 
 const toPerfume = (
@@ -53,9 +91,6 @@ const toPerfume = (
       : [],
   };
 
-  // Handle image URL - if it's a relative path starting with /, it's already correct
-  // If it's an absolute URL, use it as-is
-  // If it's just a filename, assume it's in /public
   let imageUrl: string | undefined;
   if (perfumeData.cover?.url) {
     const url = perfumeData.cover.url.trim();
@@ -103,31 +138,53 @@ export async function getPerfumes(): Promise<Perfume[]> {
     return perfumeListPromise;
   }
 
-  console.log("[API] Loading perfumes from data file...");
   perfumeListPromise = (async () => {
     try {
+      // Try backend first if configured
+      if (PERFUMES_ENDPOINT) {
+        console.log("[API] Loading perfumes from backend:", PERFUMES_ENDPOINT);
+        const res = await fetchWithRetry(PERFUMES_ENDPOINT, {
+          cache: "no-store",
+          retries: 2,
+          timeout: 10000,
+        });
+        
+        const data = await res.json() as DataFile;
+        console.log("[API] Backend data received");
+        
+        const perfumes = data.perfumes.map((p) => toPerfume(p, data.brands, data.collections));
+        perfumeListCache = perfumes;
+        perfumeListCacheTime = Date.now();
+        console.log("[API] Perfumes loaded from backend:", perfumes.length);
+        return perfumes;
+      }
+
+      // Fallback to local data
+      console.log("[API] Backend not configured, loading from local data...");
       const data = await getData();
-      console.log("[API] Data loaded, transforming perfumes...");
-      const perfumes = data.perfumes.map((p) =>
-        toPerfume(p, data.brands, data.collections)
-      );
-
-      console.log("[API] Perfumes transformed:", {
-        count: perfumes.length,
-        brands: data.brands.length,
-        collections: data.collections.length,
-      });
-
+      const perfumes = data.perfumes.map((p) => toPerfume(p, data.brands, data.collections));
       perfumeListCache = perfumes;
       perfumeListCacheTime = Date.now();
+      console.log("[API] Perfumes loaded locally:", perfumes.length);
       return perfumes;
     } catch (error) {
+      console.error("[API] ERROR loading perfumes:", error);
       perfumeListCache = null;
       perfumeListCacheTime = 0;
-      console.error("[API] ERROR: Error loading perfumes:", error);
-      throw error instanceof Error
-        ? error
-        : new Error("Unknown error loading perfumes");
+      
+      // Try local fallback on backend error
+      try {
+        console.log("[API] Attempting local fallback...");
+        const data = await getData();
+        const perfumes = data.perfumes.map((p) => toPerfume(p, data.brands, data.collections));
+        perfumeListCache = perfumes;
+        perfumeListCacheTime = Date.now();
+        console.log("[API] Fallback successful:", perfumes.length);
+        return perfumes;
+      } catch (fallbackError) {
+        console.error("[API] Fallback failed:", fallbackError);
+        throw error instanceof Error ? error : new Error("Failed to load perfumes");
+      }
     } finally {
       perfumeListPromise = null;
     }

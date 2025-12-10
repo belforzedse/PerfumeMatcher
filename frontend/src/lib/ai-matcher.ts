@@ -2,89 +2,97 @@ import { QuestionnaireAnswers } from "@/lib/questionnaire";
 import { Perfume } from "@/lib/api";
 import { RankedPerfume } from "@/lib/perfume-matcher";
 
-interface AIRankingsResponse {
-  rankings: Array<{
-    id: number;
-    matchPercentage: number;
-    reasons?: string[];
-  }>;
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const RECOMMEND_ENDPOINT = BACKEND_URL ? `${BACKEND_URL}/recommend/` : "";
+
+interface BackendRanking {
+  id: string | number;
+  matchPercentage: number;
+  reasons?: string[];
+  name?: string;
+  brand?: string;
+  score?: number;
 }
+
+interface BackendRecommendResponse {
+  profile_text?: string;
+  results: BackendRanking[];
+}
+
+const fetchWithRetry = async (url: string, options: RequestInit & { retries?: number; timeout?: number } = {}) => {
+  const { retries = 1, timeout = 30000, ...fetchOptions } = options;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`[AI Matcher] Attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+      
+      if (attempt < retries) {
+        // Wait 1s before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  throw lastError || new Error("Request failed");
+};
 
 export async function getAIRankings(
   answers: QuestionnaireAnswers,
   perfumes: Perfume[]
 ): Promise<RankedPerfume[]> {
-  console.log("[AI Matcher Client] Starting getAIRankings...");
-  console.log("[AI Matcher Client] Input:", {
-    perfumesCount: perfumes.length,
-    answersSummary: {
-      moods: answers.moods.length,
-      moments: answers.moments.length,
-      times: answers.times.length,
-      intensity: answers.intensity.length,
-      styles: answers.styles.length,
-      noteLikes: answers.noteLikes.length,
-      noteDislikes: answers.noteDislikes.length,
-    },
-  });
-
+  console.log("[AI Matcher Client] Starting getAIRankings (backend)...");
   const requestStartTime = Date.now();
 
+  if (!RECOMMEND_ENDPOINT) {
+    throw new Error("Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL in environment.");
+  }
+
   try {
-    console.log("[AI Matcher Client] Fetching from /api/recommendations...");
-    const response = await fetch("/api/recommendations", {
+    const response = await fetchWithRetry(RECOMMEND_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        answers,
-        perfumes,
-      }),
+      body: JSON.stringify(answers),
+      retries: 1,
+      timeout: 30000,
     });
 
     const fetchElapsed = Date.now() - requestStartTime;
-    console.log(`[AI Matcher Client] Fetch completed in ${fetchElapsed}ms, status: ${response.status}`);
+    console.log(`[AI Matcher Client] Request completed in ${fetchElapsed}ms`);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      console.error("[AI Matcher Client] ERROR: Request failed:", {
-        status: response.status,
-        statusText: response.statusText,
-        error,
-      });
-      throw new Error(
-        error.error || `Failed to get AI rankings: ${response.status}`
-      );
-    }
+    const data: BackendRecommendResponse = await response.json();
+    const perfumeMap = new Map(perfumes.map((p) => [String(p.id), p]));
 
-    console.log("[AI Matcher Client] Parsing response JSON...");
-    const data: AIRankingsResponse = await response.json();
-    console.log("[AI Matcher Client] Response received:", {
-      rankingsCount: data.rankings.length,
-      topMatch: data.rankings[0]
-        ? {
-            id: data.rankings[0].id,
-            matchPercentage: data.rankings[0].matchPercentage,
-          }
-        : null,
-    });
-
-    // Transform AI response to RankedPerfume format
-    console.log("[AI Matcher Client] Transforming to RankedPerfume format...");
-    const perfumeMap = new Map(perfumes.map((p) => [p.id, p]));
     const rankedPerfumes: RankedPerfume[] = [];
-
-    for (const ranking of data.rankings) {
-      const perfume = perfumeMap.get(ranking.id);
+    for (const ranking of data.results || []) {
+      const perfume = perfumeMap.get(String(ranking.id));
       if (!perfume) {
-        console.warn(`[AI Matcher Client] WARNING: Perfume ID ${ranking.id} not found in perfume map`);
+        console.warn(`[AI Matcher] Perfume ID ${ranking.id} not found in catalog`);
         continue;
       }
-
       rankedPerfumes.push({
         ...perfume,
-        score: ranking.matchPercentage,
+        score: typeof ranking.score === "number" ? ranking.score : ranking.matchPercentage,
         maxScore: 100,
         matchPercentage: ranking.matchPercentage,
         reasons: ranking.reasons || [],
@@ -96,18 +104,7 @@ export async function getAIRankings(
     }
 
     const totalElapsed = Date.now() - requestStartTime;
-    console.log(`[AI Matcher Client] Transformation complete in ${totalElapsed}ms total`);
-    console.log("[AI Matcher Client] Final result:", {
-      rankedPerfumesCount: rankedPerfumes.length,
-      topMatch: rankedPerfumes[0]
-        ? {
-            id: rankedPerfumes[0].id,
-            name: rankedPerfumes[0].nameFa || rankedPerfumes[0].nameEn,
-            matchPercentage: rankedPerfumes[0].matchPercentage,
-          }
-        : null,
-    });
-
+    console.log(`[AI Matcher] Successfully ranked ${rankedPerfumes.length} perfumes in ${totalElapsed}ms`);
     return rankedPerfumes;
   } catch (error) {
     const totalElapsed = Date.now() - requestStartTime;

@@ -2,10 +2,13 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import os
+import math
 
 from django.conf import settings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from openai import OpenAI
 
 from .bridge_config import (
     CONTEXT_TO_NOTE_TAGS,
@@ -134,13 +137,157 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
     return " ".join(parts)
 
 
+def _ensure_list(val) -> List[str]:
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return [str(x) for x in val if x is not None]
+    if isinstance(val, str):
+        return [val]
+    return []
+
+
+def _adapt_perfume(raw: Dict[str, Any]) -> Perfume:
+    """
+    Normalize raw perfume dict into Perfume dataclass:
+    - Accept alternate field names (nameFa/nameEn, accords/mainAccords, strength).
+    - Coerce scalar fields to lists where needed.
+    - Default missing fields to sensible empties.
+    """
+    pid = str(raw.get("id") or raw.get("slug") or raw.get("pk") or "")
+    name = str(raw.get("nameFa") or raw.get("name_fa") or raw.get("name") or "")
+    brand = str(raw.get("brand") or raw.get("brandFa") or raw.get("brand_fa") or "")
+    gender = raw.get("gender") or None
+    family = raw.get("family") or raw.get("category") or None
+
+    main_accords = _ensure_list(
+        raw.get("main_accords")
+        or raw.get("accords")
+        or raw.get("mainAccords")
+        or raw.get("accordsFa")
+    )
+    top_notes = _ensure_list(raw.get("top_notes") or raw.get("topNotes"))
+    heart_notes = _ensure_list(raw.get("heart_notes") or raw.get("middle_notes") or raw.get("heartNotes"))
+    base_notes = _ensure_list(raw.get("base_notes") or raw.get("baseNotes"))
+
+    # Fallback: if only a flat notes array exists, treat as heart notes
+    if not (top_notes or heart_notes or base_notes):
+        flat_notes = _ensure_list(raw.get("notes") or raw.get("allNotes"))
+        heart_notes = flat_notes
+
+    seasons = _ensure_list(raw.get("seasons") or raw.get("season"))
+    occasions = _ensure_list(raw.get("occasions") or raw.get("context") or raw.get("contexts"))
+    intensity = raw.get("intensity") or raw.get("strength")
+
+    return Perfume(
+        id=pid,
+        name=name,
+        brand=brand,
+        gender=gender,
+        family=family,
+        main_accords=main_accords,
+        top_notes=top_notes,
+        heart_notes=heart_notes,
+        base_notes=base_notes,
+        seasons=seasons,
+        occasions=occasions,
+        intensity=intensity,
+    )
+
+
 def load_perfumes() -> List[Perfume]:
     """
-    Load perfumes from perfumes.json at the project root.
+    Load perfumes from perfumes.json at the project root and adapt to matcher schema.
     """
     path: Path = settings.BASE_DIR / "perfumes.json"
     data = json.loads(path.read_text(encoding="utf-8"))
-    return [Perfume(**item) for item in data]
+    return [_adapt_perfume(item) for item in data]
+
+
+# ---- AI rerank helpers -------------------------------------------------------
+
+def _to_ai_payload(perfumes: List[Perfume], answers: Dict[str, Any], limit: int = 40) -> Dict[str, Any]:
+    top = perfumes[:limit]
+    items = []
+    for p in top:
+        items.append(
+            {
+                "id": p.id,
+                "name": p.name,
+                "brand": p.brand,
+                "family": p.family,
+                "mainAccords": p.main_accords[:6],
+                "topNotes": p.top_notes[:6],
+                "heartNotes": p.heart_notes[:6],
+                "baseNotes": p.base_notes[:6],
+                "seasons": p.seasons[:4],
+                "occasions": p.occasions[:4],
+                "intensity": p.intensity,
+            }
+        )
+
+    prefs = {
+        "moods": (answers.get("moods") or [])[:6],
+        "contexts": (answers.get("contexts") or [])[:6],
+        "sweetness": answers.get("sweetness"),
+        "freshness": answers.get("freshness"),
+        "strength": answers.get("strength"),
+        "gender": answers.get("gender"),
+    }
+
+    return {"preferences": prefs, "candidates": items}
+
+
+def _ai_rerank(payload: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
+    api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+    model = os.getenv("AI_MODEL") or "gpt-5-nano"
+    if not api_key:
+        return None
+
+    client = OpenAI(api_key=api_key)
+
+    # Compact prompt; ask for JSON array with capped reasons
+    system_prompt = (
+        "You are a perfume recommendation expert. "
+        "Given user preferences and candidate perfumes, return JSON: "
+        "{\"rankings\":[{\"id\":\"...\",\"matchPercentage\":90,\"reasons\":[\"...\",\"...\"]}]}. "
+        "Limit reasons to at most 2 short items. Match percentage 1-100."
+    )
+
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+            ],
+            temperature=0.2,
+            max_tokens=320,
+            response_format={"type": "json_object"},
+            timeout=12,
+        )
+        content = completion.choices[0].message.content if completion.choices else None
+        if not content:
+            return None
+        parsed = json.loads(content)
+        rankings = parsed.get("rankings") if isinstance(parsed, dict) else parsed
+        if not isinstance(rankings, list):
+            return None
+        out = []
+        for item in rankings:
+            try:
+                out.append(
+                    {
+                        "id": str(item.get("id") or ""),
+                        "matchPercentage": max(1, min(100, int(item.get("matchPercentage") or 0))),
+                        "reasons": item.get("reasons") if isinstance(item.get("reasons"), list) else [],
+                    }
+                )
+            except Exception:
+                continue
+        return out or None
+    except Exception:
+        return None
 
 
 def _collect_normalized_notes(p: Perfume) -> List[str]:
@@ -209,17 +356,81 @@ class PerfumeEngine:
             reverse=True,
         )[:top_k]
 
-        results = []
+        # Build local candidates payload (sorted)
+        candidates = []
         for idx in idx_sorted:
             p = self.perfumes[idx]
-            results.append(
+            candidates.append(
                 {
                     "id": p.id,
                     "name": p.name,
                     "brand": p.brand,
+                    "family": p.family,
+                    "main_accords": p.main_accords,
+                    "top_notes": p.top_notes,
+                    "heart_notes": p.heart_notes,
+                    "base_notes": p.base_notes,
+                    "seasons": p.seasons,
+                    "occasions": p.occasions,
+                    "intensity": p.intensity,
                     "score": adjusted_scores[idx],
                 }
             )
+
+        # Prepare AI payload from top candidates
+        ai_payload = _to_ai_payload([c for c in (self.perfumes[i] for i in idx_sorted)], qdata, limit=min(40, len(idx_sorted)))
+        ai_rankings = _ai_rerank(ai_payload)
+
+        results = []
+        if ai_rankings:
+            # Map AI rankings to full info; fallback to local score ordering if missing
+            ai_map = {r["id"]: r for r in ai_rankings if r.get("id")}
+            for idx in idx_sorted:
+                p = self.perfumes[idx]
+                ar = ai_map.get(p.id)
+                if ar:
+                    results.append(
+                        {
+                            "id": p.id,
+                            "name": p.name,
+                            "brand": p.brand,
+                            "matchPercentage": ar["matchPercentage"],
+                            "reasons": ar.get("reasons") or [],
+                            "score": adjusted_scores[idx],
+                        }
+                    )
+            # If AI returned fewer, fill remaining from local (optional)
+            if len(results) < len(idx_sorted):
+                used = {r["id"] for r in results}
+                for idx in idx_sorted:
+                    p = self.perfumes[idx]
+                    if p.id in used:
+                        continue
+                    results.append(
+                        {
+                            "id": p.id,
+                            "name": p.name,
+                            "brand": p.brand,
+                            "matchPercentage": int(max(1, min(100, adjusted_scores[idx] * 100))),
+                            "reasons": [],
+                            "score": adjusted_scores[idx],
+                        }
+                    )
+        else:
+            # Local-only fallback
+            for idx in idx_sorted:
+                p = self.perfumes[idx]
+                pct = int(max(1, min(100, adjusted_scores[idx] * 100)))
+                results.append(
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "brand": p.brand,
+                        "matchPercentage": pct,
+                        "reasons": [],
+                        "score": adjusted_scores[idx],
+                    }
+                )
 
         return {"profile_text": profile_text, "results": results}
 
