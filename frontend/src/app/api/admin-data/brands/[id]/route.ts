@@ -4,9 +4,10 @@ import { loadData, persistData } from "@/lib/data-store";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  const { id: idString } = await params;
+  const id = Number(idString);
   const body = await request.json();
   const name = (body?.name as string | undefined)?.trim();
 
@@ -39,9 +40,10 @@ export async function PUT(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  const { id: idString } = await params;
+  const id = Number(idString);
   if (!id || Number.isNaN(id)) {
     return NextResponse.json({ error: "شناسه نامعتبر است" }, { status: 400 });
   }

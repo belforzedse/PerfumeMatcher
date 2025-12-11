@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Turbopack is now the default bundler in Next.js 16
+  // Empty config silences the webpack compatibility warning
+  turbopack: {},
+
+  // Keep webpack config for fallback support (use with --webpack flag)
   webpack: (config, { isServer }) => {
     // Prevent webpack from bundling Node.js modules on client-side
     if (!isServer) {
@@ -59,9 +64,6 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   typescript: {
     ignoreBuildErrors: false,
   },

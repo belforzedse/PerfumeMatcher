@@ -4,6 +4,38 @@ export interface PerfumeResponse extends Omit<Perfume, "notes"> {
   notes: PerfumeNotes;
 }
 
+// Data file structure for local JSON storage (used by admin API routes)
+export interface Brand {
+  id: number;
+  name: string;
+}
+
+export interface Collection {
+  id: number;
+  name: string;
+  brand?: number;
+}
+
+export interface PerfumeData {
+  id: number;
+  name_fa: string;
+  name_en: string;
+  brand?: number;
+  collection?: number;
+  gender?: string;
+  season?: string;
+  family?: string;
+  character?: string;
+  notes?: PerfumeNotes;
+  cover?: { url: string };
+}
+
+export interface DataFile {
+  brands: Brand[];
+  collections: Collection[];
+  perfumes: PerfumeData[];
+}
+
 let cachedPerfumes: PerfumeResponse[] | null = null;
 let cacheTime = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes

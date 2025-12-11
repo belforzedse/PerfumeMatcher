@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)"
+      "Bash(npm audit:*)",
+      "Bash(npx @next/codemod@canary upgrade:*)",
+      "Bash(npx next typegen)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []
