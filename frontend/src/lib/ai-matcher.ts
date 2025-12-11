@@ -2,8 +2,8 @@ import { QuestionnaireAnswers } from "@/lib/questionnaire";
 import { Perfume } from "@/lib/api";
 import { RankedPerfume } from "@/lib/perfume-matcher";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
-const RECOMMEND_ENDPOINT = BACKEND_URL ? `${BACKEND_URL}/recommend/` : "";
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
+const RECOMMEND_ENDPOINT = `${BACKEND_BASE_URL}/api/recommend/rerank/`;
 
 interface BackendRanking {
   id: string | number;
@@ -15,12 +15,13 @@ interface BackendRanking {
 }
 
 interface BackendRecommendResponse {
-  profile_text?: string;
-  results: BackendRanking[];
+  rankings: BackendRanking[];
+  fallback?: boolean;
+  elapsedMs?: number;
 }
 
 const fetchWithRetry = async (url: string, options: RequestInit & { retries?: number; timeout?: number } = {}) => {
-  const { retries = 1, timeout = 30000, ...fetchOptions } = options;
+  const { retries = 1, timeout = 120000, ...fetchOptions } = options; // 120 seconds to match backend timeout
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -74,32 +75,41 @@ export async function getAIRankings(
       },
       body: JSON.stringify(answers),
       retries: 1,
-      timeout: 30000,
+      timeout: 120000, // 120 seconds to match backend timeout (90s default + buffer)
     });
 
     const fetchElapsed = Date.now() - requestStartTime;
     console.log(`[AI Matcher Client] Request completed in ${fetchElapsed}ms`);
 
     const data: BackendRecommendResponse = await response.json();
+    console.log(`[AI Matcher] Received ${data.rankings?.length || 0} rankings from backend`);
+    console.log(`[AI Matcher] Backend returned IDs:`, data.rankings?.map(r => r.id).slice(0, 5));
+    
     const perfumeMap = new Map(perfumes.map((p) => [String(p.id), p]));
+    console.log(`[AI Matcher] Catalog has ${perfumes.length} perfumes`);
+    console.log(`[AI Matcher] Sample catalog IDs:`, perfumes.slice(0, 5).map(p => p.id));
 
     const rankedPerfumes: RankedPerfume[] = [];
-    for (const ranking of data.results || []) {
+    for (const ranking of data.rankings || []) {
       const perfume = perfumeMap.get(String(ranking.id));
       if (!perfume) {
-        console.warn(`[AI Matcher] Perfume ID ${ranking.id} not found in catalog`);
+        console.warn(`[AI Matcher] Perfume ID ${ranking.id} (type: ${typeof ranking.id}) not found in catalog`);
         continue;
       }
+      const matchPercentage = typeof ranking.matchPercentage === "number" 
+        ? Math.max(0, Math.min(100, ranking.matchPercentage))
+        : 0;
+      
       rankedPerfumes.push({
         ...perfume,
-        score: typeof ranking.score === "number" ? ranking.score : ranking.matchPercentage,
+        score: matchPercentage / 100, // Convert percentage to 0-1 scale
         maxScore: 100,
-        matchPercentage: ranking.matchPercentage,
+        matchPercentage: matchPercentage,
         reasons: ranking.reasons || [],
         breakdown: [],
         matchedCorePreferences: 0,
         consideredCorePreferences: 0,
-        confidence: ranking.matchPercentage,
+        confidence: matchPercentage,
       });
     }
 

@@ -1,11 +1,7 @@
-import { Perfume } from "./api";
+import { Perfume, PerfumeNotes } from "./api";
 
-export interface PerfumeResponse extends Perfume {
-  notes: {
-    top?: string[];
-    middle?: string[];
-    base?: string[];
-  };
+export interface PerfumeResponse extends Omit<Perfume, "notes"> {
+  notes: PerfumeNotes;
 }
 
 let cachedPerfumes: PerfumeResponse[] | null = null;
@@ -19,16 +15,27 @@ async function loadPerfumes(): Promise<PerfumeResponse[]> {
     return cachedPerfumes;
   }
 
-  const response = await fetch(`${BACKEND_BASE_URL}/api/perfumes/`, {
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to load perfumes: ${response.status}`);
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/perfumes/`, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load perfumes: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = (await response.json()) as PerfumeResponse[];
+    cachedPerfumes = data;
+    cacheTime = Date.now();
+    return data;
+  } catch (error) {
+    console.error("[data-loader] Error loading perfumes from backend:", error);
+    // Return empty array instead of throwing to allow graceful degradation
+    return [];
   }
-  const data = (await response.json()) as PerfumeResponse[];
-  cachedPerfumes = data;
-  cacheTime = Date.now();
-  return data;
 }
 
 export async function getData(): Promise<{ perfumes: PerfumeResponse[] }> {

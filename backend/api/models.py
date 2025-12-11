@@ -29,12 +29,17 @@ class Perfume(models.Model):
         max_length=12, choices=Gender.choices, blank=True, null=True
     )
     family = models.CharField(max_length=120, blank=True, default="")
-    season = models.CharField(max_length=50, blank=True, default="")
+    season = models.CharField(max_length=50, blank=True, default="")  # legacy single value
+    seasons = models.JSONField(default=list, blank=True)  # list of seasons
     strength = models.CharField(
         max_length=20, choices=Strength.choices, blank=True, null=True
     )
     character = models.CharField(max_length=120, blank=True, default="")
     intensity = models.CharField(max_length=50, blank=True, default="")
+    
+    # Occasions and accords
+    occasions = models.JSONField(default=list, blank=True)  # list of occasions/contexts
+    main_accords = models.JSONField(default=list, blank=True)  # main accords/notes
 
     # Notes
     notes_top = models.JSONField(default=list, blank=True)

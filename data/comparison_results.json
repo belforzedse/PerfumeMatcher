@@ -1,0 +1,2489 @@
+{
+  "statistics": {
+    "total_existing": 258,
+    "found": 148,
+    "not_found": 110,
+    "found_percentage": 57.36434108527132,
+    "exact_matches": 0,
+    "text_search_matches": 148,
+    "fuzzy_matches": 0
+  },
+  "found": [
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "Alexandria II",
+        "name_fa": "الکساندریا 2"
+      },
+      "parsed": {
+        "brand": "Xerjoff",
+        "name_en": "Alexandria II"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "Naxos",
+        "name_fa": "ناکسوس"
+      },
+      "parsed": {
+        "brand": "Xerjoff",
+        "name_en": "XJ 1861 Naxos"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "Accento",
+        "name_fa": "اسنتو"
+      },
+      "parsed": {
+        "brand": "Flumen Profumi",
+        "name_en": "Accento d Amore"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "Opera",
+        "name_fa": "اپرا"
+      },
+      "parsed": {
+        "brand": "DSH Perfumes",
+        "name_en": "l Opera des Rouges et des Roses"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "Erba Pura",
+        "name_fa": "ارباپورا"
+      },
+      "parsed": {
+        "brand": "Sospiro Perfumes",
+        "name_en": "Erba Pura"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "زرجف",
+        "name_en": "More Than Words",
+        "name_fa": "مور دن وردز"
+      },
+      "parsed": {
+        "brand": "Xerjoff",
+        "name_en": "More Than Words"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Herod",
+        "name_fa": "هرود"
+      },
+      "parsed": {
+        "brand": "Sherod Marquez Artisan Perfumes",
+        "name_en": "Bougie Boy"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Kalan",
+        "name_fa": "کالان"
+      },
+      "parsed": {
+        "brand": "O Boticario",
+        "name_en": "Kalanit"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Galloway",
+        "name_fa": "گالووی"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Galloway"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Pegasus",
+        "name_fa": "پگاسوس"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Pegasus"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Layton",
+        "name_fa": "لیتون"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Layton"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Oajan",
+        "name_fa": "اوجان"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Oajan"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Ispazon",
+        "name_fa": "ایسپازون"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Ispazon"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارلی",
+        "name_en": "Akaster",
+        "name_fa": "آکاستر"
+      },
+      "parsed": {
+        "brand": "Parfums de Marly",
+        "name_en": "Akaster"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "شنل",
+        "name_en": "Coco Mademoiselle",
+        "name_fa": "کوکو مادمازل"
+      },
+      "parsed": {
+        "brand": "Chanel",
+        "name_en": "Coco Mademoiselle"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "شنل",
+        "name_en": "Chance",
+        "name_fa": "چنس"
+      },
+      "parsed": {
+        "brand": "Geoffrey Beene",
+        "name_en": "Chance"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "شنل",
+        "name_en": "Chance Eau Tendre",
+        "name_fa": "چنس او تندر"
+      },
+      "parsed": {
+        "brand": "Chanel",
+        "name_en": "Chance Eau Tendre"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "شنل",
+        "name_en": "Allure Homme Sport",
+        "name_fa": "الور هوم اسپرت"
+      },
+      "parsed": {
+        "brand": "Chanel",
+        "name_en": "Allure Homme Sport"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Sauvage",
+        "name_fa": "ساواژ"
+      },
+      "parsed": {
+        "brand": "Alkemia Perfumes",
+        "name_en": "Miel de Sauvage et Tabac"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Fahrenheit",
+        "name_fa": "فارنهایت"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Aqua Fahrenheit"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Midnight Poison",
+        "name_fa": "میدنایت پویزن"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Elixir Midnight Poison"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Pure Poison",
+        "name_fa": "پیور پویزن"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Pure Poison"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Poison Girl",
+        "name_fa": "پویزن گرل"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Poison Girl"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Hypnotic Poison",
+        "name_fa": "هیپنوتیک پویزن"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Hypnotic Poison"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Dior Homme Intense",
+        "name_fa": "دیورهوم اینتنس"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Dior Homme Intense"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Miss Dior Absolutely Blooming",
+        "name_fa": "میس دیور ابسولوتلی بلومینگ"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Miss Dior Absolutely Blooming"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Miss Dior Cherie",
+        "name_fa": "میس دیور چری"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Miss Dior Cherie"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Addict",
+        "name_fa": "ادکت"
+      },
+      "parsed": {
+        "brand": "Blackglama",
+        "name_en": "Addiction"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Spice Blend",
+        "name_fa": "اسپایس بلند"
+      },
+      "parsed": {
+        "brand": "April Aromatics",
+        "name_en": "Spice Blend Vetiver"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیور",
+        "name_en": "Oud Ispahan",
+        "name_fa": "عود اصفهان"
+      },
+      "parsed": {
+        "brand": "Christian Dior",
+        "name_en": "Oud Ispahan"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "جیوانچی",
+        "name_en": "Ange Ou Demon Le Secret",
+        "name_fa": "آنژدمون له سکرت"
+      },
+      "parsed": {
+        "brand": "Givenchy",
+        "name_en": "Ange Ou Demon Le Secret"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "جیوانچی",
+        "name_en": "Xeryus Rouge",
+        "name_fa": "اگزریوس رژ"
+      },
+      "parsed": {
+        "brand": "Givenchy",
+        "name_en": "Xeryus Rouge"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Aventus",
+        "name_fa": "اونتوس مردانه"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Aventus"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Silver Mountain Water",
+        "name_fa": "سیلور مانتین واتر"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Silver Mountain Water"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Viking",
+        "name_fa": "وایکینگ"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Viking"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Green Irish Tweed",
+        "name_fa": "گرین آیریش توئید"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Green Irish Tweed"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Asian Green Tea",
+        "name_fa": "آسین گرین تی"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Asian Green Tea"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "White Flowers",
+        "name_fa": "وایت فلاور"
+      },
+      "parsed": {
+        "brand": "Marilyn Miglin",
+        "name_en": "Four White Flowers"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Himalaya",
+        "name_fa": "هیمالیا"
+      },
+      "parsed": {
+        "brand": "Crabtree Evelyn",
+        "name_en": "Himalayan Blue"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Royal Oud",
+        "name_fa": "رویال عود"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Royal Oud"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کرید",
+        "name_en": "Bois du Portugal",
+        "name_fa": "بویس دو پرتقال"
+      },
+      "parsed": {
+        "brand": "Creed",
+        "name_en": "Bois du Portugal"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لاگوست",
+        "name_en": "Essential",
+        "name_fa": "اسنشیال"
+      },
+      "parsed": {
+        "brand": "Avon",
+        "name_en": "Black Essential"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لاگوست",
+        "name_en": "Lacoste Red",
+        "name_fa": "لاگوست قرمز"
+      },
+      "parsed": {
+        "brand": "Lacoste",
+        "name_en": "Red"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Elle",
+        "name_fa": "اله"
+      },
+      "parsed": {
+        "brand": "A Lab on Fire",
+        "name_en": "Rose Rebelle"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Cinema",
+        "name_fa": "سینما"
+      },
+      "parsed": {
+        "brand": "Scent by the Sea",
+        "name_en": "Cinema Rouge"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Tuxedo",
+        "name_fa": "توکسیدو"
+      },
+      "parsed": {
+        "brand": "Ralph Lauren",
+        "name_en": "Tuxedo"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Manifesto",
+        "name_fa": "منیفستو"
+      },
+      "parsed": {
+        "brand": "Yves Saint Laurent",
+        "name_en": "Manifesto"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Libre",
+        "name_fa": "لیبر"
+      },
+      "parsed": {
+        "brand": "Brecourt",
+        "name_en": "Eau Libre"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Supreme Bouquet",
+        "name_fa": "سوپریم بوکه"
+      },
+      "parsed": {
+        "brand": "Yves Saint Laurent",
+        "name_en": "Supreme Bouquet"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Mon Paris",
+        "name_fa": "مون پاریس"
+      },
+      "parsed": {
+        "brand": "Yves Saint Laurent",
+        "name_en": "Mon Paris"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ایوسن لورن",
+        "name_en": "Black opium",
+        "name_fa": "بلک اپیوم"
+      },
+      "parsed": {
+        "brand": "Yves Saint Laurent",
+        "name_en": "Black Opium"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کلوین کلین",
+        "name_en": "Euphoria",
+        "name_fa": "ایفوریا زنانه"
+      },
+      "parsed": {
+        "brand": "Calvin Klein",
+        "name_en": "Deep Euphoria"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بوگارت",
+        "name_en": "Silver Scent",
+        "name_fa": "سیلورسنت"
+      },
+      "parsed": {
+        "brand": "Jacques Bogart",
+        "name_en": "Silver Scent"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تروساردی",
+        "name_en": "Donna",
+        "name_fa": "دونا"
+      },
+      "parsed": {
+        "brand": "Antonio Banderas",
+        "name_en": "Diavolo As de Corazon per Donna"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مون بلان",
+        "name_en": "Legend",
+        "name_fa": "لجند"
+      },
+      "parsed": {
+        "brand": "American Eagle",
+        "name_en": "Legend"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "هالوین",
+        "name_en": "Halloween",
+        "name_fa": "هالوین"
+      },
+      "parsed": {
+        "brand": "DSH Perfumes",
+        "name_en": "Halloween"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "روبرتو کاوالی",
+        "name_en": "Roberto Cavalli Gold",
+        "name_fa": "روبرتو کاوالی طلایی"
+      },
+      "parsed": {
+        "brand": "Roberto Cavalli",
+        "name_en": "Roberto Cavalli Gold Edition"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لایت بلو",
+        "name_en": "Light Blue",
+        "name_fa": "لایت بلو"
+      },
+      "parsed": {
+        "brand": "Christian Riese Lassen",
+        "name_en": "Rising Wave Light Blue"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "شی سیدو",
+        "name_en": "Zen",
+        "name_fa": "ذن"
+      },
+      "parsed": {
+        "brand": "A Dozen Roses",
+        "name_en": "Amber Queen"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ناسوماتو",
+        "name_en": "Black Afgano",
+        "name_fa": "بلک افغان"
+      },
+      "parsed": {
+        "brand": "Atrin Star",
+        "name_en": "Black Afgano"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ناسوماتو",
+        "name_en": "Baraonda",
+        "name_fa": "بارائوندا"
+      },
+      "parsed": {
+        "brand": "Nasomatto",
+        "name_en": "Baraonda"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ناسوماتو",
+        "name_en": "Blamage",
+        "name_fa": "بلامیج"
+      },
+      "parsed": {
+        "brand": "Nasomatto",
+        "name_en": "Blamage"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ناسوماتو",
+        "name_en": "Hindu Grass",
+        "name_fa": "هندوگرس"
+      },
+      "parsed": {
+        "brand": "Nasomatto",
+        "name_en": "Hindu Grass"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "نارسیسو رودریگز",
+        "name_en": "Narciso Rodriguez for Him",
+        "name_fa": "نارسیسو رودریگز مردانه"
+      },
+      "parsed": {
+        "brand": "Narciso Rodriguez",
+        "name_en": "Narciso Rodriguez for Him"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "نارسیسو رودریگز",
+        "name_en": "Narciso Poudree",
+        "name_fa": "نارسیسو پودری"
+      },
+      "parsed": {
+        "brand": "Narciso Rodriguez",
+        "name_en": "Narciso Poudree"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارولیناهررا",
+        "name_en": "Good Girl",
+        "name_fa": "گودگرل"
+      },
+      "parsed": {
+        "brand": "Carolina Herrera",
+        "name_en": "Good Girl"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارولیناهررا",
+        "name_en": "CH Men",
+        "name_fa": "سی اچ مردانه"
+      },
+      "parsed": {
+        "brand": "Carolina Herrera",
+        "name_en": "CH Men"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارولیناهررا",
+        "name_en": "212 Sexy Men",
+        "name_fa": "212 سکسی مردانه"
+      },
+      "parsed": {
+        "brand": "Carolina Herrera",
+        "name_en": "212 Sexy Men"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارولیناهررا",
+        "name_en": "212 VIP Men",
+        "name_fa": "212 وی ای پی مردانه"
+      },
+      "parsed": {
+        "brand": "Carolina Herrera",
+        "name_en": "212 VIP MEN Pills"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارولیناهررا",
+        "name_en": "Mystery Tobacco",
+        "name_fa": "میستری توباکو"
+      },
+      "parsed": {
+        "brand": "Carolina Herrera",
+        "name_en": "Mystery Tobacco"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دانهیل",
+        "name_en": "Desire Blue",
+        "name_fa": "دیزایر بلو"
+      },
+      "parsed": {
+        "brand": "Alfred Dunhill",
+        "name_en": "Desire Blue"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دانهیل",
+        "name_en": "Dunhill for men",
+        "name_fa": "دانهیل مردانه قهوه ای"
+      },
+      "parsed": {
+        "brand": "Alfred Dunhill",
+        "name_en": "Dunhill for Men"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لانکوم",
+        "name_en": "La Nuit Tresor",
+        "name_fa": "لانويت ترزور"
+      },
+      "parsed": {
+        "brand": "Lancome",
+        "name_en": "La Nuit Tresor"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لانکوم",
+        "name_en": "La Vie Est Belle",
+        "name_fa": "لاوی بل"
+      },
+      "parsed": {
+        "brand": "Lancome",
+        "name_en": "La Vie Est Belle"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لانکوم",
+        "name_en": "Tresor Midnight Rose",
+        "name_fa": "میدنایت رز ترزور"
+      },
+      "parsed": {
+        "brand": "Lancome",
+        "name_en": "Tresor Midnight Rose"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گرلن",
+        "name_en": "Mon",
+        "name_fa": "مون"
+      },
+      "parsed": {
+        "brand": "A Lab on Fire",
+        "name_en": "Mon Musc a Moi"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گرلن",
+        "name_en": "Santal Royal",
+        "name_fa": "سانتال رویال"
+      },
+      "parsed": {
+        "brand": "Guerlain",
+        "name_en": "Santal Royal"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گوچی",
+        "name_en": "Rush",
+        "name_fa": "راش"
+      },
+      "parsed": {
+        "brand": "A Dozen Roses",
+        "name_en": "Gold Rush"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گوچی",
+        "name_en": "Bloom",
+        "name_fa": "بلوم"
+      },
+      "parsed": {
+        "brand": "Ajne",
+        "name_en": "Bloom de Nuit Night s Bloom"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گوچی",
+        "name_en": "Flora",
+        "name_fa": "فلورا"
+      },
+      "parsed": {
+        "brand": "Adidas",
+        "name_en": "Adidas Floral Dream"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "گوچی",
+        "name_en": "Guilty Pour Homme",
+        "name_fa": "گیلیتی پورهوم"
+      },
+      "parsed": {
+        "brand": "Gucci",
+        "name_en": "Gucci Guilty Pour Homme Diamond"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لالیک",
+        "name_en": "Encre Noire",
+        "name_fa": "انکر نویر"
+      },
+      "parsed": {
+        "brand": "Lalique",
+        "name_en": "Encre Noire"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لالیک",
+        "name_en": "Satine",
+        "name_fa": "ستین"
+      },
+      "parsed": {
+        "brand": "Lalique",
+        "name_en": "Satine"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لالیک",
+        "name_en": "Le Parfum",
+        "name_fa": "له پارفوم"
+      },
+      "parsed": {
+        "brand": "A B R Barlach",
+        "name_en": "Bond James Bond Le Parfum"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "آزارو",
+        "name_en": "pour Homme",
+        "name_fa": "پورهوم"
+      },
+      "parsed": {
+        "brand": "Andy Warhol",
+        "name_en": "Andy Warhol pour Homme"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "آزارو",
+        "name_en": "Chrome",
+        "name_fa": "کروم"
+      },
+      "parsed": {
+        "brand": "Azzaro",
+        "name_en": "Azzaro Chrome Intense"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لوئوه",
+        "name_en": "Quizas",
+        "name_fa": "کوئیزاس"
+      },
+      "parsed": {
+        "brand": "Loewe",
+        "name_en": "Quizas Loewe Sport Edicion Especial"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ویکتوریا سکرت",
+        "name_en": "Tease",
+        "name_fa": "تیس"
+      },
+      "parsed": {
+        "brand": "Paris Hilton",
+        "name_en": "Tease"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ویکتوریا سکرت",
+        "name_en": "So Sexy",
+        "name_fa": "سو سکسی"
+      },
+      "parsed": {
+        "brand": "Antonio Banderas",
+        "name_en": "Diavolo So Sexy"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ویکتوریا سکرت",
+        "name_en": "Bombshell",
+        "name_fa": "بمبشل"
+      },
+      "parsed": {
+        "brand": "Marilyn Miglin",
+        "name_en": "Bombshell"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Aqva Pour Homme",
+        "name_fa": "آکوا پورهو.م"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Aqva Pour Homme"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Jasmin Noir",
+        "name_fa": "جاسمین نویر"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Jasmin Noir"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Tygar",
+        "name_fa": "تایگار"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Tygar"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Onekh",
+        "name_fa": "اونخ"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Onekh"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Ambero",
+        "name_fa": "آمبرو"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Ambero"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بولگاری",
+        "name_en": "Gyan",
+        "name_fa": "گیان"
+      },
+      "parsed": {
+        "brand": "Bvlgari",
+        "name_en": "Gyan"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "پاکورابان",
+        "name_en": "Invictus",
+        "name_fa": "اینوکتوس"
+      },
+      "parsed": {
+        "brand": "Paco Rabanne",
+        "name_en": "Invictus"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "پاکورابان",
+        "name_en": "1 Million",
+        "name_fa": "وان ملیون"
+      },
+      "parsed": {
+        "brand": "Paco Rabanne",
+        "name_en": "1 Million"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "پاکورابان",
+        "name_en": "Lady Million",
+        "name_fa": "لیدی ملیون"
+      },
+      "parsed": {
+        "brand": "Paco Rabanne",
+        "name_en": "Lady Million"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "جورجیو آرمانی",
+        "name_en": "Acqua di Gio",
+        "name_fa": "آکوا دی جیو"
+      },
+      "parsed": {
+        "brand": "Giorgio Armani",
+        "name_en": "Acqua di Gio"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "جورجیو آرمانی",
+        "name_en": "Acqua di Gio Essenza",
+        "name_fa": "آکوا دی جیو اسنزا"
+      },
+      "parsed": {
+        "brand": "Giorgio Armani",
+        "name_en": "Acqua di Gio Essenza"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لنوین",
+        "name_en": "Marry Me",
+        "name_fa": "مری می"
+      },
+      "parsed": {
+        "brand": "Lanvin",
+        "name_en": "Marry Me"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لنوین",
+        "name_en": "Modern Princess",
+        "name_fa": "مدرن پرنسس"
+      },
+      "parsed": {
+        "brand": "Lanvin",
+        "name_en": "Modern Princess"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "میسون فرانسیس کرکجان",
+        "name_en": "Aqua Celestia",
+        "name_fa": "آکواسلستیا"
+      },
+      "parsed": {
+        "brand": "Maison Francis Kurkdjian",
+        "name_en": "Aqua Celestia"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "هرمس",
+        "name_en": "Terre",
+        "name_fa": "تق"
+      },
+      "parsed": {
+        "brand": "Drift Parfum de Terre",
+        "name_en": "Aspens"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "هرمس",
+        "name_en": "Elixir des Merveilles",
+        "name_fa": "الکسیر دس مرولیس"
+      },
+      "parsed": {
+        "brand": "Hermes",
+        "name_en": "Elixir des Merveilles"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اسنتریک",
+        "name_en": "Molecule 02",
+        "name_fa": "مولکول 02"
+      },
+      "parsed": {
+        "brand": "Escentric Molecules",
+        "name_en": "Molecule 02"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "کارتیر",
+        "name_en": "Cartier Pasha",
+        "name_fa": "کارتیر پاشا"
+      },
+      "parsed": {
+        "brand": "Cartier",
+        "name_en": "Pasha de Cartier"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "پنهالیگونز",
+        "name_en": "The Tragedy of Lord George",
+        "name_fa": "د تراژدی اف لورد جورج"
+      },
+      "parsed": {
+        "brand": "Penhaligon s",
+        "name_en": "The Tragedy of Lord George"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اسکادا",
+        "name_en": "Into the Blue",
+        "name_fa": "اینتو د بلو"
+      },
+      "parsed": {
+        "brand": "Zippo Fragrances",
+        "name_en": "Zippo Into The Blue"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "جنیفرلوپز",
+        "name_en": "Still",
+        "name_fa": "استیل"
+      },
+      "parsed": {
+        "brand": "Avon",
+        "name_en": "Still Waters"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دیویدوف",
+        "name_en": "Champion",
+        "name_fa": "چمپیون"
+      },
+      "parsed": {
+        "brand": "Adidas",
+        "name_en": "Adidas UEFA Champions League Arena Edition"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ای ایکس نیهیلو",
+        "name_en": "Fleur Narcotique",
+        "name_fa": "فلورنارکوتیک"
+      },
+      "parsed": {
+        "brand": "Ex Nihilo",
+        "name_en": "Fleur Narcotique"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ممو پاریس",
+        "name_en": "African Leather",
+        "name_fa": "آفریکن لدر"
+      },
+      "parsed": {
+        "brand": "Memo",
+        "name_en": "African Leather"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ممو پاریس",
+        "name_en": "Italian Leather",
+        "name_fa": "ایتالین لدر"
+      },
+      "parsed": {
+        "brand": "JoAnne Bassett",
+        "name_en": "Italian Leather"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ممو پاریس",
+        "name_en": "Russian Leather",
+        "name_fa": "راشن لدر"
+      },
+      "parsed": {
+        "brand": "Demeter Fragrance",
+        "name_en": "Russian Leather"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ممو پاریس",
+        "name_en": "Irish Leather",
+        "name_fa": "آیریش لدر"
+      },
+      "parsed": {
+        "brand": "Memo",
+        "name_en": "Irish Leather"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بای کیلیان",
+        "name_en": "Good Girl Gone Bad",
+        "name_fa": "گودگرل گان بد"
+      },
+      "parsed": {
+        "brand": "By Kilian",
+        "name_en": "Good Girl Gone Bad"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بای کیلیان",
+        "name_en": "Smoke for the Soul",
+        "name_fa": "اسموک فور د سول"
+      },
+      "parsed": {
+        "brand": "By Kilian",
+        "name_en": "Smoke for the Soul"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "بای کیلیان",
+        "name_en": "Straight to Heaven",
+        "name_fa": "استریت تو هیون"
+      },
+      "parsed": {
+        "brand": "By Kilian",
+        "name_en": "Straight to Heaven"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "دسکوارد",
+        "name_en": "He Wood Rocky Mountain",
+        "name_fa": "هی وود راکی مانتین"
+      },
+      "parsed": {
+        "brand": "DSQUARED",
+        "name_en": "He Wood Rocky Mountain Wood"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "روشاز",
+        "name_en": "Aquawoman",
+        "name_fa": "آکواوومن"
+      },
+      "parsed": {
+        "brand": "Rochas",
+        "name_en": "Aquawoman"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تیری موگله",
+        "name_en": "Womanity",
+        "name_fa": "وومنیتی"
+      },
+      "parsed": {
+        "brand": "Thierry Mugler",
+        "name_en": "Womanity Liqueurs de Parfum"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تیری موگله",
+        "name_en": "Alien",
+        "name_fa": "الین"
+      },
+      "parsed": {
+        "brand": "A Wing A Prayer Perfumes",
+        "name_en": "Caliente Perfume"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اینیشیو پارفومز پرایوز",
+        "name_en": "Addictive Vibration",
+        "name_fa": "ادکتیوویبریشن"
+      },
+      "parsed": {
+        "brand": "Initio Parfums Prives",
+        "name_en": "Addictive Vibration"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اینیشیو پارفومز پرایوز",
+        "name_en": "Side Effect",
+        "name_fa": "ساید افکت"
+      },
+      "parsed": {
+        "brand": "Initio Parfums Prives",
+        "name_en": "Side Effect"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تیزیاناترنزی",
+        "name_en": "Kirke",
+        "name_fa": "کیریکه"
+      },
+      "parsed": {
+        "brand": "Tiziana Terenzi",
+        "name_en": "Kirke"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "الفکتیو",
+        "name_en": "Studio Chambre Noir",
+        "name_fa": "استادیو چمبر نویر"
+      },
+      "parsed": {
+        "brand": "Olfactive Studio",
+        "name_en": "Chambre Noire"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اورتوپاریسی",
+        "name_en": "Bergamask",
+        "name_fa": "برگاماسک"
+      },
+      "parsed": {
+        "brand": "Orto Parisi",
+        "name_en": "Bergamask"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اورتوپاریسی",
+        "name_en": "Boccanera",
+        "name_fa": "بوکانرا"
+      },
+      "parsed": {
+        "brand": "Orto Parisi",
+        "name_en": "Boccanera"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "لویی ویتون",
+        "name_en": "On The Beach",
+        "name_fa": "آن د بیچ"
+      },
+      "parsed": {
+        "brand": "Anna Sui",
+        "name_en": "Dolly Girl On The Beach"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تام فورد",
+        "name_en": "Italian Cypress",
+        "name_fa": "ایتالین سایپروس"
+      },
+      "parsed": {
+        "brand": "Tom Ford",
+        "name_en": "Italian Cypress"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تام فورد",
+        "name_en": "Black Orchid",
+        "name_fa": "بلک ارکید"
+      },
+      "parsed": {
+        "brand": "Tom Ford",
+        "name_en": "Black Orchid"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تام فورد",
+        "name_en": "Tuscan Leather",
+        "name_fa": "توسکان لدر"
+      },
+      "parsed": {
+        "brand": "Tom Ford",
+        "name_en": "Tuscan Leather"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تام فورد",
+        "name_en": "Tobacco Vanille",
+        "name_fa": "توباکو وانیل"
+      },
+      "parsed": {
+        "brand": "Tom Ford",
+        "name_en": "Tobacco Vanille"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "تام فورد",
+        "name_en": "Oud Wood",
+        "name_fa": "عودوود"
+      },
+      "parsed": {
+        "brand": "Tom Ford",
+        "name_en": "Oud Wood"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ژان پل گوتیه",
+        "name_en": "Scandal",
+        "name_fa": "اسکندل"
+      },
+      "parsed": {
+        "brand": "Victoria s Secret",
+        "name_en": "Scandalous"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "اتکینسون",
+        "name_en": "Oud Save The King",
+        "name_fa": "عود سیو د کینگ"
+      },
+      "parsed": {
+        "brand": "Atkinsons",
+        "name_en": "Oud Save The King"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ورساچه",
+        "name_en": "Crystal Noir",
+        "name_fa": "کریستال نویر"
+      },
+      "parsed": {
+        "brand": "Versace",
+        "name_en": "Crystal Noir"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ورساچه",
+        "name_en": "Bright Crystal",
+        "name_fa": "برایت کریستال"
+      },
+      "parsed": {
+        "brand": "Versace",
+        "name_en": "Bright Crystal"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ورساچه",
+        "name_en": "Pour Homme",
+        "name_fa": "پورهوم"
+      },
+      "parsed": {
+        "brand": "Andy Warhol",
+        "name_en": "Andy Warhol pour Homme"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ورساچه",
+        "name_en": "Eros",
+        "name_fa": "اروس مردانه"
+      },
+      "parsed": {
+        "brand": "Aftelier",
+        "name_en": "Cepes and Tuberose"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ورساچه",
+        "name_en": "Dylan Blue",
+        "name_fa": "دیلان بلومردانه"
+      },
+      "parsed": {
+        "brand": "Versace",
+        "name_en": "Versace Pour Homme Dylan Blue"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "باربری",
+        "name_en": "Goddess",
+        "name_fa": "گادس"
+      },
+      "parsed": {
+        "brand": "Alkemia Perfumes",
+        "name_en": "Divine Goddess Musk"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ناتیکا",
+        "name_en": "Nautica Voyage",
+        "name_fa": "ناتیکا وویاج"
+      },
+      "parsed": {
+        "brand": "Nautica",
+        "name_en": "Nautica Voyage"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "له لابو",
+        "name_en": "Santal 33",
+        "name_fa": "سانتال 33"
+      },
+      "parsed": {
+        "brand": "Le Labo",
+        "name_en": "Santal 33"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "مارک آنتونی",
+        "name_en": "Tilia",
+        "name_fa": "تیلیا"
+      },
+      "parsed": {
+        "brand": "Acca Kappa",
+        "name_en": "Tilia Cordata"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    },
+    {
+      "existing": {
+        "brand": "ریحانا",
+        "name_en": "RiRi",
+        "name_fa": "ری ری"
+      },
+      "parsed": {
+        "brand": "Rihanna",
+        "name_en": "RiRi"
+      },
+      "match_type": "text_search",
+      "similarity": 1.0
+    }
+  ],
+  "not_found": [
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati Mefisto",
+      "name_fa": "مفیستو کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati Bouquet Ideale",
+      "name_fa": "ایده ال بوکه کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Lira Casamorati",
+      "name_fa": "لیرا کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati 1888",
+      "name_fa": "1888 کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati Gran Ballo",
+      "name_fa": "گرن بالو کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati La Tosca",
+      "name_fa": "لاتوسکا کازاموراتی"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Torino22",
+      "name_fa": "تورینو22"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Percival",
+      "name_fa": "پرسیوال"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Delina",
+      "name_fa": "دلینا"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Haltane",
+      "name_fa": "هالتان"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Althaïr",
+      "name_fa": "آلتیر"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Valaya",
+      "name_fa": "والایا"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Palatine",
+      "name_fa": "پلاتین"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Perseus",
+      "name_fa": "پرسیوس"
+    },
+    {
+      "brand": "مارلی",
+      "name_en": "Oriana",
+      "name_fa": "اوریانا"
+    },
+    {
+      "brand": "شنل",
+      "name_en": "Blue De Chanel",
+      "name_fa": "بلو شنل"
+    },
+    {
+      "brand": "دیور",
+      "name_en": "Sauvage Elixir",
+      "name_fa": "ساواژ الکسیر"
+    },
+    {
+      "brand": "دیور",
+      "name_en": "J'adore",
+      "name_fa": "جادور"
+    },
+    {
+      "brand": "دیور",
+      "name_en": "Bois D'Argent",
+      "name_fa": "بویس د آرجنت"
+    },
+    {
+      "brand": "جیوانچی",
+      "name_en": "L’Ange Noir",
+      "name_fa": "له انخه نویر"
+    },
+    {
+      "brand": "جیوانچی",
+      "name_en": "M M W",
+      "name_fa": "ام ام دبلیو"
+    },
+    {
+      "brand": "جیوانچی",
+      "name_en": "L'Interdit Absolu",
+      "name_fa": "له اینتردیت ابسولو"
+    },
+    {
+      "brand": "کرید",
+      "name_en": "AventusFor Her",
+      "name_fa": "اونتوس زنانه"
+    },
+    {
+      "brand": "کرید",
+      "name_en": "Aventus Absolu",
+      "name_fa": "اونتوس ابسولو"
+    },
+    {
+      "brand": "کرید",
+      "name_en": "Queen Of Silk",
+      "name_fa": "کوئین اف سیلک"
+    },
+    {
+      "brand": "کرید",
+      "name_en": "Centaurus",
+      "name_fa": "سنتاروس"
+    },
+    {
+      "brand": "کرید",
+      "name_en": "Delphinus",
+      "name_fa": "دلفینوس"
+    },
+    {
+      "brand": "لاگوست",
+      "name_en": "Lacoste L.12.12 Blanc",
+      "name_fa": "بلانچ"
+    },
+    {
+      "brand": "ایوسن لورن",
+      "name_en": "Y",
+      "name_fa": "وای"
+    },
+    {
+      "brand": "ایوسن لورن",
+      "name_en": "Libre Intense",
+      "name_fa": "لیبر اینتنس"
+    },
+    {
+      "brand": "ایوسن لورن",
+      "name_en": "Babycat",
+      "name_fa": "بیبی کت"
+    },
+    {
+      "brand": "لایت بلو",
+      "name_en": "devotion intense",
+      "name_fa": "دووشن اینتنس"
+    },
+    {
+      "brand": "لایت بلو",
+      "name_en": "Devotion Pour Homme",
+      "name_fa": "دووشن پورهوم"
+    },
+    {
+      "brand": "ناسوماتو",
+      "name_en": "Fantomas",
+      "name_fa": "فانتوماس"
+    },
+    {
+      "brand": "ناسوماتو",
+      "name_en": "Nudiflorum",
+      "name_fa": "نودیفلورم"
+    },
+    {
+      "brand": "نارسیسو رودریگز",
+      "name_en": "Narciso Rodriguez for Her EDT",
+      "name_fa": "نارسیسو رودزیگز زنانه مشکی"
+    },
+    {
+      "brand": "نارسیسو رودریگز",
+      "name_en": "Narciso Rodriguez for Her EDP",
+      "name_fa": "نارسیسو رودریگز زنانه صورتی"
+    },
+    {
+      "brand": "کارولیناهررا",
+      "name_en": "Bad Boy",
+      "name_fa": "بدبوی"
+    },
+    {
+      "brand": "کارولیناهررا",
+      "name_en": "212 Sexy Women",
+      "name_fa": "212 سکسی زنانه"
+    },
+    {
+      "brand": "کارولیناهررا",
+      "name_en": "212 VIP Women",
+      "name_fa": "212 وی ای پی زنانه"
+    },
+    {
+      "brand": "کارولیناهررا",
+      "name_en": "Stallion Leather",
+      "name_fa": "استالین لدر"
+    },
+    {
+      "brand": "گرلن",
+      "name_en": "Baiser de Russie",
+      "name_fa": "بایسردروسی"
+    },
+    {
+      "brand": "گرلن",
+      "name_en": "L’Instant Magic",
+      "name_fa": "لینسنت مجیک"
+    },
+    {
+      "brand": "گرلن",
+      "name_en": "Oud Essentiel",
+      "name_fa": "عود اسنشیال"
+    },
+    {
+      "brand": "لالیک",
+      "name_en": "L’Amour",
+      "name_fa": "لامور"
+    },
+    {
+      "brand": "لالیک",
+      "name_en": "Ombre Noire",
+      "name_fa": "امبرنویر"
+    },
+    {
+      "brand": "لوئوه",
+      "name_en": "7",
+      "name_fa": "هفت"
+    },
+    {
+      "brand": "ویکتوراندرالف",
+      "name_en": "Flower Bomb",
+      "name_fa": "فلاوربمب"
+    },
+    {
+      "brand": "ویکتوراندرالف",
+      "name_en": "Spice Bomb",
+      "name_fa": "اسپایس بمب"
+    },
+    {
+      "brand": "ویکتوریا سکرت",
+      "name_en": "Very Sexy Night",
+      "name_fa": "وری سکسی نایت"
+    },
+    {
+      "brand": "بولگاری",
+      "name_en": "Falkar",
+      "name_fa": "فالکار"
+    },
+    {
+      "brand": "جورجیو آرمانی",
+      "name_en": "Si",
+      "name_fa": "سی"
+    },
+    {
+      "brand": "جورجیو آرمانی",
+      "name_en": "My Way",
+      "name_fa": "مای وی"
+    },
+    {
+      "brand": "جورجیو آرمانی",
+      "name_en": "Stronger With You Sandalwood",
+      "name_fa": "استرانگر ویت یو صندل وود"
+    },
+    {
+      "brand": "لنوین",
+      "name_en": "Eclat d´Arpege",
+      "name_fa": "اکلت"
+    },
+    {
+      "brand": "میسون فرانسیس کرکجان",
+      "name_en": "Baccarat Rouge 540 EDP",
+      "name_fa": "باکارات رژادو پرفیوم"
+    },
+    {
+      "brand": "میسون فرانسیس کرکجان",
+      "name_en": "Baccarat Rouge 540 Extrait De Parfum",
+      "name_fa": "باکارات رژ اکستریت پرفیوم"
+    },
+    {
+      "brand": "کلایو کریستین",
+      "name_en": "x",
+      "name_fa": "ایکس"
+    },
+    {
+      "brand": "اسی میاکه",
+      "name_en": "L’Eau Bleue d’Issey Pour Homme",
+      "name_fa": "لئو بلو د ایسه پور هوم"
+    },
+    {
+      "brand": "کنزو",
+      "name_en": "L’Eau Par",
+      "name_fa": "لئوپار"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Honour Women",
+      "name_fa": "هانر زنانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Epic Men",
+      "name_fa": "اپیک مردانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Journey for Men",
+      "name_fa": "جورنی مردانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Interlude Men",
+      "name_fa": "اینترلود مردانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Purpose",
+      "name_fa": "پرپس"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Search",
+      "name_fa": "سرچ"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Bracken Man",
+      "name_fa": "بروکن مردانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Reflection for Men",
+      "name_fa": "رفلکشن مردانه"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Outlands",
+      "name_fa": "اوتلدز"
+    },
+    {
+      "brand": "آمواج",
+      "name_en": "Guidance",
+      "name_fa": "گایدنس"
+    },
+    {
+      "brand": "ای ایکس نیهیلو",
+      "name_en": "Chandigarh Express",
+      "name_fa": "چندیگاراکسپرس"
+    },
+    {
+      "brand": "ممو پاریس",
+      "name_en": "Retba",
+      "name_fa": "رتبا"
+    },
+    {
+      "brand": "ممو پاریس",
+      "name_en": "Jamal’s Palace",
+      "name_fa": "جمال پالاس"
+    },
+    {
+      "brand": "ممو پاریس",
+      "name_en": "Sicilian Leather",
+      "name_fa": "سیسیلین لدر"
+    },
+    {
+      "brand": "ممو پاریس",
+      "name_en": "Jamal’s Desert",
+      "name_fa": "جمال دیزرت"
+    },
+    {
+      "brand": "بای کیلیان",
+      "name_en": "Angels’ Share",
+      "name_fa": "آنجلز شیر"
+    },
+    {
+      "brand": "بای کیلیان",
+      "name_en": "Apple Brandy on the Rocks",
+      "name_fa": "اپل برندی آن د راکس"
+    },
+    {
+      "brand": "بای کیلیان",
+      "name_en": "Black Phantom",
+      "name_fa": "بلک فانتوم"
+    },
+    {
+      "brand": "بای کیلیان",
+      "name_en": "Can't Stop Loving You",
+      "name_fa": "کنت استاپ لاوینگ یو"
+    },
+    {
+      "brand": "بای کیلیان",
+      "name_en": "Old Fashioned",
+      "name_fa": "اولد فشن"
+    },
+    {
+      "brand": "بودیسیا",
+      "name_en": "Boadicea The Victorious Heroine",
+      "name_fa": "بودیسیا د ویکتوریوس هروئین"
+    },
+    {
+      "brand": "اینیشیو پارفومز پرایوز",
+      "name_en": "Psychedelic Love",
+      "name_fa": "سایک ئلیک لاو"
+    },
+    {
+      "brand": "اینیشیو پارفومز پرایوز",
+      "name_en": "Oud for Greatness",
+      "name_fa": "عودفور گریتنس"
+    },
+    {
+      "brand": "اینیشیو پارفومز پرایوز",
+      "name_en": "Narcotic Delight",
+      "name_fa": "نارکوتیک د لایت"
+    },
+    {
+      "brand": "اینیشیو پارفومز پرایوز",
+      "name_en": "Rehab",
+      "name_fa": "رهب"
+    },
+    {
+      "brand": "اورتوپاریسی",
+      "name_en": "Terroni",
+      "name_fa": "ترونی"
+    },
+    {
+      "brand": "اورتوپاریسی",
+      "name_en": "Megamare",
+      "name_fa": "مگامار"
+    },
+    {
+      "brand": "اورتوپاریسی",
+      "name_en": "Cuoium",
+      "name_fa": "کویوم"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Ombre Nomade",
+      "name_fa": "امبر نومد"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Imagination",
+      "name_fa": "ایمجینیشن"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Stellar Times",
+      "name_fa": "استلار تایمز"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Le Jour se Lève",
+      "name_fa": "له جور سه لیو"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "L’Immensité",
+      "name_fa": "لیمنسیت"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Afternoon Swim",
+      "name_fa": "افترنون سوییم"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Météore",
+      "name_fa": "متیور"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "Pacific Chill",
+      "name_fa": "پسیفیک چیل"
+    },
+    {
+      "brand": "لویی ویتون",
+      "name_en": "City Of Stars",
+      "name_fa": "سیتی آف استارز"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Vanilla Sex",
+      "name_fa": "وانیلا سکس"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Ébène Fumé",
+      "name_fa": "ابن فیوم"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Bitter Peach",
+      "name_fa": "بیترپیچ"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Ombré Leather",
+      "name_fa": "امبرلدر"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Fucking Fabulous",
+      "name_fa": "فاکینگ فابیولس"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Lost Cherry",
+      "name_fa": "لاست چری"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Cherry Smoke",
+      "name_fa": "چری اسموک"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Vanille Fatale",
+      "name_fa": "وانیل فتال"
+    },
+    {
+      "brand": "تام فورد",
+      "name_en": "Black Lacquer",
+      "name_fa": "بلک لاکر"
+    },
+    {
+      "brand": "زرجف",
+      "name_en": "Casamorati Italica",
+      "name_fa": "ایتالیکا کازاموراتی"
+    },
+    {
+      "brand": "کاپتان بلک",
+      "name_en": "Captain Black",
+      "name_fa": "کاپتان بلک"
+    },
+    {
+      "brand": "کایالی",
+      "name_en": "Yum Boujee Marshmallow 81",
+      "name_fa": "یام بوجی مارشمالو 81"
+    },
+    {
+      "brand": "کایالی",
+      "name_en": "The  Wedding Silk Santal 36",
+      "name_fa": "د دوینگ سیلک سانتال 36"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+# Predefined Notes System
+
+## Overview
+The ranking system now uses a predefined list of perfume notes to ensure consistency and improve matching accuracy. Admins can only select from this curated list when adding notes to perfumes.
+
+## Benefits
+
+1. **Consistency**: Standardized note names prevent variations (e.g., "رز" vs "گل رز" vs "رز قرمز")
+2. **Better Matching**: TF-IDF and AI matching work better with consistent tokens
+3. **Normalization**: Easier to map notes to categories/tags for questionnaire matching
+4. **User Experience**: Users see consistent note names across all perfumes
+5. **Data Quality**: Prevents typos and inconsistent naming
+
+## Implementation
+
+### Backend (`backend/api/notes_master.py`)
+- **200+ predefined notes** organized by category (citrus, floral, woody, spicy, sweet, etc.)
+- Functions to validate notes against the master list
+- Notes organized by category for easier admin selection
+
+### API Endpoint
+- `GET /api/available-notes/` - Returns all available notes
+- `GET /api/available-notes/?category=true` - Returns notes organized by category
+
+### Backend Validation (`backend/api/serializers.py`)
+- `PerfumeSerializer` validates all notes against the predefined list
+- Returns clear error messages if invalid notes are submitted
+- Only valid notes are saved to the database
+
+### Frontend Admin Panel (`frontend/src/app/admin/products/page.tsx`)
+- **Autocomplete dropdown** for note selection
+- Shows suggestions as you type
+- Only allows selection from predefined list
+- Prevents invalid notes from being added
+
+## Usage
+
+### For Admins
+1. Navigate to `/admin/products`
+2. When adding notes, start typing a note name
+3. Select from the dropdown suggestions (only predefined notes appear)
+4. Invalid notes cannot be added
+
+### For Developers
+```python
+from api.notes_master import is_valid_note, validate_notes, get_all_notes
+
+# Check if a note is valid
+is_valid_note("رز")  # True
+is_valid_note("گل رز")  # False (not in predefined list)
+
+# Validate a list of notes
+valid, invalid = validate_notes(["رز", "یاسمن", "invalid_note"])
+# valid: ["رز", "یاسمن"]
+# invalid: ["invalid_note"]
+
+# Get all available notes
+all_notes = get_all_notes()
+```
+
+## Note Categories
+
+Notes are organized into these categories:
+- **Citrus**: ترنج، لیمو، پرتقال، گریپ فروت، etc.
+- **Floral**: رز، یاسمن، یاس، بهار نارنج، etc.
+- **Woody**: چوب صندل، سدر، عود، خس خس، etc.
+- **Spicy**: دارچین، فلفل سیاه، زعفران، etc.
+- **Sweet**: وانیل، کارامل، پرالین، عسل، etc.
+- **Oriental**: کهربا، بخور، لابدانوم، etc.
+- **Musky**: مشک، ایریس، کشمیر، etc.
+- **Green**: نعنا، ریحان، چای سبز، etc.
+- **Aquatic**: اقیانوسی، دریایی، آب، etc.
+- **Fruity**: سیب، گلابی، هلو، etc.
+- **Earthy**: خزه، زمینی، خاک، etc.
+- **Powdery**: پودری، پودر تالک، etc.
+- **Balsamic**: بالم، بالم پرو، etc.
+- **Other**: دود، چرم، فلز، etc.
+
+## Adding New Notes
+
+To add new notes to the master list:
+
+1. Edit `backend/api/notes_master.py`
+2. Add the note to the appropriate category in `PREDEFINED_NOTES`
+3. Add it to the corresponding category in `NOTES_BY_CATEGORY`
+4. Restart Django server
+
+## Migration Strategy
+
+For existing perfumes with notes not in the predefined list:
+
+1. The validation is **strict** - invalid notes will be rejected
+2. Admins should review existing perfumes and update notes to match the predefined list
+3. Consider creating a migration script to normalize existing notes using the `normalize_note_label` function from `matcher.note_normalization`
+
+## Future Improvements
+
+1. **Note Synonyms**: Add support for synonyms (e.g., "گل رز" → "رز")
+2. **Note Hierarchy**: Organize notes into hierarchies (e.g., "رز" → "گل رز", "رز قرمز")
+3. **Note Descriptions**: Add descriptions/definitions for each note
+4. **Note Images**: Add visual representations for each note
+5. **Bulk Import**: Allow admins to import notes from CSV/Excel

@@ -11,6 +11,7 @@ import {
   fetchBrandsAdmin,
   fetchCollectionsAdmin,
   fetchPerfumesAdmin,
+  fetchAvailableNotes,
   uploadFile,
   convertToEnglish,
   convertToPersian,
@@ -89,47 +90,104 @@ interface NotesFieldProps {
   value: string[];
   onChange: (value: string[]) => void;
   error?: string;
+  availableNotes: string[];
 }
 
-function NotesField({ label, helper, value, onChange, error }: NotesFieldProps) {
+function NotesField({ label, helper, value, onChange, error, availableNotes }: NotesFieldProps) {
   const [inputValue, setInputValue] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredNotes, setFilteredNotes] = useState<string[]>([]);
 
-  const handleAdd = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const val = event.target.value;
+    setInputValue(val);
+    
+    if (val.trim()) {
+      const filtered = availableNotes.filter(
+        (note) => note.includes(val) && !value.includes(note)
+      );
+      setFilteredNotes(filtered.slice(0, 10)); // Show top 10 matches
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleAdd = (note?: string) => {
+    const noteToAdd = note || inputValue.trim();
+    if (!noteToAdd) {
       return;
     }
 
-    if (!value.includes(trimmed)) {
-      onChange([...value, trimmed]);
+    // Validate against predefined list
+    if (!availableNotes.includes(noteToAdd)) {
+      return; // Don't add invalid notes
+    }
+
+    if (!value.includes(noteToAdd)) {
+      onChange([...value, noteToAdd]);
     }
     setInputValue("");
+    setShowSuggestions(false);
   };
 
   const handleRemove = (note: string) => {
     onChange(value.filter((item) => item !== note));
   };
 
+  const handleSuggestionClick = (note: string) => {
+    handleAdd(note);
+  };
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 relative">
       <label className="text-sm font-medium text-[var(--color-foreground)]">{label}</label>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(event) => setInputValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              handleAdd();
-            }
-          }}
-          className="flex-1 rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-          placeholder="مثلاً ترنج"
-        />
+      <div className="flex gap-2 relative">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (filteredNotes.length > 0) {
+                  handleAdd(filteredNotes[0]);
+                } else {
+                  handleAdd();
+                }
+              }
+            }}
+            onFocus={() => {
+              if (inputValue.trim()) {
+                setShowSuggestions(true);
+              }
+            }}
+            onBlur={() => {
+              // Delay to allow click on suggestions
+              setTimeout(() => setShowSuggestions(false), 200);
+            }}
+            className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+            placeholder="مثلاً ترنج (از لیست انتخاب کنید)"
+          />
+          {showSuggestions && filteredNotes.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-[var(--color-border)] rounded-[var(--radius-base)] shadow-lg max-h-60 overflow-y-auto">
+              {filteredNotes.map((note, index) => (
+                <button
+                  key={`${note}-${index}`}
+                  type="button"
+                  onClick={() => handleSuggestionClick(note)}
+                  className="w-full text-right px-4 py-2 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-accent-soft)] transition-colors"
+                >
+                  {note}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
-          onClick={handleAdd}
+          onClick={() => handleAdd()}
           className="rounded-[var(--radius-base)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[var(--color-accent-strong)]"
         >
           افزودن
@@ -138,9 +196,9 @@ function NotesField({ label, helper, value, onChange, error }: NotesFieldProps) 
       <p className="text-xs text-[var(--color-foreground-muted)]">{helper}</p>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {value.map((note) => (
+          {value.map((note, index) => (
             <span
-              key={note}
+              key={`${note}-${index}`}
               className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-xs text-[var(--color-accent-contrast)]"
             >
               {note}
@@ -221,6 +279,7 @@ export default function AdminProductsPage() {
   const [brands, setBrands] = useState<AdminBrand[]>([]);
   const [collections, setCollections] = useState<AdminCollection[]>([]);
   const [perfumes, setPerfumes] = useState<AdminPerfume[]>([]);
+  const [availableNotes, setAvailableNotes] = useState<string[]>([]);
   const [status, setStatus] = useState<FeedbackState | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [editingPerfume, setEditingPerfume] = useState<AdminPerfume | null>(null);
@@ -259,13 +318,16 @@ export default function AdminProductsPage() {
     setLoading(true);
     try {
       const perfumePromise = fetchPerfumesAdmin();
+      const notesPromise = fetchAvailableNotes();
       const [brandResult, collectionResult] = await Promise.allSettled([
         fetchBrandsAdmin(),
         fetchCollectionsAdmin(),
       ]);
 
       const perfumeData = await perfumePromise;
+      const notesData = await notesPromise;
       setPerfumes(perfumeData);
+      setAvailableNotes(Array.isArray(notesData) ? notesData : []);
 
       const warnings: string[] = [];
 
@@ -374,7 +436,7 @@ export default function AdminProductsPage() {
       return;
     }
 
-    if (!perfume.documentId) {
+    if (!perfume.id) {
       setStatus({
         type: "error",
         message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
@@ -383,7 +445,7 @@ export default function AdminProductsPage() {
     }
 
     try {
-      await deletePerfume(perfume.documentId);
+      await deletePerfume(perfume.id.toString());
       setStatus({ type: "success", message: "محصول با موفقیت حذف شد." });
       await loadData();
     } catch (error) {
@@ -399,13 +461,13 @@ export default function AdminProductsPage() {
     setStatus(null);
 
     try {
-      let coverId: number | undefined;
+      let coverUrl: string | undefined;
 
       // Upload image if provided and it's a File (not existing URL)
       if (values.image && values.image instanceof File) {
         try {
           const uploadResult = await uploadFile(values.image);
-          coverId = uploadResult.id;
+          coverUrl = uploadResult.url; // Use URL string, not ID
         } catch (uploadError) {
           console.error("خطا در آپلود تصویر", uploadError);
           setStatus({
@@ -414,6 +476,9 @@ export default function AdminProductsPage() {
           });
           return;
         }
+      } else if (values.image && typeof values.image === "string") {
+        // If it's already a URL string, use it directly
+        coverUrl = values.image;
       }
 
       const payload: CreatePerfumePayload | UpdatePerfumePayload = {
@@ -431,18 +496,18 @@ export default function AdminProductsPage() {
         },
         brand: Number(values.brandId),
         collection: values.collectionId ? Number(values.collectionId) : undefined,
-        cover: coverId,
+        cover: coverUrl, // Use URL string
       };
 
       if (isEditing && editingPerfume) {
-        if (!editingPerfume.documentId) {
+        if (!editingPerfume.id) {
           setStatus({
             type: "error",
             message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
           });
           return;
         }
-        await updatePerfume(editingPerfume.documentId, payload);
+        await updatePerfume(editingPerfume.id.toString(), payload);
         setStatus({ type: "success", message: "محصول با موفقیت به‌روزرسانی شد." });
         exitEditMode({ preserveStatus: true });
       } else {
@@ -651,10 +716,11 @@ export default function AdminProductsPage() {
             render={({ field, fieldState }) => (
               <NotesField
                 label="نت‌های آغازین"
-                helper="نام نت را تایپ کرده و دکمه افزودن را بزنید."
+                helper="نام نت را تایپ کرده و از لیست انتخاب کنید."
                 value={field.value ?? []}
                 onChange={field.onChange}
                 error={fieldState.error?.message}
+                availableNotes={availableNotes}
               />
             )}
           />
@@ -666,10 +732,11 @@ export default function AdminProductsPage() {
             render={({ field, fieldState }) => (
               <NotesField
                 label="نت‌های میانی"
-                helper="برای جداکردن نت‌ها از دکمه افزودن استفاده کنید."
+                helper="از لیست نت‌های پیشنهادی انتخاب کنید."
                 value={field.value ?? []}
                 onChange={field.onChange}
                 error={fieldState.error?.message}
+                availableNotes={availableNotes}
               />
             )}
           />
@@ -681,10 +748,11 @@ export default function AdminProductsPage() {
             render={({ field, fieldState }) => (
               <NotesField
                 label="نت‌های پایانی"
-                helper="می‌توانید هر تعداد نت که می‌خواهید اضافه کنید."
+                helper="از لیست نت‌های پیشنهادی انتخاب کنید."
                 value={field.value ?? []}
                 onChange={field.onChange}
                 error={fieldState.error?.message}
+                availableNotes={availableNotes}
               />
             )}
           />

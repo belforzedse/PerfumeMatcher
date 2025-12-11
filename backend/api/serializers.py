@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Perfume
+from .notes_master import is_valid_note, validate_notes
 
 # New kiosk-questionnaire fields (frontend alignment)
 MOOD_CHOICES = ["fresh", "sweet", "warm", "floral", "woody"]
@@ -94,6 +95,9 @@ class QuestionnaireSerializer(serializers.Serializer):
 
 class PerfumeSerializer(serializers.ModelSerializer):
     notes = serializers.SerializerMethodField()
+    notes_top = serializers.JSONField(required=False, allow_null=True)
+    notes_middle = serializers.JSONField(required=False, allow_null=True)
+    notes_base = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = Perfume
@@ -111,11 +115,19 @@ class PerfumeSerializer(serializers.ModelSerializer):
             "character",
             "intensity",
             "notes",
+            "notes_top",
+            "notes_middle",
+            "notes_base",
             "tags",
             "images",
             "created_at",
             "updated_at",
         ]
+        extra_kwargs = {
+            "notes_top": {"write_only": True},
+            "notes_middle": {"write_only": True},
+            "notes_base": {"write_only": True},
+        }
 
     def get_notes(self, obj: Perfume):
         return {
@@ -123,3 +135,58 @@ class PerfumeSerializer(serializers.ModelSerializer):
             "middle": obj.notes_middle or [],
             "base": obj.notes_base or [],
         }
+    
+    def validate_notes_field(self, notes: list) -> list:
+        """Validate notes against predefined list."""
+        if not isinstance(notes, list):
+            raise serializers.ValidationError("Notes must be a list")
+        
+        valid_notes, invalid_notes = validate_notes(notes)
+        
+        if invalid_notes:
+            raise serializers.ValidationError(
+                f"Invalid notes (not in predefined list): {', '.join(invalid_notes)}"
+            )
+        
+        return valid_notes
+    
+    def validate_notes_top(self, value):
+        return self.validate_notes_field(value) if value else []
+    
+    def validate_notes_middle(self, value):
+        return self.validate_notes_field(value) if value else []
+    
+    def validate_notes_base(self, value):
+        return self.validate_notes_field(value) if value else []
+    
+    def create(self, validated_data):
+        # Extract notes fields if provided
+        notes_top = validated_data.pop("notes_top", [])
+        notes_middle = validated_data.pop("notes_middle", [])
+        notes_base = validated_data.pop("notes_base", [])
+        
+        perfume = Perfume.objects.create(**validated_data)
+        perfume.notes_top = notes_top
+        perfume.notes_middle = notes_middle
+        perfume.notes_base = notes_base
+        perfume.save()
+        return perfume
+    
+    def update(self, instance, validated_data):
+        # Extract notes fields if provided
+        notes_top = validated_data.pop("notes_top", None)
+        notes_middle = validated_data.pop("notes_middle", None)
+        notes_base = validated_data.pop("notes_base", None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        if notes_top is not None:
+            instance.notes_top = notes_top
+        if notes_middle is not None:
+            instance.notes_middle = notes_middle
+        if notes_base is not None:
+            instance.notes_base = notes_base
+        
+        instance.save()
+        return instance

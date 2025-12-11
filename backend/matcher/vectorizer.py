@@ -56,20 +56,24 @@ def perfume_to_text(p: Perfume) -> str:
     if p.family:
         parts.append(f"family_{_normalize_token(p.family)}")
 
-    # Notes
-    for note in p.notes_top:
-        n = _normalize_note(note)
+    # Notes - Django model uses notes_top, notes_middle, notes_base
+    notes_top = p.notes_top if isinstance(p.notes_top, list) else (p.notes_top or [])
+    notes_middle = p.notes_middle if isinstance(p.notes_middle, list) else (p.notes_middle or [])
+    notes_base = p.notes_base if isinstance(p.notes_base, list) else (p.notes_base or [])
+    
+    for note in notes_top:
+        n = _normalize_note(str(note))
         parts.append(f"topnote_{n}")
         parts.append(f"note_{n}")
 
-    for note in p.notes_middle:
-        n = _normalize_note(note)
+    for note in notes_middle:
+        n = _normalize_note(str(note))
         for _ in range(2):
             parts.append(f"heartnote_{n}")
             parts.append(f"note_{n}")
 
-    for note in p.notes_base:
-        n = _normalize_note(note)
+    for note in notes_base:
+        n = _normalize_note(str(note))
         for _ in range(3):
             parts.append(f"basenote_{n}")
             parts.append(f"note_{n}")
@@ -77,8 +81,12 @@ def perfume_to_text(p: Perfume) -> str:
     if p.gender:
         parts.append(f"gender_{p.gender}")
 
+    # Handle both single season and seasons list
     if p.season:
         parts.append(f"season_{_normalize_token(p.season)}")
+    seasons_list = p.seasons if isinstance(p.seasons, list) else []
+    for season in seasons_list:
+        parts.append(f"season_{_normalize_token(str(season))}")
 
     if p.intensity:
         parts.append(f"intensity_{_normalize_token(p.intensity)}")
@@ -238,8 +246,11 @@ def load_perfumes() -> List[Perfume]:
 
 
 def _collect_normalized_notes(p: Perfume) -> List[str]:
-    merged = list(p.notes_top) + list(p.notes_middle) + list(p.notes_base)
-    return [_normalize_note(n) for n in merged]
+    notes_top = p.notes_top if isinstance(p.notes_top, list) else (p.notes_top or [])
+    notes_middle = p.notes_middle if isinstance(p.notes_middle, list) else (p.notes_middle or [])
+    notes_base = p.notes_base if isinstance(p.notes_base, list) else (p.notes_base or [])
+    merged = list(notes_top) + list(notes_middle) + list(notes_base)
+    return [_normalize_note(str(n)) for n in merged]
 
 
 class PerfumeEngine:
@@ -303,7 +314,8 @@ class PerfumeEngine:
                     score -= 0.15
 
             if moments and perfume.occasions:
-                if "night_out" in perfume.occasions and "daily" in moments:
+                occasions_list = perfume.occasions if isinstance(perfume.occasions, list) else []
+                if "night_out" in occasions_list and "daily" in moments:
                     score -= 0.05
 
             if intensities and perfume.intensity:
@@ -329,12 +341,16 @@ class PerfumeEngine:
         results = []
         for idx in idx_sorted:
             p = self.perfumes[idx]
+            score = adjusted_scores[idx]
+            # Convert score (0-1) to matchPercentage (0-100)
+            match_percentage = max(0, min(100, round(score * 100)))
             results.append(
                 {
                     "id": p.id,
-                    "name": p.name,
-                    "brand": p.brand,
-                    "score": adjusted_scores[idx],
+                    "name": p.name or p.name_fa or p.name_en or "",
+                    "brand": p.brand or "",
+                    "score": score,
+                    "matchPercentage": match_percentage,
                 }
             )
 

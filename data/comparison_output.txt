@@ -1,0 +1,57 @@
+﻿================================================================================
+COMPARING EXISTING PERFUMES WITH PARSED DATASET
+================================================================================
+
+Loading existing perfumes from: D:\cyan\gandom-perfume\PerfumeMatcher\frontend\public\data\data.json
+[OK] Loaded 258 existing perfumes
+
+Loading parsed dataset from: D:\cyan\gandom-perfume\PerfumeMatcher\data\parsed_perfumes.json
+[OK] Loaded 36969 parsed perfumes
+
+================================================================================
+SEARCHING FOR EXISTING PERFUMES IN DATASET
+================================================================================
+
+Searching 258 existing perfumes in 36969 parsed perfumes...
+[OK] Search complete!
+
+================================================================================
+RESULTS
+================================================================================
+
+Total existing perfumes: 258
+  Found in dataset:       152 (58.9%)
+  Not found:              106 (41.1%)
+  - Text search matches:   152
+
+================================================================================
+SAMPLE FOUND MATCHES (first 15)
+================================================================================
+python : Traceback (most recent call last):
+At C:\Users\User\AppData\Local\Temp\ps-script-a8352e17-2a4f-4e8a-89ed-b466a5b014db.ps1:88 char:1
++ python scripts/compare_perfumes.py 2>&1 | Out-File -FilePath "data/co ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\cyan\gandom-perfume\PerfumeMatcher\scripts\compare_perfumes.py", line 195, in main
+    print(f"\n{i}. {brand} - {name}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 5-8: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\cyan\gandom-perfume\PerfumeMatcher\scripts\compare_perfumes.py", line 264, in <module>
+    main()
+    ~~~~^^
+  File "D:\cyan\gandom-perfume\PerfumeMatcher\scripts\compare_perfumes.py", line 199, in main
+    print(f"\n{i}. [Brand: {brand[:30]}...] - [Name: {name[:30]}...]")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 13-16: character maps to <undefined>

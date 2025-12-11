@@ -1,5 +1,4 @@
-﻿import { getData } from "./data-loader";
-
+﻿
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const PERFUMES_ENDPOINT = `${BACKEND_BASE_URL}/api/perfumes/`;
 
@@ -41,23 +40,40 @@ const fetchWithRetry = async (url: string, options: RequestInit & { retries?: nu
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, timeout);
 
-      const response = await fetch(url, {
-        ...fetchOptions,
-        signal: controller.signal,
-      });
+      try {
+        const response = await fetch(url, {
+          ...fetchOptions,
+          headers: {
+            "Content-Type": "application/json",
+            ...(fetchOptions.headers || {}),
+          },
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return response;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      return response;
     } catch (error) {
+      const isAbortError = error instanceof Error && error.name === "AbortError";
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+      
+      if (isAbortError) {
+        console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} timed out after ${timeout}ms`);
+      } else {
+        console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+      }
       
       if (attempt < retries) {
         // Exponential backoff: 500ms, 1000ms
@@ -184,22 +200,9 @@ export async function getPerfumes(): Promise<Perfume[]> {
       return perfumes;
     } catch (error) {
       console.error("[API] ERROR loading perfumes from backend:", error);
-      
-      // Fallback to local data
-      try {
-        console.log("[API] Attempting local fallback...");
-        const data = await getData();
-        const perfumes = data.perfumes.map((p) => toPerfume(p));
-        perfumeListCache = perfumes;
-        perfumeListCacheTime = Date.now();
-        console.log("[API] Fallback successful:", perfumes.length);
-        return perfumes;
-      } catch (fallbackError) {
-        console.error("[API] Fallback failed:", fallbackError);
-        perfumeListCache = null;
-        perfumeListCacheTime = 0;
-        throw error instanceof Error ? error : new Error("Failed to load perfumes");
-      }
+      perfumeListCache = null;
+      perfumeListCacheTime = 0;
+      throw error instanceof Error ? error : new Error("Failed to load perfumes from backend");
     } finally {
       perfumeListPromise = null;
     }

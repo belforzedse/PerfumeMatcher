@@ -2,25 +2,34 @@ from pathlib import Path
 import json
 import time
 import asyncio
+import logging
 from typing import Dict, Any, List, Optional
 
+import httpx
 from django.conf import settings
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from openai import OpenAI, APIError, BadRequestError, APITimeoutError
 
 from .models import Perfume
 from .serializers import QuestionnaireSerializer, PerfumeSerializer
+from .notes_master import get_all_notes, get_notes_by_category
 from matcher.vectorizer import get_engine
 from matcher.bridge_config import NOTE_CATEGORY_TO_TAGS
 
+logger = logging.getLogger(__name__)
+
+# Check if OpenAI is available (already imported above)
+OPENAI_AVAILABLE = True
 try:
-    from openai import OpenAI
-    OPENAI_AVAILABLE = True
-except ImportError:
+    # Verify OpenAI classes are available
+    _ = OpenAI, APIError, BadRequestError, APITimeoutError
+except NameError:
     OPENAI_AVAILABLE = False
+    logger.warning("OpenAI library not available")
 
 
 def _is_admin(request: HttpRequest) -> bool:
@@ -76,23 +85,24 @@ def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]]
     
     perfume_lines = "\n".join(json.dumps(p, ensure_ascii=False) for p in perfumes)
     
-    return f"""You are a perfume recommendation expert.
+    return f"""You are a perfume recommendation expert. Analyze user preferences and match them with perfumes.
 
-We have:
-- "userPreferences": one JSON object.
-- "perfumes": one JSON object per line.
+Task: Return JSON with rankings array. Each ranking must have:
+- "id": perfume ID number
+- "matchPercentage": 0-100 score
+- "reasons": array of 1-2 SHORT phrases (max 5 words each) explaining the match in PERSIAN (Farsi)
 
-Task:
-1) Analyze userPreferences and perfumes.
-2) Compute how well each perfume matches.
-3) Return JSON: {{"rankings": [{{"id": number, "matchPercentage": 0-100, "reasons": [string]}}]}}
+IMPORTANT: 
+- All reasons must be in PERSIAN (Farsi) language
+- Keep reasons concise. Examples: "مطابق با نت‌های مورد علاقه", "مناسب برای شب", "مطابق با شدت مورد نظر"
+- Return ONLY valid JSON
 
 userPreferences: {json.dumps(user_prefs, ensure_ascii=False)}
 
 perfumes:
 {perfume_lines}
 
-Return only valid JSON."""
+Return ONLY valid JSON: {{"rankings": [{{"id": number, "matchPercentage": 0-100, "reasons": [string]}}]}}"""
 
 
 @api_view(["POST"])
@@ -110,7 +120,8 @@ def recommend_rerank(request):
 
     answers = serializer.validated_data
     top_k = min(int(request.GET.get("k", 30)), 50)  # Cap at 50
-    timeout_ms = int(request.GET.get("timeout", 9000))  # Default 9s
+    timeout_ms = int(request.GET.get("timeout", 90000))  # Default 90s to test if OpenAI can respond
+    timeout_ms = min(timeout_ms, 120000)  # Cap at 120s max
     
     # Baseline matcher
     engine = get_engine()
@@ -139,8 +150,26 @@ def recommend_rerank(request):
         if pid in perfume_map
     ]
     
-    if not OPENAI_AVAILABLE or not settings.OPENAI_API_KEY:
-        # Fallback: return baseline scores
+    if not OPENAI_AVAILABLE:
+        logger.warning("OpenAI library not available - using baseline")
+        rankings = [
+            {
+                "id": item.get("id"),
+                "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
+                "reasons": [],
+            }
+            for item in candidates
+        ]
+        return Response(
+            {
+                "rankings": rankings,
+                "fallback": True,
+                "elapsedMs": int((time.time() - start_time) * 1000),
+            }
+        )
+    
+    if not settings.OPENAI_API_KEY:
+        logger.warning("OPENAI_API_KEY not set - using baseline")
         rankings = [
             {
                 "id": item.get("id"),
@@ -159,42 +188,106 @@ def recommend_rerank(request):
     
     # Call OpenAI with timeout
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        api_key = settings.OPENAI_API_KEY
+        model = getattr(settings, "AI_MODEL", "gpt-4o-mini")
+        
+        logger.info(f"Calling OpenAI with model: {model}, timeout: {timeout_ms}ms ({timeout_ms/1000.0:.1f}s)")
+        logger.info(f"API key present: {bool(api_key)}, length: {len(api_key) if api_key else 0}")
+        
+        # Initialize OpenAI client with timeout and reduced retries
+        # Use granular timeout: connect quickly, but allow longer read time
+        # Set max_retries=0 to disable automatic retries - fail fast and fallback to baseline immediately
+        timeout_seconds = timeout_ms / 1000.0
+        read_timeout = max(10.0, timeout_seconds - 10.0)  # Ensure at least 10 seconds for read, reserve 10s for connect/write
+        logger.info(f"Timeout breakdown: connect=10s, read={read_timeout:.1f}s, write=5s")
+        
+        client = OpenAI(
+            api_key=api_key,
+            timeout=httpx.Timeout(
+                connect=10.0,  # 10 seconds to establish connection
+                read=read_timeout,  # Remaining time for reading response
+                write=5.0,  # 5 seconds to write request
+                pool=30.0,  # 30 seconds for connection pool
+            ),
+            max_retries=0,  # Disable retries to avoid wasting tokens on retries
+        )
         prompt = _build_rerank_prompt(answers, compact_perfumes)
+        prompt_tokens_estimate = len(prompt.split()) * 1.3  # Rough estimate: ~1.3 tokens per word
+        logger.info(f"Prompt length: {len(prompt)} chars, {len(compact_perfumes)} perfumes, ~{int(prompt_tokens_estimate)} tokens (estimate)")
         
-        # Use asyncio timeout wrapper for synchronous call
-        def call_openai():
-            response = client.chat.completions.create(
-                model=getattr(settings, "AI_MODEL", "gpt-5-nano"),
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a perfume recommendation expert. Analyze user preferences and match them with available perfumes. Return only valid JSON.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
-            )
-            return response
+        # Build parameters - some models don't support temperature
+        create_params = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a perfume recommendation expert. Analyze user preferences and match them with perfumes. Return ONLY valid JSON. All reasons must be in PERSIAN (Farsi) language. Keep reasons SHORT (1-2 phrases, max 5 words each).",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": "json_object"},
+        }
         
-        # Run with timeout
+        # Only add temperature for models that support it
+        # GPT-5 series (gpt-5, gpt-5-mini, gpt-5-nano) only support default temperature (1)
+        # o1 models also don't support custom temperature
+        if not model.startswith("o1") and not model.startswith("gpt-5"):
+            create_params["temperature"] = 0.2
+        
+        # Make direct API call - OpenAI client handles timeout internally
+        api_call_start = time.time()
         try:
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(call_openai)
-                ai_response = future.result(timeout=timeout_ms / 1000.0)
-        except concurrent.futures.TimeoutError:
+            logger.info("Sending request to OpenAI API...")
+            ai_response = client.chat.completions.create(**create_params)
+            api_call_duration = time.time() - api_call_start
+            logger.info(f"OpenAI API responded successfully in {api_call_duration:.2f}s")
+            
+            # Log token usage if available
+            if hasattr(ai_response, 'usage'):
+                usage = ai_response.usage
+                logger.info(f"Token usage - Prompt: {usage.prompt_tokens}, Completion: {usage.completion_tokens}, Total: {usage.total_tokens}")
+        except APITimeoutError as e:
+            api_call_duration = time.time() - api_call_start
+            logger.warning(f"OpenAI call exceeded {timeout_ms}ms timeout after {api_call_duration:.2f}s: {e}")
+            logger.warning("This request likely consumed tokens but timed out before receiving response")
             raise TimeoutError(f"OpenAI call exceeded {timeout_ms}ms")
+        except (APIError, BadRequestError) as e:
+            api_call_duration = time.time() - api_call_start
+            error_type = type(e).__name__
+            error_msg = str(e)
+            logger.error(f"OpenAI API call failed after {api_call_duration:.2f}s ({error_type}): {error_msg}")
+            raise
+        except Exception as e:
+            api_call_duration = time.time() - api_call_start
+            error_type = type(e).__name__
+            error_msg = str(e)
+            logger.error(f"Unexpected error during OpenAI call after {api_call_duration:.2f}s ({error_type}): {error_msg}")
+            raise
         
-        content = ai_response.choices[0].message.content if hasattr(ai_response, "choices") else None
+        # Extract content from response
+        content = None
+        if hasattr(ai_response, "choices") and ai_response.choices:
+            choice = ai_response.choices[0]
+            if hasattr(choice, "message") and hasattr(choice.message, "content"):
+                content = choice.message.content
+        
         if not content:
+            logger.error(f"No content in OpenAI response. Response structure: {type(ai_response)}, has choices: {hasattr(ai_response, 'choices')}")
+            if hasattr(ai_response, "choices") and ai_response.choices:
+                logger.error(f"First choice type: {type(ai_response.choices[0])}, has message: {hasattr(ai_response.choices[0], 'message')}")
+                if hasattr(ai_response.choices[0], "message"):
+                    logger.error(f"Message type: {type(ai_response.choices[0].message)}, has content: {hasattr(ai_response.choices[0].message, 'content')}")
             raise ValueError("No content in OpenAI response")
         
+        logger.debug(f"OpenAI response length: {len(content)} chars")
         parsed = json.loads(content)
         ai_rankings = parsed.get("rankings", [])
         
         if not ai_rankings:
+            logger.error(f"Empty rankings from OpenAI. Parsed keys: {list(parsed.keys())}")
             raise ValueError("Empty rankings from OpenAI")
+        
+        logger.info(f"OpenAI returned {len(ai_rankings)} rankings")
         
         # Normalize and validate rankings
         rankings = []
@@ -227,8 +320,12 @@ def recommend_rerank(request):
             }
         )
         
-    except (TimeoutError, ValueError, KeyError, json.JSONDecodeError, Exception) as e:
+    except (TimeoutError, APITimeoutError, ValueError, KeyError, json.JSONDecodeError, APIError, BadRequestError, Exception) as e:
         # Fallback to baseline on any error
+        error_type = type(e).__name__
+        error_msg = str(e)
+        logger.error(f"OpenAI rerank failed ({error_type}): {error_msg}", exc_info=True)
+        
         rankings = [
             {
                 "id": item.get("id"),
@@ -243,7 +340,7 @@ def recommend_rerank(request):
                 "rankings": rankings,
                 "fallback": True,
                 "elapsedMs": elapsed_ms,
-                "error": str(e) if settings.DEBUG else None,
+                "error": f"{error_type}: {error_msg}" if settings.DEBUG else None,
             }
         )
 
@@ -298,3 +395,16 @@ def admin_perfume_detail(request: HttpRequest, pk: int):
 
     perfume.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET"])
+def available_notes(request: HttpRequest):
+    """
+    GET /api/available-notes/
+    Returns the master list of predefined notes for admin panel.
+    Query params:
+    - ?category=true: Returns notes organized by category
+    """
+    if request.GET.get("category") == "true":
+        return Response(get_notes_by_category())
+    return Response({"notes": get_all_notes()})
