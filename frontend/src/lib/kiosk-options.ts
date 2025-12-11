@@ -61,6 +61,10 @@ const BASE_KEYWORDS: Record<string, string[]> = {
   powdery: ["powder", "talc", "powdery", "iris"],
   tobacco: ["tobacco", "tobacco flower"],
   leather: ["leather"],
+  herbal: ["herb", "medicinal", "chamomile", "absinthe", "ginseng"],
+  beverage: ["wine", "champagne", "brandy", "alcohol", "drink"],
+  synthetic: ["synthetic", "aldehyde", "indole", "chemical"],
+  mineral: ["metal", "stone", "mineral", "asphalt"],
 };
 
 // Get keywords for a category

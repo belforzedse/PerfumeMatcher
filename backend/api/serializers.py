@@ -12,12 +12,21 @@ STYLE_CHOICES = ["feminine", "masculine", "unisex", "any"]
 NOTE_CHOICES = [
     "citrus",
     "floral",
+    "fruity",
     "woody",
     "spicy",
     "sweet",
+    "gourmand",
     "green",
     "oriental",
+    "resinous",
+    "aquatic",
+    "earthy",
     "musky",
+    "animalic",
+    "powdery",
+    "tobacco",
+    "leather",
 ]
 
 # Legacy fields kept for backward compatibility with older clients
@@ -33,6 +42,28 @@ LEGACY_GENDER_CHOICES = ["male", "female", "unisex"]
 
 
 class QuestionnaireSerializer(serializers.Serializer):
+    """
+    Questionnaire for perfume matching.
+
+    CANONICAL FIELDS (used by current frontend):
+    - moods: ["fresh", "sweet", "warm", "floral", "woody"]
+    - moments: ["daily", "evening", "outdoor", "gift"]
+    - times: ["day", "night", "anytime"]
+    - intensity: ["light", "medium", "strong"]
+    - styles: ["feminine", "masculine", "unisex", "any"]
+    - noteLikes/noteDislikes: [note categories - 17 total]
+
+    LEGACY FIELDS (backward compatibility):
+    - contexts → moments (partial semantic mapping)
+    - sweetness/freshness → moods (1-5 scale)
+    - strength → intensity
+    - gender → styles
+    - avoid_very_sweet/avoid_oud → special penalties
+
+    CONFLICT HANDLING:
+    If both legacy and new fields sent, both are processed (additive).
+    Recommend clients use ONLY new OR legacy, not mixed.
+    """
     # New shape
     moods = serializers.ListField(
         child=serializers.ChoiceField(choices=MOOD_CHOICES),
@@ -108,9 +139,11 @@ class PerfumeSerializer(serializers.ModelSerializer):
             "name",
             "brand",
             "collection",
+            "description",
             "gender",
             "family",
             "season",
+            "seasons",
             "strength",
             "character",
             "intensity",
@@ -120,6 +153,9 @@ class PerfumeSerializer(serializers.ModelSerializer):
             "notes_base",
             "tags",
             "images",
+            "occasions",
+            "main_accords",
+            "all_notes",
             "created_at",
             "updated_at",
         ]

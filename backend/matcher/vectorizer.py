@@ -78,6 +78,21 @@ def perfume_to_text(p: Perfume) -> str:
             parts.append(f"basenote_{n}")
             parts.append(f"note_{n}")
 
+    # Main accords - strongly weighted (2x repetition for emphasis)
+    main_accords = p.main_accords if isinstance(p.main_accords, list) else (p.main_accords or [])
+    for accord in main_accords:
+        normalized = _normalize_note(str(accord))
+        # Repeat twice to give accords strong weight (they summarize the perfume)
+        for _ in range(2):
+            parts.append(f"accord_{normalized}")
+            parts.append(f"note_{normalized}")  # Also add as note for crossover matching
+
+    # Occasions - standard weight (1x)
+    occasions_list = p.occasions if isinstance(p.occasions, list) else (p.occasions or [])
+    for occasion in occasions_list:
+        normalized = _normalize_token(str(occasion))
+        parts.append(f"occasion_{normalized}")
+
     if p.gender:
         parts.append(f"gender_{p.gender}")
 

@@ -28,7 +28,7 @@ MOMENT_TO_OCCASION_TAGS: Dict[str, List[str]] = {
 TIME_TO_OCCASION_TAGS: Dict[str, List[str]] = {
     "day": ["daytime"],
     "night": ["night"],
-    "anytime": [],
+    "anytime": ["daytime", "night"],  # Match perfumes suitable for both
 }
 
 # Style → gender leaning tokens
@@ -36,7 +36,7 @@ STYLE_TO_GENDER_TOKENS: Dict[str, List[str]] = {
     "feminine": ["gender_female"],
     "masculine": ["gender_male"],
     "unisex": ["gender_unisex"],
-    "any": [],
+    "any": [],  # Intentionally empty: no gender bias when user selects "any"
 }
 
 # Note categories (like/dislike) → representative tags
@@ -58,6 +58,10 @@ NOTE_CATEGORY_TO_TAGS: Dict[str, List[str]] = {
     "powdery": ["پودری", "ایریس", "پودر تالک"],
     "tobacco": ["تنباکو", "شکوفه تنباکو"],
     "leather": ["چرم"],
+    "herbal": ["بابونه", "افسنطین", "جینسینگ", "رازک", "بادرنجبویه"],
+    "beverage": ["شراب", "شامپاین", "براندی", "تکیلا", "ویسکی"],
+    "synthetic": ["آلدئیدها", "ایندول", "سیترون", "لورنوکس"],
+    "mineral": ["فلز", "سنگ", "آسفالت", "باروت"],
 }
 
 # Sweet/fresh axes for legacy sliders

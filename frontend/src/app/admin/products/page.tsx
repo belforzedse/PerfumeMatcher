@@ -14,7 +14,6 @@ import {
   fetchAvailableNotes,
   uploadFile,
   convertToEnglish,
-  convertToPersian,
   type AdminBrand,
   type AdminCollection,
   type AdminPerfume,
@@ -34,30 +33,39 @@ type FeedbackState = {
 interface PerfumeFormValues {
   nameFa: string;
   nameEn: string;
+  description: string;
   brandId: string;
   collectionId: string;
   gender: string[];
-  season: string[];
+  season: string[]; // legacy - kept for backward compatibility
+  seasons: string[]; // multiple seasons (preferred)
   family: string[];
   character: string[];
+  strength: string; // single select
+  intensity: string;
   notes: PerfumeNotes;
-  image?: File | null;
+  image?: File | string | null; // single image
 }
 
 const genderOptions = ["زنانه", "مردانه", "یونیسکس"];
 const seasonOptions = ["بهار", "تابستان", "پاییز", "زمستان", "چهارفصل"];
 const familyOptions = ["گلی", "چوبی", "شرقی", "مرکباتی", "آروماتیک", "مشکدار"];
 const characterOptions = ["رسمی", "روزمره", "رمانتیک", "اسپرت", "جذاب", "کلاسیک"];
+const strengthOptions = ["ملایم", "متوسط", "قوی", "خیلی قوی"];
 
 const createDefaultValues = (): PerfumeFormValues => ({
   nameFa: "",
   nameEn: "",
+  description: "",
   brandId: "",
   collectionId: "",
   gender: [],
-  season: [],
+  season: [], // legacy
+  seasons: [], // preferred
   family: [],
   character: [],
+  strength: "",
+  intensity: "",
   notes: {
     top: [],
     middle: [],
@@ -461,13 +469,13 @@ export default function AdminProductsPage() {
     setStatus(null);
 
     try {
-      let coverUrl: string | undefined;
+      let imageUrl: string | undefined;
 
-      // Upload image if provided and it's a File (not existing URL)
+      // Handle single image: upload File objects, keep URLs as-is
       if (values.image && values.image instanceof File) {
         try {
           const uploadResult = await uploadFile(values.image);
-          coverUrl = uploadResult.url; // Use URL string, not ID
+          imageUrl = uploadResult.url;
         } catch (uploadError) {
           console.error("خطا در آپلود تصویر", uploadError);
           setStatus({
@@ -478,17 +486,37 @@ export default function AdminProductsPage() {
         }
       } else if (values.image && typeof values.image === "string") {
         // If it's already a URL string, use it directly
-        coverUrl = values.image;
+        imageUrl = values.image;
       }
+
+      // Convert to array format for backend (but only one image)
+      const imageUrls = imageUrl ? [imageUrl] : [];
+
+      // Convert seasons array to English array
+      const seasonsEnglish = values.seasons && values.seasons.length > 0
+        ? values.seasons.map(s => {
+            const english = convertToEnglish("season", [s]);
+            return english || s;
+          })
+        : undefined;
+
+      // Backward compatibility: populate legacy season from first seasons value
+      const legacySeason = values.seasons && values.seasons.length > 0
+        ? convertToEnglish("season", [values.seasons[0]])
+        : (values.season.length > 0 ? convertToEnglish("season", values.season) : undefined);
 
       const payload: CreatePerfumePayload | UpdatePerfumePayload = {
         name_fa: values.nameFa.trim(),
         name_en: values.nameEn.trim(),
+        description: values.description.trim() || undefined,
         // Convert Persian values to English for backend
         gender: values.gender.length > 0 ? convertToEnglish("gender", values.gender) : undefined,
-        season: values.season.length > 0 ? convertToEnglish("season", values.season) : undefined,
+        season: legacySeason, // legacy single season
+        seasons: seasonsEnglish, // multiple seasons as array
         family: values.family.length > 0 ? convertToEnglish("family", values.family) : undefined,
         character: values.character.length > 0 ? convertToEnglish("character", values.character) : undefined,
+        strength: values.strength ? convertToEnglish("strength", [values.strength]) : undefined,
+        intensity: values.intensity.trim() || undefined,
         notes: {
           top: normaliseNotes(values.notes.top),
           middle: normaliseNotes(values.notes.middle),
@@ -496,7 +524,8 @@ export default function AdminProductsPage() {
         },
         brand: Number(values.brandId),
         collection: values.collectionId ? Number(values.collectionId) : undefined,
-        cover: coverUrl, // Use URL string
+        cover: imageUrls.length > 0 ? imageUrls[0] : undefined, // backward compatibility
+        images: imageUrls.length > 0 ? imageUrls : undefined, // send as array for backend compatibility
       };
 
       if (isEditing && editingPerfume) {
@@ -585,6 +614,19 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="description">
+            توضیحات محصول
+          </label>
+          <textarea
+            id="description"
+            rows={4}
+            className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none resize-y"
+            placeholder="توضیحات کامل محصول را اینجا وارد کنید..."
+            {...register("description")}
+          />
+        </div>
+
         <div className="grid gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="brandId">
@@ -648,10 +690,10 @@ export default function AdminProductsPage() {
 
           <Controller
             control={control}
-            name="season"
+            name="seasons"
             render={({ field, fieldState }) => (
               <MultiSelectField
-                label="فصل پیشنهادی"
+                label="فصول پیشنهادی"
                 options={seasonOptions}
                 value={field.value ?? []}
                 onChange={field.onChange}
@@ -689,6 +731,39 @@ export default function AdminProductsPage() {
               />
             )}
           />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="strength">
+              شدت عطر
+            </label>
+            <select
+              id="strength"
+              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+              {...register("strength")}
+            >
+              <option value="">انتخاب نشده</option>
+              {strengthOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="intensity">
+              شدت بویایی
+            </label>
+            <input
+              id="intensity"
+              type="text"
+              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+              placeholder="مثلاً قوی، متوسط، ملایم"
+              {...register("intensity")}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -891,12 +966,40 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
                   <div className="mt-3 grid gap-2 text-xs text-[var(--color-foreground-muted)]">
+                    {perfume.description && (
+                      <p className="text-[var(--color-foreground)] italic line-clamp-2">
+                        {perfume.description}
+                      </p>
+                    )}
                     <p>
-                      جنسیت: {perfume.gender ?? "---"} | فصل: {perfume.season ?? "---"}
+                      جنسیت: {perfume.gender ?? "---"} | فصول: {perfume.seasons && perfume.seasons.length > 0 ? perfume.seasons.join("، ") : (perfume.season ?? "---")}
                     </p>
                     <p>
-                      خانواده: {perfume.family ?? "---"} | کاراکتر: {perfume.character ?? "---"}
+                      خانواده: {perfume.family ?? "---"} | کاراکتر: {perfume.character ?? "---"} | شدت: {perfume.strength ?? "---"}
                     </p>
+                    {perfume.intensity && (
+                      <p>شدت بویایی: {perfume.intensity}</p>
+                    )}
+                    {perfume.occasions && perfume.occasions.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[var(--color-foreground-muted)] text-[10px]">مناسبت‌ها:</span>
+                        {perfume.occasions.map((occ, idx) => (
+                          <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded">
+                            {occ}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {perfume.main_accords && perfume.main_accords.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[var(--color-foreground-muted)] text-[10px]">اکوردها:</span>
+                        {perfume.main_accords.map((acc, idx) => (
+                          <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded">
+                            {acc}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <p className="font-medium text-[var(--color-foreground)]">نت‌ها</p>
                       <div className="grid gap-1 md:grid-cols-3">
@@ -913,7 +1016,18 @@ export default function AdminProductsPage() {
                           <p>{perfume.notes.base.join("، ") || "---"}</p>
                         </div>
                       </div>
+                      {perfume.all_notes && perfume.all_notes.length > 0 && (
+                        <p className="text-[10px] text-[var(--color-foreground-muted)] mt-1">
+                          تمام نت‌ها ({perfume.all_notes.length}): {perfume.all_notes.slice(0, 5).join("، ")}{perfume.all_notes.length > 5 ? "..." : ""}
+                        </p>
+                      )}
                     </div>
+                    {(perfume.created_at || perfume.updated_at) && (
+                      <div className="text-[10px] text-[var(--color-foreground-subtle)] pt-1 border-t border-[var(--color-border)]">
+                        {perfume.created_at && <p>ایجاد شده: {new Date(perfume.created_at).toLocaleDateString('fa-IR')}</p>}
+                        {perfume.updated_at && <p>آخرین بروزرسانی: {new Date(perfume.updated_at).toLocaleDateString('fa-IR')}</p>}
+                      </div>
+                    )}
                   </div>
                 </motion.li>
               ))}

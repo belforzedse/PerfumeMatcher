@@ -28,6 +28,12 @@ const PersianToEnglishMappings = {
     "جذاب": "Attractive",
     "کلاسیک": "Classic",
   },
+  strength: {
+    "ملایم": "soft",
+    "متوسط": "moderate",
+    "قوی": "strong",
+    "خیلی قوی": "very_strong",
+  },
 } as const;
 
 // Create reverse mappings for displaying backend values
@@ -43,6 +49,9 @@ const EnglishToPersianMappings = {
   ) as Record<string, string>,
   character: Object.fromEntries(
     Object.entries(PersianToEnglishMappings.character).map(([k, v]) => [v, k])
+  ) as Record<string, string>,
+  strength: Object.fromEntries(
+    Object.entries(PersianToEnglishMappings.strength).map(([k, v]) => [v, k])
   ) as Record<string, string>,
 } as const;
 
@@ -96,9 +105,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-interface BrandAttributes {
-  name?: string | null;
-}
 
 export interface AdminBrand {
   id: number;
@@ -121,14 +127,26 @@ export interface AdminPerfume {
   id: number;
   name_fa: string;
   name_en: string;
+  description?: string;
   gender?: string;
-  season?: string;
+  season?: string; // legacy single season
+  seasons?: string[]; // multiple seasons
   family?: string;
   character?: string;
+  strength?: string; // with Persian labels
+  intensity?: string;
   notes: PerfumeNotes;
   brand?: AdminBrand | null;
   collection?: AdminCollection | null;
-  image?: string;
+  image?: string; // first image for backward compatibility
+  images?: string[]; // full array
+  tags?: string[];
+  // Read-only fields
+  occasions?: string[];
+  main_accords?: string[];
+  all_notes?: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateBrandPayload {
@@ -144,31 +162,22 @@ export interface CreateCollectionPayload {
 export interface CreatePerfumePayload {
   name_fa: string;
   name_en: string;
+  description?: string;
   gender?: string;
-  season?: string;
+  season?: string; // legacy - populated from first seasons value
+  seasons?: string[]; // multiple seasons (preferred)
   family?: string;
   character?: string;
+  strength?: string; // English value
+  intensity?: string;
   notes: PerfumeNotes;
   brand?: number;
   collection?: number;
-  cover?: string;
+  cover?: string; // single image URL for backward compatibility
+  images?: string[]; // full array
+  tags?: string[];
 }
 
-const mapBrand = (brand: { id: number; name: string }): AdminBrand => ({
-  id: brand.id,
-  name: brand.name,
-});
-
-const mapCollection = (
-  collection: { id: number; name: string; brand?: number },
-  brands: AdminBrand[]
-): AdminCollection => ({
-  id: collection.id,
-  name: collection.name,
-  brand: collection.brand
-    ? brands.find((b) => b.id === collection.brand) ?? null
-    : null,
-});
 
 // Backend returns brand/collection as strings, not IDs
 interface BackendPerfume {
@@ -178,13 +187,22 @@ interface BackendPerfume {
   name?: string;
   brand?: string;
   collection?: string;
+  description?: string;
   gender?: string;
-  season?: string;
+  season?: string; // legacy single season
+  seasons?: string[]; // multiple seasons
   family?: string;
   character?: string;
+  strength?: string; // English value
+  intensity?: string;
   notes?: PerfumeNotes;
   images?: string[];
   tags?: string[];
+  occasions?: string[];
+  main_accords?: string[];
+  all_notes?: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 const mapPerfume = (
@@ -202,14 +220,32 @@ const mapPerfume = (
     ? collections.find((c) => c.name === perfume.collection) ?? null
     : null;
 
+  // Handle seasons: prefer seasons array, fallback to season string
+  let seasons: string[] | undefined;
+  if (perfume.seasons && Array.isArray(perfume.seasons) && perfume.seasons.length > 0) {
+    // Convert English seasons to Persian
+    seasons = perfume.seasons.map(s => convertToPersian("season", s).join(", "));
+  } else if (perfume.season) {
+    // Migrate legacy season to seasons array
+    seasons = convertToPersian("season", perfume.season);
+  }
+
+  // Handle legacy season for backward compatibility
+  const legacySeason = seasons && seasons.length > 0 ? seasons[0] : 
+                       (perfume.season ? convertToPersian("season", perfume.season).join(", ") : undefined);
+
   return {
     id: perfume.id,
     name_fa: perfume.name_fa || perfume.name || "",
     name_en: perfume.name_en || perfume.name || "",
+    description: perfume.description,
     gender: perfume.gender ? convertToPersian("gender", perfume.gender).join(", ") : undefined,
-    season: perfume.season ? convertToPersian("season", perfume.season).join(", ") : undefined,
+    season: legacySeason, // legacy single season
+    seasons: seasons, // multiple seasons
     family: perfume.family ? convertToPersian("family", perfume.family).join(", ") : undefined,
     character: perfume.character ? convertToPersian("character", perfume.character).join(", ") : undefined,
+    strength: perfume.strength ? convertToPersian("strength", perfume.strength).join(", ") : undefined,
+    intensity: perfume.intensity,
     notes: perfume.notes || {
       top: [],
       middle: [],
@@ -217,7 +253,15 @@ const mapPerfume = (
     },
     brand: brandObj,
     collection: collectionObj,
-    image: perfume.images && perfume.images.length > 0 ? perfume.images[0] : undefined,
+    image: perfume.images && perfume.images.length > 0 ? perfume.images[0] : undefined, // backward compatibility
+    images: perfume.images || [],
+    tags: perfume.tags || [],
+    // Read-only fields
+    occasions: perfume.occasions || [],
+    main_accords: perfume.main_accords || [],
+    all_notes: perfume.all_notes || [],
+    created_at: perfume.created_at,
+    updated_at: perfume.updated_at,
   };
 };
 
@@ -289,16 +333,16 @@ export const createBrand = async (payload: CreateBrandPayload): Promise<AdminBra
   };
 };
 
-export const updateBrand = async (id: string, payload: CreateBrandPayload): Promise<AdminBrand> => {
+export const updateBrand = async (_id: string, payload: CreateBrandPayload): Promise<AdminBrand> => {
   // Would need to update all perfumes with this brand name
   // For now, just return the updated brand object
   return {
-    id: Number(id),
+    id: Number(_id),
     name: payload.name,
   };
 };
 
-export const deleteBrand = async (id: string): Promise<void> => {
+export const deleteBrand = async (_id: string): Promise<void> => {
   // Would need to remove brand from all perfumes
   // For now, this is a no-op
 };
@@ -331,7 +375,7 @@ export const createPerfume = async (
   const brandName = payload.brand ? brands.find((b) => b.id === payload.brand)?.name : undefined;
   const collectionName = payload.collection ? collections.find((c) => c.id === payload.collection)?.name : undefined;
   
-  const backendPayload: any = {
+  const backendPayload: Record<string, unknown> = {
     name_fa: payload.name_fa,
     name_en: payload.name_en,
     gender: payload.gender,
@@ -369,22 +413,29 @@ export const updatePerfume = async (
   const brandName = payload.brand ? brands.find((b) => b.id === payload.brand)?.name : undefined;
   const collectionName = payload.collection ? collections.find((c) => c.id === payload.collection)?.name : undefined;
   
-  const backendPayload: any = {
+  const backendPayload: Record<string, unknown> = {
     name_fa: payload.name_fa,
     name_en: payload.name_en,
+    description: payload.description,
     gender: payload.gender,
-    season: payload.season,
+    season: payload.season, // legacy single season
+    seasons: payload.seasons, // multiple seasons array
     family: payload.family,
     character: payload.character,
+    strength: payload.strength,
+    intensity: payload.intensity,
     notes_top: payload.notes.top,
     notes_middle: payload.notes.middle,
     notes_base: payload.notes.base,
+    tags: payload.tags || [],
     brand: brandName || "",
     collection: collectionName || "",
   };
   
-  // Handle images if provided (cover is a URL string)
-  if (payload.cover && typeof payload.cover === "string") {
+  // Handle images: prefer images array, fallback to cover for backward compatibility
+  if (payload.images && payload.images.length > 0) {
+    backendPayload.images = payload.images;
+  } else if (payload.cover && typeof payload.cover === "string") {
     backendPayload.images = [payload.cover];
   }
   
