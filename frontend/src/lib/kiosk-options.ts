@@ -45,13 +45,22 @@ export const STYLE_CHOICES: Choice[] = [
 // Base keywords for note categories
 const BASE_KEYWORDS: Record<string, string[]> = {
   citrus: ["bergamot", "lemon", "orange", "grapefruit", "lime", "citrus", "mandarin"],
-  floral: ["rose", "jasmine", "tuberose", "violet", "peony", "lily"],
+  floral: ["rose", "jasmine", "tuberose", "violet", "peony", "lily", "orchid"],
+  fruity: ["apple", "pear", "peach", "berry", "grape", "mango", "fruity"],
   woody: ["cedar", "sandalwood", "vetiver", "oak", "oud", "wood"],
-  spicy: ["pepper", "cinnamon", "cardamom", "clove", "nutmeg", "spice"],
-  sweet: ["vanilla", "caramel", "tonka", "honey", "chocolate", "praline"],
-  green: ["mint", "herb", "tea", "basil", "sage", "green"],
-  oriental: ["amber", "incense", "resin", "labdanum", "benzoin", "oriental"],
-  musky: ["musk", "powder", "iris", "heliotrope", "cashmere"],
+  spicy: ["pepper", "cinnamon", "cardamom", "clove", "nutmeg", "spice", "saffron"],
+  sweet: ["vanilla", "caramel", "tonka", "honey", "praline"],
+  gourmand: ["coffee", "chocolate", "cocoa", "almond", "hazelnut", "gourmand"],
+  green: ["mint", "herb", "tea", "basil", "sage", "green", "lavender"],
+  oriental: ["amber", "incense", "labdanum", "benzoin", "oriental"],
+  resinous: ["resin", "balsam", "frankincense", "myrrh", "elemi"],
+  aquatic: ["water", "marine", "oceanic", "aquatic", "sea"],
+  earthy: ["earth", "moss", "patchouli", "truffle", "earthy"],
+  musky: ["musk", "cashmere", "iris"],
+  animalic: ["castoreum", "ambergris", "animalic"],
+  powdery: ["powder", "talc", "powdery", "iris"],
+  tobacco: ["tobacco", "tobacco flower"],
+  leather: ["leather"],
 };
 
 // Get keywords for a category
@@ -73,6 +82,12 @@ export const NOTE_CHOICES: NoteChoice[] = [
     keywords: getKeywords("floral"),
   },
   {
+    value: "fruity",
+    label: "میوه‌ای",
+    icon: "🍎",
+    keywords: getKeywords("fruity"),
+  },
+  {
     value: "woody",
     label: "چوبی و دودی",
     icon: "🌲",
@@ -86,9 +101,15 @@ export const NOTE_CHOICES: NoteChoice[] = [
   },
   {
     value: "sweet",
-    label: "شیرین و خوراکی",
-    icon: "🍫",
+    label: "شیرین",
+    icon: "🍯",
     keywords: getKeywords("sweet"),
+  },
+  {
+    value: "gourmand",
+    label: "خوراکی",
+    icon: "☕",
+    keywords: getKeywords("gourmand"),
   },
   {
     value: "green",
@@ -103,10 +124,52 @@ export const NOTE_CHOICES: NoteChoice[] = [
     keywords: getKeywords("oriental"),
   },
   {
+    value: "resinous",
+    label: "رزینی و بالزام",
+    icon: "🌳",
+    keywords: getKeywords("resinous"),
+  },
+  {
+    value: "aquatic",
+    label: "دریایی و آبی",
+    icon: "🌊",
+    keywords: getKeywords("aquatic"),
+  },
+  {
+    value: "earthy",
+    label: "خاکی و خزه",
+    icon: "🪨",
+    keywords: getKeywords("earthy"),
+  },
+  {
     value: "musky",
-    label: "مشکی و پودری",
+    label: "مشکی",
     icon: "🧴",
     keywords: getKeywords("musky"),
+  },
+  {
+    value: "animalic",
+    label: "حیوانی",
+    icon: "🦌",
+    keywords: getKeywords("animalic"),
+  },
+  {
+    value: "powdery",
+    label: "پودری",
+    icon: "💨",
+    keywords: getKeywords("powdery"),
+  },
+  {
+    value: "tobacco",
+    label: "تنباکو",
+    icon: "🍃",
+    keywords: getKeywords("tobacco"),
+  },
+  {
+    value: "leather",
+    label: "چرم",
+    icon: "👜",
+    keywords: getKeywords("leather"),
   },
 ];
 

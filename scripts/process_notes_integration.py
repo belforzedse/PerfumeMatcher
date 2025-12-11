@@ -14,64 +14,124 @@ import re
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
-# Category detection patterns
+# Category detection patterns - order matters! More specific first
 CATEGORY_PATTERNS = {
+    # Gourmand - food-related, should come before sweet to catch specific items
+    "gourmand": [
+        r"قهوه", r"کاکائو", r"شکلات", r"بستنی", r"کاسترد", r"کیک", r"شیرینی",
+        r"مارزیپان", r"نوقا", r"آجیل", r"بادام", r"فندق", r"گردو", r"پسته",
+        r"ماکادمیا", r"آکای", r"جوز\s+هندی\s+گل", r"دانه\s+تونکا", r"شربت",
+        r"شهد", r"ملاس", r"مارمالاد", r"کروسانت", r"بیسکویت", r"ماکارون",
+        r"کرم\s+بادام", r"شیر\s+بادام", r"شیر\s+نارگیل", r"نان", r"پرالین",
+        r"شکر\s+قهوه\s+ای", r"کارامل", r"دولچه\s+له\s+چه",
+    ],
+    # Floral - broad category, many flowers
     "floral": [
         r"گل\b", r"شکوفه", r"گلبرگ", r"\bرز\b", r"\bیاس\b", r"یاسمن",
         r"صدتومانی", r"محمدی", r"شمعدانی", r"لادن", r"نرگس", r"مریم",
-        r"بنفشه", r"میخک", r"لیلی", r"ارکیده", r"گاردنیا", r"فریزیا",
-        r"لوتوس", r"نیلوفر", r"آبی", r"بهار", r"گل[یه]?[ای]?\s",
+        r"بنفشه", r"لیلی", r"ارکیده", r"گاردنیا", r"فریزیا",
+        r"لوتوس", r"نیلوفر", r"بهار\s+نارنج", r"لاله", r"شقایق",
+        r"فرانجیپانی", r"ویستریا", r"ماگنولیا", r"میموزا", r"هورتنزیا",
+        r"دیزی", r"سلوزیا", r"پانسی", r"ژربرا", r"گل\s+خطمی", r"ختمی",
+        r"یاس\s+آب", r"یاس\s+مراکشی", r"یاس\s+هندی", r"یاس\s+مصری",
+        r"آماریلیس", r"کاملیا", r"فوشیا", r"فراموشم\s+نکن", r"قاصدک",
+        r"سوسن", r"زنبق", r"گل\s+زنگوله", r"گل\s+شکلاتی", r"گل\s+شور",
+        r"رز\s+سفید", r"رز\s+قرمز", r"رز\s+صورتی", r"رز\s+زرد",
     ],
-    "green": [
-        r"برگ\b", r"گیاهی", r"ریحان", r"نعنا", r"چای\s+سبز", r"اسطوخودوس",
-        r"رزماری", r"مریم\s+گلی", r"آویشن", r"پونه", r"شوید", r"جعفری",
-        r"ترخون", r"پونه", r"کوهی", r"گیاه",
-    ],
-    "citrus": [
-        r"لیمو", r"پرتقال", r"ترنج", r"گریپ\s+فروت", r"نارنج", r"یوزو",
-        r"کامکوات", r"پوملو", r"کلایننتین", r"ماندارین",
-    ],
+    # Fruity - fruits before they get misclassified
     "fruity": [
         r"میوه", r"سیب", r"گلابی", r"هلو", r"زردآلو", r"انگور", r"توت\s+فرنگی",
         r"تمشک", r"بلک\s+بری", r"انار", r"انجیر", r"خرمالو", r"لیچی", r"انبه",
         r"پاپایا", r"نارگیل", r"موز", r"آناناس", r"کیوی", r"زغال\s+اخته",
-        r"آلبالو", r"گیلاس", r"شلیل", r"آلو",
+        r"آلبالو", r"گیلاس", r"شلیل", r"آلو", r"توت", r"شاه\s+توت",
+        r"کارامولا", r"گواوا", r"چایوت", r"جابوتیکابا", r"آکای\s+بری",
+        r"گوجی\s+بری", r"بلوبری", r"کرنبری", r"اسرولا", r"پیتانگا",
     ],
+    # Citrus - before fruity
+    "citrus": [
+        r"لیمو", r"پرتقال", r"ترنج", r"گریپ\s+فروت", r"نارنج", r"یوزو",
+        r"کامکوات", r"پوملو", r"کلمانتین", r"ماندارین", r"نارنگی",
+        r"لیموناد", r"لیمونچلو", r"پرتقال\s+تلخ", r"پرتقال\s+خونی",
+        r"عسل\s+پرتقال", r"روغن\s+پرتقال", r"پوست\s+پرتقال", r"پوست\s+لیمو",
+    ],
+    # Sweet - general sweet notes
+    "sweet": [
+        r"شیرین", r"شکر", r"وانیل", r"تونکا", r"عسل", r"نارگیل\s+شیر",
+        r"شیر", r"شکر\s+وانیلی",
+    ],
+    # Woody
     "woody": [
         r"چوب\b", r"درخت", r"صندل", r"سدر", r"عود", r"خس\s+خس", r"گایاک",
-        r"وتیور", r"سرو", r"بلوط", r"کاج", r"راش", r"افرا", r"سپروس",
-        r"هینوکی", r"آگاروود", r"گایاک",
+        r"وتیور", r"سرو", r"بلوط", r"کاج", r"راش", r"افرا", r"صنوبر",
+        r"هینوکی", r"آگاروود", r"چوب\s+کهربا", r"چوب\s+رز", r"چوب\s+ساج",
+        r"چوب\s+بادام", r"چوب\s+گیلاس", r"سکویا", r"ردوود", r"چوب\s+پنبه",
+        r"بامبو", r"درخت\s+نخل", r"درخت\s+زیتون", r"درخت\s+کاج",
     ],
+    # Spicy
     "spicy": [
-        r"فلفل", r"دارچین", r"هل", r"میخک", r"زنجبیل", r"زیره", r"رازیانه",
+        r"فلفل", r"دارچین", r"هل", r"زنجبیل", r"زیره", r"رازیانه",
         r"انیسون", r"کارداموم", r"زعفران", r"جوز\s+هندی", r"ادویه",
+        r"پاپریکا", r"شنبلیله", r"گلپر", r"پونه\s+کوهی",
     ],
-    "sweet": [
-        r"شیرین", r"شکر", r"کارامل", r"وانیل", r"تونکا", r"پرالین", r"عسل",
-        r"شکلات", r"کاکائو", r"نوقا", r"مارزیپان", r"کاسترد", r"بستنی",
-        r"دولچه", r"شیر",
+    # Green/Herbal
+    "green": [
+        r"برگ\b", r"گیاهی", r"ریحان", r"نعنا", r"چای\s+سبز", r"اسطوخودوس",
+        r"رزماری", r"مریم\s+گلی", r"آویشن", r"پونه", r"شوید", r"جعفری",
+        r"ترخون", r"کوهی", r"گیاه", r"گشنیز", r"شنبلیله", r"شبدر",
+        r"یونجه", r"علف", r"چمن", r"برگ\s+چای", r"برگ\s+ریحان",
+        r"برگ\s+نعنا", r"برگ\s+لیمو",
     ],
+    # Resinous - resins and balsams
+    "resinous": [
+        r"رزین", r"صمغ", r"بالم", r"بلسان", r"بنزوئین", r"تولو", r"لابدانوم",
+        r"اوپوپوناکس", r"استایراکس", r"الوبانوم", r"کوپال", r"الئومی",
+        r"رزین\s+سیام", r"رزین\s+صنوبر", r"مر", r"مر\s+قرمز",
+    ],
+    # Oriental - amber and incense
     "oriental": [
-        r"کهربا", r"بخور", r"عود", r"آمبر", r"لابدانوم", r"بنزوئین",
-        r"اوپوپوناکس", r"استایراکس", r"الوبانوم", r"کاستوریوم", r"رزین",
-        r"صمغ",
+        r"کهربا", r"بخور", r"آمبر", r"آمبرتون", r"آمبروم", r"آمبروکسان",
+        r"کهربا\s+از\s+تونس", r"کهربای\s+سفید", r"کهربای\s+سیاه",
+        r"چوب\s+کهربا", r"بخور\s+مراکشی", r"بخور\s+هینوکی",
     ],
+    # Aquatic/Marine
     "aquatic": [
         r"آب\b", r"دریا", r"اقیانوس", r"آبی\b", r"خزه", r"جلبک", r"دریایی",
-        r"اقیانوسی", r"آب\s+دریا", r"آب\s+مقوی",
+        r"اقیانوسی", r"آب\s+دریا", r"آب\s+مقوی", r"آب\s+نبات", r"آب\s+کاکتوس",
+        r"جلبک\s+دریایی", r"جلبک\s+قرمز", r"علف\s+دریایی", r"خزه\s+بلوط",
+        r"اقیانوسی\s+نت", r"دریایی\s+نت",
     ],
+    # Earthy
     "earthy": [
-        r"خاک", r"زمینی", r"خزه", r"پچولی", r"ترافل", r"زغال", r"خاکستر",
-        r"خاک\s+رس", r"موس",
+        r"خاک", r"زمینی", r"پچولی", r"ترافل", r"زغال", r"خاکستر",
+        r"خاک\s+رس", r"موس", r"خزه\s+بلوط", r"خزه\s+تبتی", r"تنتور\s+خاک",
+        r"پچولی\s+اندونزیایی", r"پچولی\s+هندی",
     ],
+    # Musky
     "musky": [
-        r"مشک", r"کشمیر", r"ایریس", r"کاستوریوم", r"عنبر",
+        r"مشک", r"کشمیر", r"ایریس", r"عنبر", r"آمبرت",
     ],
+    # Powdery
     "powdery": [
         r"پودری", r"پودر", r"تالک", r"برنج\s+پودر", r"پودر\s+برنج",
+        r"ایریس", r"پودر\s+تالک",
     ],
-    "balsamic": [
-        r"بالم", r"بلسان", r"بنزوئین", r"تولو",
+    # Tobacco
+    "tobacco": [
+        r"تنباکو", r"شکوفه\s+تنباکو", r"برگ\s+تنباکو", r"برگ\s+تنباکو\s+سفید",
+        r"تنباکو\s+سبک",
+    ],
+    # Leather
+    "leather": [
+        r"چرم", r"چرم\s+روسی", r"چوب\s+چرم",
+    ],
+    # Mineral/Metallic
+    "mineral": [
+        r"فلز", r"آهن", r"آلومینیوم", r"سنگ", r"سنگ\s+چخماق", r"سنگریزه",
+        r"صخره", r"مرجانی", r"خاک\s+رس", r"گچ",
+    ],
+    # Animalic
+    "animalic": [
+        r"کاستوریوم", r"عنبر", r"یادداشت\s+های\s+حیوانی",
     ],
 }
 
@@ -150,26 +210,39 @@ def categorize_note(note: str) -> str:
     """
     Categorize a note based on patterns.
     Returns category name or "other" if no match.
+    Order matters - check more specific categories first.
     """
     note_lower = note.lower()
     
-    # Check each category's patterns
+    # Check each category's patterns (order matters - more specific first)
     for category, patterns in CATEGORY_PATTERNS.items():
         for pattern in patterns:
             if re.search(pattern, note, re.IGNORECASE):
                 # Additional checks for ambiguous cases
-                if category == "floral" and "برگ" in note:
-                    # Skip leaves even if they have "گل" nearby
+                if category == "floral" and "برگ" in note and "شکوفه" not in note:
+                    # Skip leaves even if they have "گل" nearby, unless it's "شکوفه"
                     continue
                 if category == "green" and any(fruit in note for fruit in FRUITS):
                     # Fruits are fruity, not green
                     continue
+                if category == "fruity" and "شکوفه" in note:
+                    # Flower blossoms are floral, not fruity
+                    continue
+                if category == "sweet" and any(word in note for word in ["قهوه", "کاکائو", "شکلات", "آجیل", "بادام"]):
+                    # These are gourmand, not just sweet
+                    continue
                 return category
     
     # Special handling for specific notes
-    if any(fruit in note for fruit in FRUITS):
+    if any(fruit in note for fruit in FRUITS) and "شکوفه" not in note:
         return "fruity"
     if any(flower in note for flower in FLOWERS):
+        return "floral"
+    
+    # Check for common suffixes/prefixes
+    if note.endswith("برگ") or note.startswith("برگ"):
+        return "green"
+    if "شکوفه" in note or note.startswith("گل "):
         return "floral"
     
     return "other"
@@ -188,12 +261,32 @@ def load_existing_notes(notes_master_path: Path) -> Set[str]:
     """Load existing notes from notes_master.py"""
     existing = set()
     try:
+        # Try to import if file is valid Python
+        import sys
+        import importlib.util
+        sys.path.insert(0, str(notes_master_path.parent.parent.parent))
+        spec = importlib.util.spec_from_file_location("notes_master", notes_master_path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(module)
+                if hasattr(module, 'PREDEFINED_NOTES'):
+                    existing.update(module.PREDEFINED_NOTES)
+                    return existing
+            except:
+                pass
+        
+        # Fallback: parse the file
         with open(notes_master_path, "r", encoding="utf-8") as f:
             content = f.read()
-            # Extract notes from PREDEFINED_NOTES list
-            # Simple regex to find all quoted strings in the list
-            matches = re.findall(r'"([^"]+)"', content)
-            existing.update(matches)
+            # Extract notes from PREDEFINED_NOTES list (only from first occurrence)
+            # Find the PREDEFINED_NOTES = [ section
+            match = re.search(r'PREDEFINED_NOTES\s*=\s*\[(.*?)\]', content, re.DOTALL)
+            if match:
+                notes_section = match.group(1)
+                # Extract quoted strings
+                matches = re.findall(r'"([^"]+)"', notes_section)
+                existing.update(matches)
     except Exception as e:
         print(f"Warning: Could not load existing notes: {e}")
     return existing
@@ -226,6 +319,12 @@ def process_notes_file(
         "earthy": [],
         "powdery": [],
         "balsamic": [],
+        "gourmand": [],
+        "resinous": [],
+        "tobacco": [],
+        "leather": [],
+        "mineral": [],
+        "animalic": [],
         "other": [],
     }
     
@@ -291,24 +390,30 @@ def generate_notes_master_content(
     
     # Add notes organized by category
     category_order = [
-        "citrus", "floral", "woody", "spicy", "sweet", "oriental",
-        "musky", "green", "aquatic", "fruity", "earthy", "powdery",
-        "balsamic", "other"
+        "citrus", "floral", "fruity", "woody", "spicy", "sweet", "gourmand",
+        "oriental", "resinous", "musky", "animalic", "green", "aquatic",
+        "earthy", "powdery", "tobacco", "leather", "mineral", "balsamic", "other"
     ]
     
     category_names = {
         "citrus": "Citrus / Fresh",
         "floral": "Floral",
+        "fruity": "Fruity",
         "woody": "Woody",
         "spicy": "Spicy",
-        "sweet": "Sweet / Gourmand",
+        "sweet": "Sweet",
+        "gourmand": "Gourmand / Food",
         "oriental": "Oriental / Amber",
-        "musky": "Musky / Animalic",
+        "resinous": "Resinous / Balsamic",
+        "musky": "Musky",
+        "animalic": "Animalic",
         "green": "Green / Herbal",
         "aquatic": "Aquatic / Marine",
-        "fruity": "Fruity",
         "earthy": "Earthy / Mossy",
         "powdery": "Powdery",
+        "tobacco": "Tobacco",
+        "leather": "Leather",
+        "mineral": "Mineral / Metallic",
         "balsamic": "Balsamic",
         "other": "Other",
     }
