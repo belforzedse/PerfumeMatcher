@@ -246,13 +246,13 @@ export async function getOccasions(): Promise<string[]> {
 export async function getIntensities(): Promise<string[]> {
   try {
     const perfumes = await getPerfumes();
-    const characters = new Set<string>();
+    const intensities = new Set<string>();
     perfumes.forEach((p) => {
-      if (p.character && p.character.trim().length > 0) {
-        characters.add(p.character.trim());
+      if (p.intensity && p.intensity.trim().length > 0) {
+        intensities.add(p.intensity.trim());
       }
     });
-    return Array.from(characters).sort((a, b) => a.localeCompare(b, "fa"));
+    return Array.from(intensities).sort((a, b) => a.localeCompare(b, "fa"));
   } catch (error) {
     console.error("Error loading intensities:", error);
     return [];

@@ -69,3 +69,5 @@ The backend has these fields that the frontend admin panel does NOT support:
    - Display `created_at` and `updated_at` timestamps (read-only)
    - Show `all_notes` computed field (read-only)
 
+
+

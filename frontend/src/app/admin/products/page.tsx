@@ -411,6 +411,7 @@ export default function AdminProductsPage() {
     reset({
       nameFa: perfume.name_fa,
       nameEn: perfume.name_en,
+      intensity: perfume.intensity ?? "",
       brandId: perfume.brand?.id.toString() || "",
       collectionId: perfume.collection?.id.toString() || "",
       gender: perfume.gender ? perfume.gender.split(", ").filter(v => v.length > 0) : [],

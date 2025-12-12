@@ -378,6 +378,7 @@ export const createPerfume = async (
   const backendPayload: Record<string, unknown> = {
     name_fa: payload.name_fa,
     name_en: payload.name_en,
+    intensity: payload.intensity,
     gender: payload.gender,
     season: payload.season,
     family: payload.family,

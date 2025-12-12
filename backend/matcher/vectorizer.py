@@ -308,6 +308,30 @@ class PerfumeEngine:
         moments = qdata.get("moments", [])
         intensities = qdata.get("intensity", [])
 
+        # Build gender allowlist (styles + legacy gender). If empty => no filter.
+        allowed_genders: Set[str] = set()
+        filter_by_gender = False
+
+        styles = qdata.get("styles", []) or []
+        if styles and "any" not in styles:
+            filter_by_gender = True
+            if "feminine" in styles:
+                allowed_genders.update({"female", "unisex"})
+            if "masculine" in styles:
+                allowed_genders.update({"male", "unisex"})
+            if "unisex" in styles:
+                allowed_genders.add("unisex")
+
+        legacy_gender = qdata.get("gender")
+        if legacy_gender:
+            filter_by_gender = True
+            if legacy_gender == "male":
+                allowed_genders.update({"male", "unisex"})
+            elif legacy_gender == "female":
+                allowed_genders.update({"female", "unisex"})
+            elif legacy_gender == "unisex":
+                allowed_genders.add("unisex")
+
         # Precompute disliked note tokens
         disliked_tokens: Set[str] = set()
         for category in qdata.get("noteDislikes", []):
@@ -317,6 +341,12 @@ class PerfumeEngine:
         for idx, base_score in enumerate(sims):
             score = float(base_score)
             perfume = self.perfumes[idx]
+
+            if filter_by_gender:
+                perfume_gender = perfume.gender or "unisex"
+                if allowed_genders and perfume_gender not in allowed_genders:
+                    adjusted_scores.append(float("-inf"))
+                    continue
 
             if avoid_very_sweet and self.perfume_is_very_sweet[idx]:
                 score -= 0.2

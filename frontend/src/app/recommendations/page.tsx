@@ -140,7 +140,6 @@ function RecommendationsContent() {
   const [error, setError] = useState<string | null>(null);
   const [compact, setCompact] = useState<CompactMode>("normal");
   const [refreshToken, setRefreshToken] = useState(0);
-  const [showAll, setShowAll] = useState(false);
   const headingId = "recommendations-heading";
   const [selectedPerfume, setSelectedPerfume] = useState<RankedPerfume | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,7 +183,6 @@ function RecommendationsContent() {
     if (!answersParam) {
       setAnswers(null);
       setRecommendations([]);
-      setShowAll(false);
       setError(null);
       setLoading(false);
       return () => {
@@ -196,7 +194,6 @@ function RecommendationsContent() {
     if (!parsedAnswers) {
       setAnswers(null);
       setRecommendations([]);
-      setShowAll(false);
       setError("پاسخ‌ها معتبر نیستند. لطفاً پرسشنامه را مجدداً تکمیل کنید.");
       setLoading(false);
       return () => {
@@ -223,16 +220,14 @@ function RecommendationsContent() {
         console.log("[Recommendations Page] Getting AI rankings...");
         const ranked = await getAIRankings(parsedAnswers, allPerfumes);
         console.log(`[Recommendations Page] ✅ Got ${ranked.length} ranked perfumes`);
-        // Only keep the top 20 matches for better performance
-        const topMatches = ranked.slice(0, 20);
-        console.log(`[Recommendations Page] Setting ${topMatches.length} recommendations`);
+        // Only keep the top 6 matches for kiosk display
+        const topMatches = ranked.slice(0, 6);
+        console.log(`[Recommendations Page] Setting ${topMatches.length} recommendations (top 6)`);
         setRecommendations(topMatches);
-        setShowAll(false);
       } catch (err) {
         if (cancelled) return;
         console.error("Error generating recommendations:", err);
         setRecommendations([]);
-        setShowAll(false);
         setError("در تهیه پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید.");
       } finally {
         if (!cancelled) {
@@ -248,23 +243,7 @@ function RecommendationsContent() {
     };
   }, [answersParam, refreshToken]);
 
-  const limit = useMemo(() => {
-    switch (compact) {
-      case "ultra":
-        return 3;
-      case "tight":
-        return 4;
-      default:
-        return 6;
-    }
-  }, [compact]);
-
-  const visibleRecommendations = useMemo(() => {
-    if (showAll) return recommendations;
-    return recommendations.slice(0, limit);
-  }, [recommendations, showAll, limit]);
-
-  const hiddenCount = Math.max(recommendations.length - limit, 0);
+  const visibleRecommendations = useMemo(() => recommendations.slice(0, 6), [recommendations]);
 
   if (loading) {
     return (
@@ -465,21 +444,18 @@ function RecommendationsContent() {
               </span>
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-            <div
-              className="grid w-full gap-2.5 sm:gap-3 md:gap-3.5"
-              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))" }}
-            >
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="grid h-full w-full grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 md:gap-3.5 lg:grid-cols-3 lg:grid-rows-2">
               {visibleRecommendations.length > 0 ? (
-                  visibleRecommendations.map((perfume, index) => (
-                    <div
-                      key={perfume.id}
-                      className="h-full min-h-[200px] animate-fade-in-up"
-                      style={{ animationDelay: `${80 * index}ms`, animationDuration: "560ms" }}
-                    >
-                      <MatchCard perfume={perfume} order={index + 1} compact={compact} onClick={handlePerfumeClick} />
-                    </div>
-                  ))
+                visibleRecommendations.map((perfume, index) => (
+                  <div
+                    key={perfume.id}
+                    className="h-full min-h-[200px] animate-fade-in-up"
+                    style={{ animationDelay: `${80 * index}ms`, animationDuration: "560ms" }}
+                  >
+                    <MatchCard perfume={perfume} order={index + 1} compact={compact} onClick={handlePerfumeClick} />
+                  </div>
+                ))
               ) : (
                 <div className="glass-surface col-span-full flex h-full flex-col items-center justify-center gap-3 rounded-2xl p-6 text-xs text-muted sm:text-sm">
                   <p className="m-0">مورد مناسبی پیدا نشد. لطفاً پاسخ‌ها را تغییر دهید.</p>
@@ -489,28 +465,6 @@ function RecommendationsContent() {
                 </div>
               )}
             </div>
-            {hiddenCount > 0 && !showAll && (
-              <div className="mt-3 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowAll(true)}
-                  className="btn-ghost tap-highlight touch-target touch-feedback text-xs sm:text-sm"
-                >
-                  نمایش {formatNumber(hiddenCount)} مورد دیگر
-                </button>
-              </div>
-            )}
-            {hiddenCount > 0 && showAll && (
-              <div className="mt-3 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowAll(false)}
-                  className="btn-ghost tap-highlight touch-target touch-feedback text-xs sm:text-sm"
-                >
-                  نمایش کمتر
-                </button>
-              </div>
-            )}
           </div>
         </section>
       </div>
