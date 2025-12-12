@@ -1,36 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toPersianNumbers } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import KioskFrame from "@/components/KioskFrame";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  QUESTION_FLOW,
-  QuestionnaireAnswers,
-  QuestionDefinition,
-  TOTAL_QUESTIONS,
-  createInitialAnswers,
   serializeAnswers,
+  type QuestionnaireAnswers,
 } from "@/lib/questionnaire";
 import {
   signatureTransitions,
   useFadeScaleVariants,
-  useStaggeredListVariants,
 } from "@/lib/motion";
-
-const BTN_BASE =
-  "question-option text-base sm:text-lg font-semibold transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)] tap-highlight touch-target touch-feedback";
-
-const ICON_BUTTON_BASE =
-  "inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[var(--color-foreground)] transition-colors duration-200 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)] disabled:pointer-events-none disabled:opacity-40 tap-highlight touch-target touch-feedback";
-
-const NAV_BUTTON_BASE =
-  "hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-foreground)] transition-colors duration-200 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)] disabled:pointer-events-none disabled:opacity-50 tap-highlight touch-target touch-feedback sm:inline-flex sm:px-5 sm:py-2.5 sm:text-base md:text-lg";
+import {
+  createInitialFlowState,
+  initializeFlow,
+  getCurrentStep,
+  canProceed,
+  updateConfidence,
+  getNextStep,
+  getProgress,
+  shouldShowQuickFire,
+  type FlowState,
+  type QuestionPath,
+} from "@/lib/questionnaire-flow";
+import {
+  mapResponsesToAnswers,
+  getSceneChoices,
+  getVibePairs,
+  getIntensityChoices,
+  getSafetyChoices,
+  type UserResponses,
+} from "@/lib/questionnaire-mapper";
+import PathSelector from "@/components/questionnaire/PathSelector";
+import SceneCard from "@/components/questionnaire/SceneCard";
+import PairwiseChoice from "@/components/questionnaire/PairwiseChoice";
+import IntensityControl from "@/components/questionnaire/IntensityControl";
+import SafetyStep from "@/components/questionnaire/SafetyStep";
+import QuickFireNotes from "@/components/questionnaire/QuickFireNotes";
+import ReviewScreen from "@/components/questionnaire/ReviewScreen";
 
 const formatNumber = (value: number) => toPersianNumbers(String(value));
-
-const AUTO_ADVANCE_CONFIRMATION_DURATION = 450;
 
 const SECTION_TRANSITION_DURATION = signatureTransitions.section.duration ?? 0.6;
 const DEFAULT_SIGNATURE_EASE =
@@ -39,9 +50,7 @@ const DEFAULT_SIGNATURE_EASE =
   signatureTransitions.page.ease ??
   signatureTransitions.hover.ease;
 const SECTION_TRANSITION_EASE = DEFAULT_SIGNATURE_EASE;
-const LIST_TRANSITION_DURATION = signatureTransitions.listItem.duration ?? 0.45;
-const LIST_TRANSITION_EASE =
-  signatureTransitions.listItem.ease ?? DEFAULT_SIGNATURE_EASE;
+
 const questionStackVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -82,178 +91,43 @@ const questionHeaderVariants = {
   },
 } as const;
 
-const questionSubheaderVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION * 0.9,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -12,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION * 0.7,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-} as const;
+const ICON_BUTTON_BASE =
+  "inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[var(--color-foreground)] transition-colors duration-200 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)] disabled:pointer-events-none disabled:opacity-40 tap-highlight touch-target touch-feedback";
 
-const questionTitleVariants = {
-  hidden: { opacity: 0, y: 18 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -14,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION * 0.75,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-} as const;
+const NAV_BUTTON_BASE =
+  "hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-foreground)] transition-colors duration-200 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)] disabled:pointer-events-none disabled:opacity-50 tap-highlight touch-target touch-feedback sm:inline-flex sm:px-5 sm:py-2.5 sm:text-base md:text-lg";
 
-const helperTextVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION * 0.8,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -10,
-    transition: {
-      duration: SECTION_TRANSITION_DURATION * 0.6,
-      ease: SECTION_TRANSITION_EASE,
-    },
-  },
-} as const;
-
-const toggleSelection = (
-  previous: QuestionnaireAnswers,
-  question: QuestionDefinition,
-  value: string
-): { next: QuestionnaireAnswers; limited: boolean } => {
-  const key = question.key;
-  const currentValues = previous[key];
-  const isSelected = currentValues.includes(value);
-
-  if (question.type === "single") {
-    return {
-      next: { ...previous, [key]: isSelected ? [] : [value] },
-      limited: false,
-    };
-  }
-
-  if (
-    !isSelected &&
-    typeof question.maxSelections === "number" &&
-    currentValues.length >= question.maxSelections
-  ) {
-    return { next: previous, limited: true };
-  }
-
-  const nextValues = isSelected
-    ? currentValues.filter((item) => item !== value)
-    : [...currentValues, value];
-
-  return {
-    next: { ...previous, [key]: nextValues },
-    limited: false,
-  };
-};
-
-const buildHelperText = (
-  question: QuestionDefinition,
-  selectedCount: number,
-  limitReached: boolean,
-  limitMessage: string | null
-) => {
-  if (limitMessage) return limitMessage;
-
-  if (question.type === "multiple" && question.maxSelections) {
-    const limit = formatNumber(question.maxSelections);
-    if (selectedCount === 0) {
-      return question.optional
-        ? `می‌توانید حداکثر ${limit} مورد را به صورت اختیاری انتخاب کنید.`
-        : `برای ادامه بین ۱ تا ${limit} گزینه انتخاب کنید.`;
-    }
-    const selected = formatNumber(selectedCount);
-    return limitReached
-      ? `حداکثر ${limit} مورد انتخاب شده است.`
-      : `انتخاب شده: ${selected} از ${limit}`;
-  }
-
-  if (selectedCount === 0) {
-    return question.optional
-      ? "این سوال اختیاری است."
-      : "برای ادامه لطفاً یک گزینه را انتخاب کنید.";
-  }
-
-  return "آماده ادامه هستید.";
-};
+const MICRO_REWARDS = [
+  "عالی!",
+  "خوب انتخاب کردید",
+  "درست است",
+  "عالی پیش می‌روید",
+  "خیلی خوب",
+];
 
 export default function Questionnaire() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<QuestionnaireAnswers>(() => createInitialAnswers());
-  const [limitMessage, setLimitMessage] = useState<string | null>(null);
-  const [showAutoAdvanceConfirmation, setShowAutoAdvanceConfirmation] =
-    useState(false);
-  const autoAdvanceAnimationFrameRef = useRef<number | null>(null);
-  const autoAdvanceStartTimestampRef = useRef<number | null>(null);
+  const [flowState, setFlowState] = useState<FlowState>(createInitialFlowState());
+  const [answers, setAnswers] = useState<QuestionnaireAnswers | null>(null);
+  const [microReward, setMicroReward] = useState<string | null>(null);
   const questionSectionRef = useRef<HTMLElement | null>(null);
   const headingId = "questionnaire-heading";
   const helperId = "questionnaire-helper";
 
-  const questions = QUESTION_FLOW;
-  const currentQuestion = questions[currentStep];
-  const totalQuestions = questions.length;
-  const optionsContainerVariants = useStaggeredListVariants({
-    delayChildren: SECTION_TRANSITION_DURATION * 0.35,
-    staggerChildren: LIST_TRANSITION_DURATION * 0.3,
-  });
-  const optionVariants = useFadeScaleVariants({
-    y: 26,
-    scale: 0.94,
-    blur: 14,
-    duration: LIST_TRANSITION_DURATION,
-    ease: LIST_TRANSITION_EASE,
-    exitY: -18,
-  });
+  const currentStep = getCurrentStep(flowState);
+  const progress = getProgress(flowState);
+
+  const sceneChoices = useMemo(() => getSceneChoices(), []);
+  const vibePairs = useMemo(() => getVibePairs(), []);
+  const intensityChoices = useMemo(() => getIntensityChoices(), []);
+  const safetyChoices = useMemo(() => getSafetyChoices(), []);
 
   useEffect(() => {
-    setLimitMessage(null);
-    if (autoAdvanceAnimationFrameRef.current !== null) {
-      window.cancelAnimationFrame(autoAdvanceAnimationFrameRef.current);
-      autoAdvanceAnimationFrameRef.current = null;
+    if (answers) {
+      const updated = updateConfidence(flowState, answers);
+      setFlowState(updated);
     }
-    autoAdvanceStartTimestampRef.current = null;
-    setShowAutoAdvanceConfirmation(false);
-  }, [currentQuestion]);
-
-  useEffect(() => {
-    return () => {
-      if (autoAdvanceAnimationFrameRef.current !== null) {
-        window.cancelAnimationFrame(autoAdvanceAnimationFrameRef.current);
-        autoAdvanceAnimationFrameRef.current = null;
-      }
-      autoAdvanceStartTimestampRef.current = null;
-    };
-  }, []);
+  }, [answers]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -270,123 +144,227 @@ export default function Questionnaire() {
     if (top <= 16) return;
 
     section.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [currentStep]);
+  }, [flowState.currentStep]);
 
-  const reset = useCallback((nextAnswers: QuestionnaireAnswers) => {
-    setAnswers(nextAnswers);
+  const showMicroReward = useCallback(() => {
+    const reward = MICRO_REWARDS[Math.floor(Math.random() * MICRO_REWARDS.length)];
+    setMicroReward(reward);
+    setTimeout(() => setMicroReward(null), 2000);
+  }, []);
+
+  const handlePathSelect = useCallback((path: QuestionPath) => {
+    const newState = initializeFlow(path);
+    setFlowState(newState);
+    showMicroReward();
+  }, [showMicroReward]);
+
+  const handleSceneToggle = useCallback(
+    (sceneId: string) => {
+      setFlowState((prev) => {
+        const scenes = prev.responses.scenes.includes(sceneId)
+          ? prev.responses.scenes.filter((id) => id !== sceneId)
+          : [...prev.responses.scenes, sceneId].slice(0, 3);
+
+        const newResponses = { ...prev.responses, scenes };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+        showMicroReward();
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    [showMicroReward]
+  );
+
+  const handleSafetyToggle = useCallback(
+    (safetyId: string) => {
+      setFlowState((prev) => {
+        const safetyChecks = prev.responses.safetyChecks.includes(safetyId)
+          ? prev.responses.safetyChecks.filter((id) => id !== safetyId)
+          : [...prev.responses.safetyChecks, safetyId];
+
+        const newResponses = { ...prev.responses, safetyChecks };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    []
+  );
+
+  const handleVibeSelect = useCallback(
+    (choice: "left" | "right" | "none") => {
+      setFlowState((prev) => {
+        const pairwiseIndex = prev.steps
+          .slice(0, prev.currentStep + 1)
+          .filter((s) => s.type === "pairwise").length - 1;
+
+        const vibePair = vibePairs[pairwiseIndex % vibePairs.length];
+        if (!vibePair) return prev;
+
+        const newVibePairs = [...prev.responses.vibePairs];
+        if (choice === "none") {
+          newVibePairs[pairwiseIndex] = `${vibePair.id}:none`;
+        } else {
+          newVibePairs[pairwiseIndex] = `${vibePair.id}:${choice}`;
+        }
+
+        const newResponses = { ...prev.responses, vibePairs: newVibePairs };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+        showMicroReward();
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    [vibePairs, showMicroReward]
+  );
+
+  const handleIntensitySelect = useCallback(
+    (intensityId: string) => {
+      setFlowState((prev) => {
+        const newResponses = { ...prev.responses, intensity: intensityId };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+        showMicroReward();
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    [showMicroReward]
+  );
+
+  const handleQuickFireLike = useCallback(
+    (noteId: string) => {
+      setFlowState((prev) => {
+        const likes = prev.responses.quickFireLikes.includes(noteId)
+          ? prev.responses.quickFireLikes.filter((id) => id !== noteId)
+          : [...prev.responses.quickFireLikes, noteId].slice(0, 3);
+
+        const newResponses = { ...prev.responses, quickFireLikes: likes };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    []
+  );
+
+  const handleQuickFireDislike = useCallback(
+    (noteId: string) => {
+      setFlowState((prev) => {
+        const dislikes = prev.responses.quickFireDislikes.includes(noteId)
+          ? prev.responses.quickFireDislikes.filter((id) => id !== noteId)
+          : [...prev.responses.quickFireDislikes, noteId].slice(0, 3);
+
+        const newResponses = { ...prev.responses, quickFireDislikes: dislikes };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+
+        return { ...prev, responses: newResponses };
+      });
+    },
+    []
+  );
+
+  const handleNext = useCallback(() => {
+    if (!answers) return;
+
+    const nextStepIndex = getNextStep(flowState);
+    if (nextStepIndex === null) {
+      const qs = new URLSearchParams({ answers: serializeAnswers(answers) });
+      router.push(`/recommendations?${qs.toString()}`);
+    } else {
+      setFlowState((prev) => ({ ...prev, currentStep: nextStepIndex }));
+    }
+  }, [flowState, answers, router]);
+
+  const handleBack = useCallback(() => {
+    setFlowState((prev) => {
+      if (prev.currentStep > 0) {
+        return { ...prev, currentStep: prev.currentStep - 1 };
+      }
+      return prev;
+    });
   }, []);
 
   const handleReset = useCallback(() => {
-    if (autoAdvanceAnimationFrameRef.current !== null) {
-      window.cancelAnimationFrame(autoAdvanceAnimationFrameRef.current);
-      autoAdvanceAnimationFrameRef.current = null;
-    }
-    autoAdvanceStartTimestampRef.current = null;
-    setShowAutoAdvanceConfirmation(false);
-    setLimitMessage(null);
-    reset(createInitialAnswers());
-    setCurrentStep(0);
-  }, [reset]);
+    setFlowState(createInitialFlowState());
+    setAnswers(null);
+    setMicroReward(null);
+  }, []);
 
-  const next = useCallback(
-    (overrideAnswers?: QuestionnaireAnswers) => {
-      const answersToUse = overrideAnswers ?? answers;
-      if (currentStep < totalQuestions - 1) {
-        setCurrentStep((s) => Math.min(s + 1, totalQuestions - 1));
-      } else {
-        const qs = new URLSearchParams({ answers: serializeAnswers(answersToUse) });
-        router.push(`/recommendations?${qs.toString()}`);
-      }
-    },
-    [answers, currentStep, router, totalQuestions]
-  );
-
-  const toggle = useCallback(
-    (value: string) => {
-      if (autoAdvanceAnimationFrameRef.current !== null) {
-        window.cancelAnimationFrame(autoAdvanceAnimationFrameRef.current);
-        autoAdvanceAnimationFrameRef.current = null;
-      }
-      autoAdvanceStartTimestampRef.current = null;
-      setShowAutoAdvanceConfirmation(false);
-
-      let shouldAutoAdvance = false;
-      let updatedAnswersSnapshot: QuestionnaireAnswers | null = null;
-
-      setAnswers((prev) => {
-        const wasSelected = prev[currentQuestion.key].includes(value);
-        const { next: updatedAnswers, limited } = toggleSelection(prev, currentQuestion, value);
-        if (limited) {
-          if (currentQuestion.maxSelections) {
-            const limit = formatNumber(currentQuestion.maxSelections);
-            setLimitMessage(`حداکثر ${limit} انتخاب مجاز است.`);
-          }
+  const handleEdit = useCallback((section: string) => {
+    setFlowState((prev) => {
+      let targetStep = 0;
+      switch (section) {
+        case "scenes":
+          targetStep = prev.steps.findIndex((s) => s.type === "scene-cards");
+          break;
+        case "vibes":
+          targetStep = prev.steps.findIndex((s) => s.type === "pairwise");
+          break;
+        case "intensity":
+          targetStep = prev.steps.findIndex((s) => s.type === "intensity");
+          break;
+        case "notes":
+          targetStep = prev.steps.findIndex((s) => s.type === "quick-fire-notes");
+          if (targetStep === -1) targetStep = prev.steps.length - 2;
+          break;
+        default:
           return prev;
-        }
-
-        setLimitMessage(null);
-        updatedAnswersSnapshot = updatedAnswers;
-
-        const selectionCount = updatedAnswers[currentQuestion.key].length;
-        const maxSelections =
-          typeof currentQuestion.maxSelections === "number"
-            ? currentQuestion.maxSelections
-            : null;
-        const reachedMax = maxSelections !== null && selectionCount === maxSelections;
-
-        shouldAutoAdvance =
-          !wasSelected &&
-          ((currentQuestion.type === "single" && !currentQuestion.optional && selectionCount > 0) ||
-            (reachedMax && !currentQuestion.optional));
-
-        return updatedAnswers;
-      });
-
-      if (shouldAutoAdvance && updatedAnswersSnapshot) {
-        const answersForAutoAdvance = updatedAnswersSnapshot;
-        setShowAutoAdvanceConfirmation(true);
-
-        const animate = (timestamp: number) => {
-          if (autoAdvanceStartTimestampRef.current === null) {
-            autoAdvanceStartTimestampRef.current = timestamp;
-          }
-
-          const elapsed = timestamp - autoAdvanceStartTimestampRef.current;
-
-          if (elapsed >= AUTO_ADVANCE_CONFIRMATION_DURATION) {
-            autoAdvanceAnimationFrameRef.current = null;
-            autoAdvanceStartTimestampRef.current = null;
-            setShowAutoAdvanceConfirmation(false);
-            next(answersForAutoAdvance);
-            return;
-          }
-
-          autoAdvanceAnimationFrameRef.current = window.requestAnimationFrame(animate);
-        };
-
-        autoAdvanceAnimationFrameRef.current = window.requestAnimationFrame(animate);
       }
-    },
-    [currentQuestion, next]
+      if (targetStep >= 0) {
+        return { ...prev, currentStep: targetStep };
+      }
+      return prev;
+    });
+  }, []);
+
+  const currentVibePairIndex = useMemo(
+    () =>
+      flowState.steps
+        .slice(0, flowState.currentStep + 1)
+        .filter((s) => s.type === "pairwise").length - 1,
+    [flowState.steps, flowState.currentStep]
+  );
+  const currentVibePair = useMemo(
+    () => vibePairs[currentVibePairIndex % vibePairs.length],
+    [currentVibePairIndex, vibePairs]
+  );
+  const currentVibeSelection = useMemo(
+    () => flowState.responses.vibePairs[currentVibePairIndex],
+    [flowState.responses.vibePairs, currentVibePairIndex]
+  );
+  const selectedVibeChoice = useMemo(
+    () =>
+      currentVibeSelection?.split(":")[1] === "left"
+        ? "left"
+        : currentVibeSelection?.split(":")[1] === "right"
+          ? "right"
+          : currentVibeSelection?.split(":")[1] === "none"
+            ? "none"
+            : null,
+    [currentVibeSelection]
   );
 
-  const back = () => currentStep > 0 && setCurrentStep((s) => s - 1);
+  const canProceedNow = canProceed(flowState);
 
-  const selectedCount = answers[currentQuestion.key].length;
-  const limitReached = Boolean(
-    currentQuestion.maxSelections && selectedCount >= currentQuestion.maxSelections
-  );
-
-  const canProceed = currentQuestion.optional || selectedCount > 0;
-
-  const helperText = buildHelperText(
-    currentQuestion,
-    selectedCount,
-    limitReached,
-    limitMessage
-  );
-
-  const progress = Math.round(((currentStep + 1) / TOTAL_QUESTIONS) * 100);
+  if (!currentStep) {
+    return (
+      <KioskFrame>
+        <main className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8">
+          <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full max-w-5xl min-h-0 flex-1 flex-col">
+            <div className="flex flex-1 items-center justify-center">
+              <p className="text-muted">در حال بارگذاری...</p>
+            </div>
+          </div>
+        </main>
+      </KioskFrame>
+    );
+  }
 
   return (
     <KioskFrame>
@@ -394,10 +372,10 @@ export default function Questionnaire() {
         aria-labelledby={headingId}
         className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
-        <div className="glass-card page-panel flex h-full w-full min-h-0 flex-1 flex-col">
+        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full max-w-5xl min-h-0 flex-1 flex-col">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentQuestion.key}
+              key={currentStep.id}
               className="flex flex-1 min-h-0 flex-col"
               variants={questionStackVariants}
               initial="hidden"
@@ -408,56 +386,52 @@ export default function Questionnaire() {
                 className="space-y-2 text-right"
                 variants={questionHeaderVariants}
               >
-                <motion.p
-                  className="m-0 text-[11px] text-muted sm:text-xs"
-                  aria-live="polite"
-                  variants={questionSubheaderVariants}
-                >
-                  سوال {formatNumber(currentStep + 1)} از {formatNumber(TOTAL_QUESTIONS)}
-                </motion.p>
+                {flowState.path && (
+                  <motion.p
+                    className="m-0 text-[11px] text-muted sm:text-xs"
+                    aria-live="polite"
+                    variants={questionHeaderVariants}
+                  >
+                    مرحله {formatNumber(flowState.currentStep)} از {formatNumber(flowState.steps.length)}
+                  </motion.p>
+                )}
                 <motion.h1
                   id={headingId}
                   className="m-0 text-xl font-semibold leading-tight text-[var(--color-foreground)] xs:text-2xl md:text-[1.85rem]"
-                  variants={questionTitleVariants}
+                  variants={questionHeaderVariants}
                 >
-                  {currentQuestion.title}
+                  {currentStep.title}
                 </motion.h1>
-                {currentQuestion.description && (
+                {currentStep.description && (
                   <motion.p
                     className="m-0 text-xs text-muted sm:text-sm"
-                    variants={questionSubheaderVariants}
+                    variants={questionHeaderVariants}
                   >
-                    {currentQuestion.description}
+                    {currentStep.description}
                   </motion.p>
                 )}
               </motion.header>
 
               <motion.div
                 className="space-y-3 text-right"
-                variants={questionSubheaderVariants}
+                variants={questionHeaderVariants}
               >
-                <div className="h-2 w-full rounded-full bg-soft" role="presentation">
-                  <div
-                    className="h-2 rounded-full bg-[var(--color-accent)] transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                    aria-hidden
-                  />
-                </div>
-                <motion.p
-                  id={helperId}
-                  className="m-0 text-[11px] text-muted sm:text-xs"
-                  aria-live="polite"
-                  variants={helperTextVariants}
-                >
-                  {helperText}
-                </motion.p>
+                {flowState.path && (
+                  <div className="h-2 w-full rounded-full bg-soft" role="presentation">
+                    <div
+                      className="h-2 rounded-full bg-[var(--color-accent)] transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                      aria-hidden
+                    />
+                  </div>
+                )}
                 <div
                   role="status"
                   aria-live="polite"
                   className="relative flex min-h-[28px] justify-end text-[11px] font-medium text-[var(--color-accent)] sm:min-h-[30px] sm:text-xs"
                 >
                   <AnimatePresence>
-                    {showAutoAdvanceConfirmation && (
+                    {microReward && (
                       <motion.span
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -465,7 +439,7 @@ export default function Questionnaire() {
                         transition={{ duration: 0.18 }}
                         className="inline-flex rounded-full bg-[var(--color-accent)]/10 px-2 py-1"
                       >
-                        انتخاب ثبت شد
+                        {microReward}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -478,48 +452,61 @@ export default function Questionnaire() {
                 aria-describedby={helperId}
                 variants={questionHeaderVariants}
               >
-                <div className="mb-2 hidden text-xs font-medium text-muted lg:block">گزینه‌های خود را لمس کنید</div>
-                <div className="flex-1 min-h-0 pr-1">
-                  <motion.div
-                    className="grid w-full gap-2.5 sm:gap-3 md:gap-4"
-                    style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))" }}
-                    variants={optionsContainerVariants}
-                    initial="hidden"
-                    animate="show"
-                    exit="exit"
-                  >
-                    {currentQuestion.options.map((option) => {
-                  const values = answers[currentQuestion.key];
-                  const isSelected = values.includes(option.value);
-                  const disabled =
-                    !isSelected &&
-                    typeof currentQuestion.maxSelections === "number" &&
-                    values.length >= currentQuestion.maxSelections;
-                  return (
-                    <motion.button
-                      key={option.value}
-                      onClick={() => toggle(option.value)}
-                      disabled={disabled}
-                      aria-pressed={isSelected}
-                      variants={optionVariants}
-                      className={`${BTN_BASE} ${
-                        isSelected ? "question-option--selected" : "question-option--default"
-                      } ${disabled ? "question-option--disabled" : ""} min-h-[56px] text-sm sm:min-h-[60px] sm:text-base md:min-h-[68px] md:text-lg`}
-                    >
-                      <span className="flex-1 text-right">{option.label}</span>
-                      {currentQuestion.type === "multiple" && isSelected && (
-                        <span className="rounded-full bg-white/70 px-2 py-0.5 text-[0.7rem] text-muted">انتخاب شده</span>
-                      )}
-                    </motion.button>
-                  );
-                })}
-                    {currentQuestion.options.length === 0 && (
-                      <div className="glass-surface col-span-full flex h-full items-center justify-center rounded-2xl p-6 text-xs text-muted sm:text-sm">
-                        گزینه‌ای یافت نشد.
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
+                {currentStep.type === "path-selection" && (
+                  <PathSelector onSelect={handlePathSelect} />
+                )}
+
+                {currentStep.type === "scene-cards" && (
+                  <SceneCard
+                    scenes={sceneChoices}
+                    selected={flowState.responses.scenes}
+                    maxSelections={3}
+                    onToggle={handleSceneToggle}
+                  />
+                )}
+
+                {currentStep.type === "safety-step" && (
+                  <SafetyStep
+                    safetyChoices={safetyChoices}
+                    selected={flowState.responses.safetyChecks}
+                    onToggle={handleSafetyToggle}
+                  />
+                )}
+
+                {currentStep.type === "pairwise" && currentVibePair && (
+                  <PairwiseChoice
+                    pair={currentVibePair}
+                    selected={selectedVibeChoice}
+                    onSelect={handleVibeSelect}
+                    showNotSure={true}
+                  />
+                )}
+
+                {currentStep.type === "intensity" && (
+                  <IntensityControl
+                    intensities={intensityChoices}
+                    selected={flowState.responses.intensity || null}
+                    onSelect={handleIntensitySelect}
+                  />
+                )}
+
+                {currentStep.type === "quick-fire-notes" && shouldShowQuickFire(flowState) && (
+                  <QuickFireNotes
+                    selectedLikes={flowState.responses.quickFireLikes}
+                    selectedDislikes={flowState.responses.quickFireDislikes}
+                    maxSelections={3}
+                    onToggleLike={handleQuickFireLike}
+                    onToggleDislike={handleQuickFireDislike}
+                  />
+                )}
+
+                {currentStep.type === "review" && answers && (
+                  <ReviewScreen
+                    responses={flowState.responses}
+                    answers={answers}
+                    onEdit={handleEdit}
+                  />
+                )}
               </motion.section>
             </motion.div>
           </AnimatePresence>
@@ -528,9 +515,9 @@ export default function Questionnaire() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={back}
-                disabled={currentStep === 0}
-                aria-label="بازگشت به سوال قبلی"
+                onClick={handleBack}
+                disabled={flowState.currentStep === 0}
+                aria-label="بازگشت به مرحله قبلی"
                 className={`${ICON_BUTTON_BASE} sm:hidden`}
               >
                 <svg
@@ -551,11 +538,11 @@ export default function Questionnaire() {
               </button>
               <button
                 type="button"
-                onClick={back}
-                disabled={currentStep === 0}
+                onClick={handleBack}
+                disabled={flowState.currentStep === 0}
                 className={NAV_BUTTON_BASE}
               >
-                <span>سوال قبلی</span>
+                <span>مرحله قبلی</span>
                 <svg
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
@@ -636,12 +623,12 @@ export default function Questionnaire() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => next()}
-                disabled={!canProceed}
+                onClick={handleNext}
+                disabled={!canProceedNow}
                 aria-label={
-                  currentStep === totalQuestions - 1
+                  currentStep.type === "review"
                     ? "مشاهده پیشنهادها"
-                    : "سوال بعدی"
+                    : "مرحله بعدی"
                 }
                 className={`${ICON_BUTTON_BASE} sm:hidden`}
               >
@@ -663,8 +650,8 @@ export default function Questionnaire() {
               </button>
               <button
                 type="button"
-                onClick={() => next()}
-                disabled={!canProceed}
+                onClick={handleNext}
+                disabled={!canProceedNow}
                 className={NAV_BUTTON_BASE}
               >
                 <svg
@@ -683,7 +670,7 @@ export default function Questionnaire() {
                   />
                 </svg>
                 <span>
-                  {currentStep === totalQuestions - 1 ? "مشاهده پیشنهادها" : "سوال بعدی"}
+                  {currentStep.type === "review" ? "مشاهده پیشنهادها" : "مرحله بعدی"}
                 </span>
               </button>
             </div>
@@ -693,4 +680,3 @@ export default function Questionnaire() {
     </KioskFrame>
   );
 }
-

@@ -251,7 +251,7 @@ function RecommendationsContent() {
         aria-labelledby={headingId}
         className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
-        <div className="glass-card page-panel flex h-full max-h-[94vh] w-full max-w-6xl flex-1 flex-col gap-3.5 overflow-hidden rounded-[28px] p-5 sm:p-7 md:p-9">
+        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full max-h-[94vh] w-full max-w-5xl flex-1 flex-col gap-3.5 overflow-hidden rounded-[28px] p-5 sm:p-7 md:p-9">
           <div className="flex flex-col gap-2.5 text-right animate-fade-in">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
@@ -310,7 +310,7 @@ function RecommendationsContent() {
         aria-labelledby={headingId}
         className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
-        <div className="glass-card page-panel flex h-full max-h-[94vh] w-full max-w-3xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
+        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full max-h-[94vh] w-full max-w-5xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
           <header className="space-y-2 text-right">
             <h1 id={headingId} className="m-0 text-xl sm:text-2xl font-semibold text-[var(--color-foreground)]">مشکلی پیش آمد.</h1>
             <p className="m-0 text-xs text-muted sm:text-sm">{error}</p>
@@ -338,7 +338,7 @@ function RecommendationsContent() {
         aria-labelledby={headingId}
         className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
-        <div className="glass-card page-panel flex h-full max-h-[94vh] w-full max-w-3xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
+        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full max-h-[94vh] w-full max-w-5xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
           <header className="space-y-2 text-right">
             <h1 id={headingId} className="m-0 text-xl sm:text-2xl font-semibold text-[var(--color-foreground)]">پاسخی ثبت نشد.</h1>
             <p className="m-0 text-xs text-muted sm:text-sm">برای دریافت پیشنهادها، پرسشنامه را تکمیل کنید.</p>
@@ -361,7 +361,7 @@ function RecommendationsContent() {
       aria-labelledby={headingId}
       className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
     >
-      <div className="glass-card page-panel flex h-full max-h-[94vh] w-full max-w-5xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
+      <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full max-h-[94vh] w-full max-w-5xl flex-1 flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-6 md:p-8">
         <header className="flex flex-col gap-3 text-right sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h1 id={headingId} className="m-0 text-xl xs:text-2xl sm:text-3xl font-semibold text-[var(--color-foreground)]">
