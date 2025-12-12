@@ -177,22 +177,39 @@ class PerfumeSerializer(serializers.ModelSerializer):
         if not isinstance(notes, list):
             raise serializers.ValidationError("Notes must be a list")
         
+        if not notes:
+            return []
+        
         valid_notes, invalid_notes = validate_notes(notes)
         
+        # Log invalid notes but don't fail - just return valid ones
+        # This allows Persian notes that aren't in the predefined list
         if invalid_notes:
-            raise serializers.ValidationError(
-                f"Invalid notes (not in predefined list): {', '.join(invalid_notes)}"
-            )
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Some notes not in predefined list (will be skipped): {', '.join(invalid_notes)}")
         
         return valid_notes
     
     def validate_notes_top(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            return []
         return self.validate_notes_field(value) if value else []
     
     def validate_notes_middle(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            return []
         return self.validate_notes_field(value) if value else []
     
     def validate_notes_base(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            return []
         return self.validate_notes_field(value) if value else []
     
     def create(self, validated_data):

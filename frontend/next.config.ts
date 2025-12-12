@@ -19,11 +19,20 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: {
+    // Allow localhost and private IPs for development
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: "https",
         hostname: "kioskapi.gandom-perfume.ir",
         pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "kioskapi.gandom-perfume.ir",
+        pathname: "/media/**",
       },
       {
         protocol: "http",
@@ -33,8 +42,50 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "http",
+        hostname: "82.115.26.133",
+        port: "1337",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
         hostname: "192.168.1.19",
         port: "1337",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.1.19",
+        port: "1337",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.0.181",
+        port: "8000",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.0.181",
+        port: "8000",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.0.181",
+        port: "8000",
         pathname: "/uploads/**",
       },
       {

@@ -85,7 +85,7 @@ const fetchWithRetry = async (url: string, options: RequestInit & { retries?: nu
   throw lastError || new Error("Fetch failed");
 };
 
-interface BackendPerfumeData {
+export interface BackendPerfumeData {
   id: number | string;
   name_en?: string;
   name_fa?: string;
@@ -114,7 +114,7 @@ interface BackendPerfumeData {
   };
 }
 
-const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
+export const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
   // Backend API returns brand/collection as strings already, not IDs
   const brand = typeof perfumeData.brand === "string" ? perfumeData.brand : undefined;
   const collection = typeof perfumeData.collection === "string" ? perfumeData.collection : undefined;
@@ -129,16 +129,30 @@ const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
 
   let imageUrl: string | undefined;
   if (Array.isArray(perfumeData.images) && perfumeData.images.length > 0) {
-    imageUrl = perfumeData.images[0];
+    const url = perfumeData.images[0].trim();
+    // Convert relative paths to absolute URLs using backend base URL
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      imageUrl = url;
+    } else if (url.startsWith("/")) {
+      // Relative path - prepend backend base URL
+      imageUrl = `${BACKEND_BASE_URL}${url}`;
+    } else {
+      imageUrl = `${BACKEND_BASE_URL}/${url}`;
+    }
+    console.log(`[API] Converted image URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
   } else if (perfumeData.cover?.url) {
     const url = perfumeData.cover.url.trim();
     if (url.startsWith("http://") || url.startsWith("https://")) {
       imageUrl = url;
     } else if (url.startsWith("/")) {
-      imageUrl = url;
+      // Relative path - prepend backend base URL
+      imageUrl = `${BACKEND_BASE_URL}${url}`;
     } else {
-      imageUrl = `/${url}`;
+      imageUrl = `${BACKEND_BASE_URL}/${url}`;
     }
+    console.log(`[API] Converted cover URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
+  } else {
+    console.log(`[API] No image found for perfume ${perfumeData.id}, images:`, perfumeData.images, "cover:", perfumeData.cover);
   }
 
   return {

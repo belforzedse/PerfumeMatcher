@@ -6,6 +6,7 @@ from .views import (
     admin_perfumes,
     admin_perfume_detail,
     available_notes,
+    admin_upload,
 )
 
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
     path("perfumes/", perfumes, name="perfumes"),
     path("admin/perfumes/", admin_perfumes, name="admin_perfumes"),
     path("admin/perfumes/<int:pk>/", admin_perfume_detail, name="admin_perfume_detail"),
+    path("admin/upload/", admin_upload, name="admin_upload"),
     path("available-notes/", available_notes, name="available_notes"),
 ]

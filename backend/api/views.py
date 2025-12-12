@@ -48,6 +48,7 @@ def recommend(request):
     POST /api/recommend/
     Body: Questionnaire JSON
     Response: { profile_text, results: [...] }
+    Returns full perfume data with images, not just IDs.
     """
     serializer = QuestionnaireSerializer(data=request.data)
     if not serializer.is_valid():
@@ -55,6 +56,31 @@ def recommend(request):
 
     engine = get_engine()
     result = engine.recommend(serializer.validated_data)
+    
+    # Limit to top 20 results
+    top_results = result.get("results", [])[:20]
+    
+    # Get full perfume data for the results
+    candidate_ids = [r.get("id") for r in top_results]
+    perfumes = Perfume.objects.filter(id__in=candidate_ids)
+    perfume_map = {p.id: p for p in perfumes}
+    
+    # Replace results with full perfume data
+    full_results = []
+    for r in top_results:
+        perfume = perfume_map.get(r.get("id"))
+        if perfume:
+            serializer = PerfumeSerializer(perfume)
+            full_results.append({
+                "id": perfume.id,
+                "score": r.get("score", 0),
+                **serializer.data
+            })
+        else:
+            # Fallback to original if perfume not found
+            full_results.append(r)
+    
+    result["results"] = full_results
     return Response(result)
 
 
@@ -389,8 +415,17 @@ def admin_perfume_detail(request: HttpRequest, pk: int):
             perfume, data=request.data, partial=request.method == "PATCH"
         )
         if serializer.is_valid():
+            # Log what we're saving, especially images
+            if "images" in request.data:
+                logger.info(f"Updating perfume {pk} with images: {request.data.get('images')}")
             serializer.save()
+            # Log what was actually saved
+            saved_perfume = Perfume.objects.get(pk=pk)
+            logger.info(f"Perfume {pk} images after save: {saved_perfume.images}")
             return Response(serializer.data)
+        # Log validation errors for debugging
+        logger.error(f"Perfume update validation failed for ID {pk}: {serializer.errors}")
+        logger.error(f"Request data: {request.data}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     perfume.delete()
@@ -408,3 +443,93 @@ def available_notes(request: HttpRequest):
     if request.GET.get("category") == "true":
         return Response(get_notes_by_category())
     return Response({"notes": get_all_notes()})
+
+
+@api_view(["POST"])
+def admin_upload(request: HttpRequest):
+    """
+    POST /api/admin/upload/
+    Upload an image file. Returns the URL to access the uploaded file.
+    Requires admin authentication.
+    """
+    if not _is_admin(request):
+        return _unauthorized()
+    
+    if "file" not in request.FILES:
+        return Response(
+            {"error": "فایل ارسال نشده است."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    file = request.FILES["file"]
+    
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        return Response(
+            {"error": "فقط فایل‌های تصویری مجاز است."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Validate file size (10MB max)
+    max_size = 10 * 1024 * 1024  # 10MB
+    if file.size > max_size:
+        return Response(
+            {"error": "حجم فایل بیش از حد مجاز است (حداکثر 10 مگابایت)."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Save file to media directory
+    import os
+    import uuid
+    from pathlib import Path
+    from django.conf import settings
+    
+    try:
+        # Ensure MEDIA_ROOT exists
+        if not hasattr(settings, 'MEDIA_ROOT') or not settings.MEDIA_ROOT:
+            logger.error("MEDIA_ROOT not configured in settings")
+            return Response(
+                {"error": "تنظیمات سرور ناقص است."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+        logger.info(f"Upload directory: {upload_dir}")
+        
+        # Generate unique filename
+        file_ext = Path(file.name).suffix or ".webp"
+        unique_name = f"{uuid.uuid4()}{file_ext}"
+        file_path = os.path.join(upload_dir, unique_name)
+        
+        # Save file directly
+        logger.info(f"Saving file to: {file_path}")
+        with open(file_path, "wb+") as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+        
+        # Verify file was saved
+        if not os.path.exists(file_path):
+            logger.error(f"File was not saved: {file_path}")
+            return Response(
+                {"error": "ذخیره فایل با خطا مواجه شد."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        file_size = os.path.getsize(file_path)
+        logger.info(f"File saved successfully: {file_path} ({file_size} bytes)")
+        
+        # Return URL (relative to MEDIA_URL)
+        file_url = f"{settings.MEDIA_URL}uploads/{unique_name}"
+        logger.info(f"File uploaded successfully: {file_url} -> {file_path}")
+        return Response(
+            {"id": 0, "url": file_url},
+            status=status.HTTP_201_CREATED
+        )
+    except Exception as e:
+        logger.error(f"Error uploading file: {str(e)}", exc_info=True)
+        return Response(
+            {"error": f"خطا در آپلود فایل: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

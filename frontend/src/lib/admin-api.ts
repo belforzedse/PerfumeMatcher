@@ -84,22 +84,41 @@ const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://loc
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "admin-key"; // Should be set in .env
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Don't set Content-Type if it's FormData (browser will set it with boundary)
+  const isFormData = init?.body instanceof FormData;
+  const headers: Record<string, string> = {
+    "X-Admin-Key": ADMIN_KEY,
+    ...(init?.headers as Record<string, string> || {}),
+  };
+  
+  // Only set Content-Type for non-FormData requests
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(`${BACKEND_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Admin-Key": ADMIN_KEY,
-      ...(init?.headers || {}),
-    },
+    headers,
     credentials: "include", // Include cookies for admin key
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = (errorData as { detail?: string; error?: string }).detail || 
-                    (errorData as { error?: string }).error || 
-                    response.statusText;
-    throw new Error(message);
+    let errorMessage = response.statusText;
+    try {
+      const errorData = await response.json();
+      errorMessage = (errorData as { detail?: string; error?: string }).detail || 
+                     (errorData as { error?: string }).error || 
+                     errorMessage;
+    } catch {
+      // If JSON parsing fails, try to get text
+      try {
+        const text = await response.text();
+        if (text) errorMessage = text;
+      } catch {
+        // Keep default errorMessage
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json() as Promise<T>;
@@ -253,8 +272,29 @@ const mapPerfume = (
     },
     brand: brandObj,
     collection: collectionObj,
-    image: perfume.images && perfume.images.length > 0 ? perfume.images[0] : undefined, // backward compatibility
-    images: perfume.images || [],
+    // Convert relative image URLs to absolute URLs
+    image: perfume.images && perfume.images.length > 0 
+      ? (() => {
+          const url = perfume.images[0].trim();
+          if (url.startsWith("http://") || url.startsWith("https://")) {
+            return url;
+          } else if (url.startsWith("/")) {
+            return `${BACKEND_BASE_URL}${url}`;
+          } else {
+            return `${BACKEND_BASE_URL}/${url}`;
+          }
+        })()
+      : undefined, // backward compatibility
+    images: (perfume.images || []).map(url => {
+      const trimmed = url.trim();
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed;
+      } else if (trimmed.startsWith("/")) {
+        return `${BACKEND_BASE_URL}${trimmed}`;
+      } else {
+        return `${BACKEND_BASE_URL}/${trimmed}`;
+      }
+    }),
     tags: perfume.tags || [],
     // Read-only fields
     occasions: perfume.occasions || [],
@@ -414,34 +454,62 @@ export const updatePerfume = async (
   const brandName = payload.brand ? brands.find((b) => b.id === payload.brand)?.name : undefined;
   const collectionName = payload.collection ? collections.find((c) => c.id === payload.collection)?.name : undefined;
   
-  const backendPayload: Record<string, unknown> = {
-    name_fa: payload.name_fa,
-    name_en: payload.name_en,
-    description: payload.description,
-    gender: payload.gender,
-    season: payload.season, // legacy single season
-    seasons: payload.seasons, // multiple seasons array
-    family: payload.family,
-    character: payload.character,
-    strength: payload.strength,
-    intensity: payload.intensity,
-    notes_top: payload.notes.top,
-    notes_middle: payload.notes.middle,
-    notes_base: payload.notes.base,
-    tags: payload.tags || [],
-    brand: brandName || "",
-    collection: collectionName || "",
-  };
+  // Build payload, only including defined values
+  const backendPayload: Record<string, unknown> = {};
   
-  // Handle images: prefer images array, fallback to cover for backward compatibility
-  if (payload.images && payload.images.length > 0) {
-    backendPayload.images = payload.images;
-  } else if (payload.cover && typeof payload.cover === "string") {
-    backendPayload.images = [payload.cover];
+  if (payload.name_fa !== undefined) backendPayload.name_fa = payload.name_fa;
+  if (payload.name_en !== undefined) backendPayload.name_en = payload.name_en;
+  if (payload.description !== undefined) backendPayload.description = payload.description;
+  
+  // Convert gender: if it's a string, split and convert; if array, convert first value
+  if (payload.gender !== undefined) {
+    if (typeof payload.gender === "string") {
+      // Handle comma-separated or single value
+      const genderArray = payload.gender.split(",").map(g => g.trim()).filter(Boolean);
+      if (genderArray.length > 0) {
+        // Convert Persian to English and take first value
+        const englishGender = convertToEnglish("gender", genderArray);
+        backendPayload.gender = englishGender.split(", ")[0].toLowerCase(); // Take first and lowercase
+      }
+    } else if (Array.isArray(payload.gender) && (payload.gender as string[]).length > 0) {
+      const englishGender = convertToEnglish("gender", payload.gender as string[]);
+      backendPayload.gender = englishGender.split(", ")[0].toLowerCase();
+    }
   }
   
+  if (payload.season !== undefined) backendPayload.season = payload.season; // legacy single season
+  if (payload.seasons !== undefined) backendPayload.seasons = payload.seasons; // multiple seasons array
+  if (payload.family !== undefined) backendPayload.family = payload.family;
+  if (payload.character !== undefined) backendPayload.character = payload.character;
+  if (payload.strength !== undefined) backendPayload.strength = payload.strength;
+  if (payload.intensity !== undefined) backendPayload.intensity = payload.intensity;
+  
+  // Notes - ensure they're arrays and skip validation for now (backend will handle)
+  if (payload.notes) {
+    backendPayload.notes_top = payload.notes.top || [];
+    backendPayload.notes_middle = payload.notes.middle || [];
+    backendPayload.notes_base = payload.notes.base || [];
+  }
+  
+  if (payload.tags !== undefined) backendPayload.tags = payload.tags || [];
+  if (brandName !== undefined) backendPayload.brand = brandName || "";
+  if (collectionName !== undefined) backendPayload.collection = collectionName || "";
+  
+  // Handle images: prefer images array, fallback to cover for backward compatibility
+  // Always include images field if provided (even if empty array) to ensure it's saved to database
+  if (payload.images !== undefined) {
+    backendPayload.images = payload.images.length > 0 ? payload.images : [];
+  } else if (payload.cover !== undefined) {
+    if (typeof payload.cover === "string" && payload.cover.length > 0) {
+      backendPayload.images = [payload.cover];
+    } else {
+      backendPayload.images = [];
+    }
+  }
+  
+  // Use PATCH instead of PUT to allow partial updates
   const result = await request<BackendPerfume>(`/api/admin/perfumes/${id}/`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(backendPayload),
   });
 
@@ -476,19 +544,17 @@ export const deleteCollection = async (id: string): Promise<void> => {
 };
 
 export const uploadFile = async (file: File): Promise<{ id: number; url: string }> => {
-  // For now, return a data URL or placeholder
-  // In production, you'd want to upload to a storage service (S3, Cloudinary, etc.)
-  // or implement a file upload endpoint in Django
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({ id: 0, url: reader.result as string });
-    };
-    reader.onerror = () => {
-      reject(new Error("آپلود فایل ناموفق بود."));
-    };
-    reader.readAsDataURL(file);
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  // Upload to backend Django endpoint
+  const result = await request<{ id: number; url: string }>("/api/admin/upload/", {
+    method: "POST",
+    body: formData,
+    // Don't set Content-Type - browser will set it with boundary for FormData
   });
+  
+  return result;
 };
 
 export interface AvailableNotesResponse {

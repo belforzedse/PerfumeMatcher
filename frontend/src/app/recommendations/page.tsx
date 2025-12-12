@@ -12,7 +12,8 @@ import {
   type QuestionnaireAnswers,
 } from "@/lib/questionnaire";
 import { type RankedPerfume } from "@/lib/perfume-matcher";
-import { getAIRankings } from "@/lib/ai-matcher";
+// AI disabled - using baseline matcher
+import { getBaselineRankings } from "@/lib/baseline-matcher";
 import PerfumeDetailsModal from "@/components/PerfumeDetailsModal";
 
 const formatNumber = (value: number) => toPersianNumbers(String(value));
@@ -67,7 +68,7 @@ const MatchCard = ({
         </span>
       </header>
 
-      {perfume.image && (
+      {perfume.image ? (
         <div className="flex flex-grow items-center justify-center">
           <div
             className="glass-surface glass-surface--media relative w-full overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] group-focus-visible:scale-[1.03]"
@@ -82,10 +83,14 @@ const MatchCard = ({
               priority={order <= 3}
               loading={order <= 3 ? "eager" : "lazy"}
               quality={85}
+              unoptimized={true}
+              onError={(e) => {
+                console.error(`[Recommendations] Image load error for perfume ${perfume.id}:`, perfume.image, e);
+              }}
             />
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="space-y-1 sm:space-y-1.5 md:space-y-1.5 text-right">
         {brand && (
@@ -207,22 +212,14 @@ function RecommendationsContent() {
 
     const fetchRecommendations = async () => {
       try {
-        console.log("[Recommendations Page] Fetching perfumes...");
-        const allPerfumes = await getPerfumes();
-        console.log(`[Recommendations Page] ✅ Loaded ${allPerfumes.length} perfumes`);
-        if (cancelled) return;
-        if (allPerfumes.length === 0) {
-          console.warn("[Recommendations Page] ⚠️ No perfumes loaded!");
-          setError("داده‌های عطرها یافت نشد. لطفاً صفحه را رفرش کنید.");
-          setLoading(false);
-          return;
-        }
-        console.log("[Recommendations Page] Getting AI rankings...");
-        const ranked = await getAIRankings(parsedAnswers, allPerfumes);
+        console.log("[Recommendations Page] Getting baseline rankings (AI disabled)...");
+        // Backend now returns full perfume data, no need to fetch all perfumes
+        const ranked = await getBaselineRankings(parsedAnswers);
         console.log(`[Recommendations Page] ✅ Got ${ranked.length} ranked perfumes`);
         // Only keep the top 6 matches for kiosk display
         const topMatches = ranked.slice(0, 6);
         console.log(`[Recommendations Page] Setting ${topMatches.length} recommendations (top 6)`);
+        console.log(`[Recommendations Page] Sample perfume images:`, topMatches.slice(0, 3).map(p => ({ id: p.id, name: p.nameFa, image: p.image })));
         setRecommendations(topMatches);
       } catch (err) {
         if (cancelled) return;
