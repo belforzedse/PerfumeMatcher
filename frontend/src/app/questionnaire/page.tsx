@@ -356,7 +356,7 @@ export default function Questionnaire() {
     return (
       <KioskFrame>
         <main className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8">
-          <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full max-w-5xl min-h-0 flex-1 flex-col">
+          <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col">
             <div className="flex flex-1 items-center justify-center">
               <p className="text-muted">در حال بارگذاری...</p>
             </div>
@@ -372,7 +372,7 @@ export default function Questionnaire() {
         aria-labelledby={headingId}
         className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
-        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full max-w-5xl min-h-0 flex-1 flex-col">
+        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep.id}
