@@ -261,7 +261,7 @@ function DraggableNote({
 
   // If using DragOverlay, don't move the original tile.
   const style: React.CSSProperties = isDragging
-    ? undefined
+    ? {}
     : { transform: CSS.Transform.toString(transform) };
 
   return (
@@ -273,7 +273,6 @@ function DraggableNote({
       {...attributes}
       className={[
         "glass-card backdrop-blur-xl glass-button-gradient-border",
-        // less padding + rectangle shape like your screenshot
         "flex h-[96px] w-full flex-col items-center justify-center gap-1 rounded-3xl px-2 py-2",
         "select-none touch-none cursor-grab active:cursor-grabbing",
         "transition-transform duration-200 hover:scale-[1.015]",

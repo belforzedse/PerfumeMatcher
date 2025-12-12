@@ -63,11 +63,11 @@ export default function PairwiseChoice({
             </h3>
             {selected === "left" && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
                 className="glass-chip glass-chip--compact glass-chip--accent text-xs font-semibold"
               >
-                انتخاب شده
+                ✓ {pair.left.label} انتخاب شد
               </motion.div>
             )}
           </div>
@@ -105,11 +105,11 @@ export default function PairwiseChoice({
             </h3>
             {selected === "right" && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
                 className="glass-chip glass-chip--compact glass-chip--accent text-xs font-semibold"
               >
-                انتخاب شده
+                ✓ {pair.right.label} انتخاب شد
               </motion.div>
             )}
           </div>

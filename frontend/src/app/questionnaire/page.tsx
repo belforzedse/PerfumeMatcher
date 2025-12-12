@@ -146,11 +146,56 @@ export default function Questionnaire() {
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [flowState.currentStep]);
 
+  // Track pending auto-advance timeouts to cancel them when needed
+  const autoAdvanceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const showMicroReward = useCallback(() => {
     const reward = MICRO_REWARDS[Math.floor(Math.random() * MICRO_REWARDS.length)];
     setMicroReward(reward);
     setTimeout(() => setMicroReward(null), 2000);
   }, []);
+
+  const handleNext = useCallback(() => {
+    if (!answers) return;
+
+    const nextStepIndex = getNextStep(flowState);
+    if (nextStepIndex === null) {
+      const qs = new URLSearchParams({ answers: serializeAnswers(answers) });
+      router.push(`/recommendations?${qs.toString()}`);
+    } else {
+      setFlowState((prev) => ({ ...prev, currentStep: nextStepIndex }));
+    }
+  }, [flowState, answers, router]);
+
+  // Auto-advance helper - uses current state via setFlowState callback
+  const autoAdvance = useCallback(() => {
+    // Cancel any pending auto-advance
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
+    autoAdvanceTimeoutRef.current = setTimeout(() => {
+      setFlowState((prev) => {
+        // Don't auto-advance on review page or if can't proceed
+        const currentStep = getCurrentStep(prev);
+        if (currentStep?.type === "review" || !canProceed(prev)) return prev;
+        
+        const nextStepIndex = getNextStep(prev);
+        if (nextStepIndex === null) {
+          // Get latest answers from state
+          const latestAnswers = mapResponsesToAnswers(prev.responses);
+          if (latestAnswers) {
+            const qs = new URLSearchParams({ answers: serializeAnswers(latestAnswers) });
+            router.push(`/recommendations?${qs.toString()}`);
+          }
+          return prev;
+        }
+        return { ...prev, currentStep: nextStepIndex };
+      });
+      autoAdvanceTimeoutRef.current = null;
+    }, 1200); // Delay to show feedback
+  }, [router]);
 
   const handlePathSelect = useCallback((path: QuestionPath) => {
     const newState = initializeFlow(path);
@@ -170,10 +215,19 @@ export default function Questionnaire() {
         setAnswers(newAnswers);
         showMicroReward();
 
-        return { ...prev, responses: newResponses };
+        const newState = { ...prev, responses: newResponses };
+        
+        // Auto-advance if max selections reached
+        if (scenes.length >= 3 && !prev.responses.scenes.includes(sceneId)) {
+          setTimeout(() => {
+            autoAdvance();
+          }, 1200);
+        }
+
+        return newState;
       });
     },
-    [showMicroReward]
+    [showMicroReward, autoAdvance]
   );
 
   const handleSafetyToggle = useCallback(
@@ -215,10 +269,19 @@ export default function Questionnaire() {
         setAnswers(newAnswers);
         showMicroReward();
 
-        return { ...prev, responses: newResponses };
+        const newState = { ...prev, responses: newResponses };
+        
+        // Auto-advance after selection (unless "none")
+        if (choice !== "none") {
+          setTimeout(() => {
+            autoAdvance();
+          }, 1200);
+        }
+
+        return newState;
       });
     },
-    [vibePairs, showMicroReward]
+    [vibePairs, showMicroReward, autoAdvance]
   );
 
   const handleIntensitySelect = useCallback(
@@ -269,19 +332,13 @@ export default function Questionnaire() {
     []
   );
 
-  const handleNext = useCallback(() => {
-    if (!answers) return;
-
-    const nextStepIndex = getNextStep(flowState);
-    if (nextStepIndex === null) {
-      const qs = new URLSearchParams({ answers: serializeAnswers(answers) });
-      router.push(`/recommendations?${qs.toString()}`);
-    } else {
-      setFlowState((prev) => ({ ...prev, currentStep: nextStepIndex }));
-    }
-  }, [flowState, answers, router]);
-
   const handleBack = useCallback(() => {
+    // Cancel any pending auto-advance when going back
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
     setFlowState((prev) => {
       if (prev.currentStep > 0) {
         return { ...prev, currentStep: prev.currentStep - 1 };

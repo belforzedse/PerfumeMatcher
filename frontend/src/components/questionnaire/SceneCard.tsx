@@ -49,19 +49,45 @@ export default function SceneCard({ scenes, selected, maxSelections, onToggle }:
             } ${disabled ? "opacity-50 cursor-not-allowed" : "tap-highlight touch-target touch-feedback"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]`}
           >
             <div className="flex w-full items-start justify-between gap-2">
-              {scene.icon && <Icon emoji={scene.icon} size={40} />}
+              {scene.icon && (
+                <motion.span
+                  animate={isSelected ? { scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] } : {}}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Icon emoji={scene.icon} size={40} />
+                </motion.span>
+              )}
               {isSelected && (
-                <span className="glass-chip glass-chip--compact glass-chip--accent text-xs font-semibold">
-                  انتخاب شده
-                </span>
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass-chip glass-chip--compact glass-chip--accent text-xs font-semibold"
+                >
+                  ✓ انتخاب شده
+                </motion.span>
               )}
             </div>
             <div className="space-y-1">
-              <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
+              <h3 className={`m-0 text-base font-semibold sm:text-lg ${
+                isSelected ? "text-[var(--color-accent)]" : "text-[var(--color-foreground)]"
+              }`}>
                 {scene.label}
               </h3>
               {scene.description && (
-                <p className="m-0 text-xs text-muted sm:text-sm">{scene.description}</p>
+                <p className={`m-0 text-xs sm:text-sm ${
+                  isSelected ? "text-[var(--color-foreground)]/90" : "text-muted"
+                }`}>
+                  {scene.description}
+                </p>
+              )}
+              {isSelected && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="m-0 mt-1 text-[10px] font-medium text-[var(--color-accent)] sm:text-xs"
+                >
+                  این لحظه برای شما انتخاب شد
+                </motion.p>
               )}
             </div>
           </motion.button>

@@ -173,21 +173,37 @@ export default function IntensityControl({
         </div>
       </div>
 
-      {/* Selected pill */}
+      {/* Selected pill with description */}
       {selectedItem && (
         <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-surface backdrop-blur-xl glass-gradient-border flex w-full items-center justify-center gap-3 rounded-2xl p-4"
+          initial={{ opacity: 0, y: -8, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="glass-surface backdrop-blur-xl glass-gradient-border flex w-full flex-col items-center gap-2 rounded-2xl p-4"
         >
-          {selectedItem.icon && (
-            <span className="text-[var(--color-accent)]">
-              <Icon emoji={selectedItem.icon} size={24} />
+          <div className="flex items-center gap-3">
+            {selectedItem.icon && (
+              <motion.span
+                animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.6 }}
+                className="text-[var(--color-accent)]"
+              >
+                <Icon emoji={selectedItem.icon} size={24} />
+              </motion.span>
+            )}
+            <span className="text-sm font-semibold text-[var(--color-foreground)] sm:text-base">
+              ✓ {selectedItem.label} انتخاب شد
             </span>
+          </div>
+          {selectedItem.description && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="m-0 text-xs text-muted text-center"
+            >
+              {selectedItem.description}
+            </motion.p>
           )}
-          <span className="text-sm font-semibold text-[var(--color-foreground)] sm:text-base">
-            {selectedItem.label}
-          </span>
         </motion.div>
       )}
     </div>

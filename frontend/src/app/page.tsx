@@ -15,7 +15,7 @@ export default function HomePage() {
     <KioskFrame>
       <main className="flex min-h-0 w-full flex-1 justify-center px-4 py-8 sm:px-6 lg:px-12">
         <motion.article
-          className="glass-card page-panel relative flex w-full max-w-4xl flex-col items-center gap-6 px-6 py-8 text-center sm:gap-8 sm:px-10 sm:py-10 lg:gap-12 lg:py-12"
+          className="glass-card backdrop-blur-xl page-panel relative flex w-full max-w-5xl flex-col items-center gap-6 px-6 py-8 text-center sm:gap-8 sm:px-10 sm:py-10 lg:gap-12 lg:py-12"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 28, scale: 0.985, filter: "blur(8px)" }}
           animate={
             shouldReduceMotion
@@ -38,7 +38,7 @@ export default function HomePage() {
                 width={360}
                 height={360}
                 priority
-                className="w-full max-w-[220px] object-contain sm:max-w-[260px]"
+                className="w-full max-w-[220px] object-contain sm:max-w-[660px]"
               />
             </div>
           </div>
