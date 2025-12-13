@@ -26,8 +26,7 @@ export default function SceneCard({ scenes, selected, maxSelections, onToggle }:
 
   return (
     <motion.div
-      className="grid w-full gap-3 sm:gap-4"
-      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))" }}
+      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 w-full gap-3 sm:gap-4"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -42,7 +41,7 @@ export default function SceneCard({ scenes, selected, maxSelections, onToggle }:
             onClick={() => !disabled && onToggle(scene.id)}
             disabled={disabled}
             variants={itemVariants}
-            className={`glass-card backdrop-blur-xl glass-button-gradient-border flex min-h-[120px] flex-col items-start justify-between gap-3 rounded-2xl p-4 text-right transition-all duration-300 sm:min-h-[140px] sm:p-5 ${
+            className={`glass-card backdrop-blur-xl glass-button-gradient-border flex min-h-[100px] flex-col items-start justify-between gap-2 rounded-2xl p-3 text-right transition-all duration-300 sm:min-h-[140px] sm:gap-3 sm:p-5 ${
               isSelected
                 ? "border-2 border-[var(--color-accent)] bg-gradient-to-br from-white/90 to-[var(--color-accent-soft)]/40 shadow-strong"
                 : "border border-[var(--color-border)] hover:scale-[1.02] hover:shadow-soft"
@@ -53,17 +52,18 @@ export default function SceneCard({ scenes, selected, maxSelections, onToggle }:
                 <motion.span
                   animate={isSelected ? { scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] } : {}}
                   transition={{ duration: 0.5 }}
+                  className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
                 >
-                  <Icon emoji={scene.icon} size={40} />
+                  <Icon emoji={scene.icon} size={32} className="w-full h-full" />
                 </motion.span>
               )}
               {isSelected && (
                 <motion.span
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="glass-chip glass-chip--compact glass-chip--accent text-xs font-semibold"
+                  className="glass-chip glass-chip--compact glass-chip--accent text-[10px] sm:text-xs font-semibold"
                 >
-                  ✓ انتخاب شده
+                  انتخاب شده
                 </motion.span>
               )}
             </div>
@@ -79,15 +79,6 @@ export default function SceneCard({ scenes, selected, maxSelections, onToggle }:
                 }`}>
                   {scene.description}
                 </p>
-              )}
-              {isSelected && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="m-0 mt-1 text-[10px] font-medium text-[var(--color-accent)] sm:text-xs"
-                >
-                  این لحظه برای شما انتخاب شد
-                </motion.p>
               )}
             </div>
           </motion.button>
