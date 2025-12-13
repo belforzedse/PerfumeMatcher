@@ -189,4 +189,4 @@ ADMIN_ACCESS_KEY = os.getenv("ADMIN_ACCESS_KEY", "admin-key")
 
 # AI/OpenAI configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-5-mini")  # Valid models: gpt-5-mini, gpt-5, gpt-4o-mini, gpt-4o, gpt-3.5-turbo
+AI_MODEL = os.getenv("AI_MODEL", "gpt-5-nano")  # Valid models: gpt-5-mini, gpt-5, gpt-4o-mini, gpt-4o, gpt-3.5-turbo
