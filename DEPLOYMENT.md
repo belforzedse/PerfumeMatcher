@@ -147,7 +147,7 @@ DEBUG=False
 ALLOWED_HOSTS=kioskapi.gandom-perfume.ir,your-vps-ip,localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=https://kiosk.gandom-perfume.ir,http://kiosk.gandom-perfume.ir
 OPENAI_API_KEY=sk-your-openai-key
-AI_MODEL=gpt-4o-mini
+AI_MODEL=gpt-5-mini
 ADMIN_ACCESS_KEY=your-admin-key
 ```
 

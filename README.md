@@ -47,7 +47,7 @@ Frontend (Next.js 16)          Backend (Django 6)
    
    # Create .env file
    echo "OPENAI_API_KEY=your-key-here" > .env
-   echo "AI_MODEL=gpt-4o-mini" >> .env
+   echo "AI_MODEL=gpt-5-mini" >> .env
    
    # Run migrations
    python manage.py migrate
@@ -148,7 +148,7 @@ SECRET_KEY=your-secret-key
 DEBUG=False
 ALLOWED_HOSTS=your-domain.com,localhost
 OPENAI_API_KEY=sk-...
-AI_MODEL=gpt-4o-mini
+AI_MODEL=gpt-5-mini
 ADMIN_ACCESS_KEY=your-admin-key
 ```
 
