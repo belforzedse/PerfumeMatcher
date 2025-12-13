@@ -96,6 +96,18 @@ jobs:
             set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
 
+            # Export environment variable for docker-compose
+            export NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
+
+            # Stop and remove old containers with correct names
+            docker compose down || true
+            
+            # Remove any orphaned containers (those with random names)
+            docker ps -a --filter "name=perfume-" --format "{{.Names}}" | xargs -r docker rm -f || true
+            
+            # Clean up any containers that might conflict
+            docker rm -f perfume-backend perfume-frontend 2>/dev/null || true
+
             # Use docker compose v2 (plugin)
             # Pull latest images or build if needed
             docker compose pull || true
