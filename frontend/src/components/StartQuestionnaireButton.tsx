@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { BiChevronLeft } from "react-icons/bi";
+import { useKioskMode } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
 interface StartQuestionnaireButtonProps {
   className?: string;
@@ -18,6 +20,7 @@ export default function StartQuestionnaireButton({
   label = "شروع",
 }: StartQuestionnaireButtonProps) {
   const shouldReduceMotion = useReducedMotion();
+  const isKiosk = useKioskMode();
 
   const interactiveProps = shouldReduceMotion
     ? {}
@@ -43,7 +46,7 @@ export default function StartQuestionnaireButton({
         prefetch={false}
         aria-label="شروع پرسشنامه"
         {...interactiveProps}
-        className={[
+        className={cn(
           "tap-highlight touch-target touch-feedback group relative isolate",
           "flex w-full items-center justify-center",
           "overflow-hidden rounded-full",
@@ -55,7 +58,8 @@ export default function StartQuestionnaireButton({
           "shadow-[0_18px_46px_rgba(0,0,0,0.14),0_0_26px_var(--accent-glow)]",
           "ring-1 ring-white/35",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.35)]",
-        ].join(" ")}
+          isKiosk && "min-h-[80px] px-12 py-7"
+        )}
       >
         {/* top highlight */}
         <span
@@ -81,7 +85,10 @@ export default function StartQuestionnaireButton({
         </span>
 
         {/* Centered label */}
-        <span className="relative text-center text-2xl font-semibold leading-none drop-shadow-[0_3px_10px_rgba(0,0,0,0.18)] sm:text-4xl">
+        <span className={cn(
+          "relative text-center text-2xl font-semibold leading-none drop-shadow-[0_3px_10px_rgba(0,0,0,0.18)] sm:text-4xl",
+          isKiosk && "text-3xl sm:text-5xl"
+        )}>
           {label}
         </span>
       </MotionLink>

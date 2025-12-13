@@ -15,17 +15,16 @@ interface SceneCardProps {
   onToggle: (sceneId: string) => void;
 }
 
-// TEMP placeholders only (no URL params / grayscale params).
-// Replace these with your own uploaded images later.
+
 const SCENE_IMAGES: Record<string, string> = {
-  "morning-cafe": "https://picsum.photos/seed/morning-cafe/900/1400.webp",
-  "evening-party": "https://picsum.photos/seed/evening-party/900/1400.webp",
-  "nature-walk": "https://picsum.photos/seed/nature-walk/900/1400.webp",
-  "cozy-home": "https://picsum.photos/seed/cozy-home/900/1400.webp",
-  "romantic-dinner": "https://picsum.photos/seed/romantic-dinner/900/1400.webp",
-  "beach-day": "https://picsum.photos/seed/beach-day/900/1400.webp",
-  "winter-night": "https://picsum.photos/seed/winter-night/900/1400.webp",
-  "gift-occasion": "https://picsum.photos/seed/gift-occasion/900/1400.webp",
+  "morning-cafe": "/cafe.webp",
+  "evening-party": "/party.webp",
+  "nature-walk": "/nature.webp",
+  "cozy-home": "/house.webp",
+  "romantic-dinner": "/dinner.webp",
+  "beach-day": "/beach.webp",
+  "winter-night": "/winter.webp",
+  "gift-occasion": "gift.webp",
 };
 
 // Color mapping for scene icons (applied to the *badge* tint, not the emoji itself)

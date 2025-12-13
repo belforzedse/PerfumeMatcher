@@ -155,8 +155,9 @@ export default function Questionnaire() {
   const showMicroReward = useCallback(() => {
     const reward = MICRO_REWARDS[Math.floor(Math.random() * MICRO_REWARDS.length)];
     setMicroReward(reward);
-    setTimeout(() => setMicroReward(null), 2000);
-  }, []);
+    // Longer display time in kiosk mode for better visibility
+    setTimeout(() => setMicroReward(null), isKiosk ? 3000 : 2000);
+  }, [isKiosk]);
 
   const handleNext = useCallback(() => {
     if (!answers) return;
@@ -178,11 +179,16 @@ export default function Questionnaire() {
       autoAdvanceTimeoutRef.current = null;
     }
 
+    // Longer delay in kiosk mode for better UX
+    const delay = isKiosk ? 2200 : 1200;
+
     autoAdvanceTimeoutRef.current = setTimeout(() => {
       setFlowState((prev) => {
-        // Don't auto-advance on review page or if can't proceed
+        // Don't auto-advance on review page, safety step (optional), or if can't proceed
         const currentStep = getCurrentStep(prev);
-        if (currentStep?.type === "review" || !canProceed(prev)) return prev;
+        if (currentStep?.type === "review" || 
+            currentStep?.type === "safety-step" || 
+            !canProceed(prev)) return prev;
         
         const nextStepIndex = getNextStep(prev);
         if (nextStepIndex === null) {
@@ -197,8 +203,8 @@ export default function Questionnaire() {
         return { ...prev, currentStep: nextStepIndex };
       });
       autoAdvanceTimeoutRef.current = null;
-    }, 1200); // Delay to show feedback
-  }, [router]);
+    }, delay); // Delay to show feedback (longer in kiosk mode)
+  }, [router, isKiosk]);
 
   const handlePathSelect = useCallback((path: QuestionPath) => {
     const newState = initializeFlow(path);
@@ -220,11 +226,11 @@ export default function Questionnaire() {
 
         const newState = { ...prev, responses: newResponses };
         
-        // Auto-advance if max selections reached
+        // Auto-advance if max selections reached (delay handled in autoAdvance)
         if (scenes.length >= 3 && !prev.responses.scenes.includes(sceneId)) {
           setTimeout(() => {
             autoAdvance();
-          }, 1200);
+          }, 100);
         }
 
         return newState;
@@ -274,11 +280,11 @@ export default function Questionnaire() {
 
         const newState = { ...prev, responses: newResponses };
         
-        // Auto-advance after selection (unless "none")
+        // Auto-advance after selection (unless "none") (delay handled in autoAdvance)
         if (choice !== "none") {
           setTimeout(() => {
             autoAdvance();
-          }, 1200);
+          }, 100);
         }
 
         return newState;
@@ -431,13 +437,16 @@ export default function Questionnaire() {
       <main
         aria-labelledby={headingId}
         className={cn(
-          "page-main flex min-h-0 w-full flex-1 items-stretch overflow-hidden justify-center",
-          isKiosk ? "px-8 py-8" : "px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
+          "page-main flex min-h-0 w-full flex-1 items-stretch justify-center",
+          // Allow shadows to render - use overflow-y-auto instead of overflow-hidden
+          isKiosk ? "overflow-y-auto overflow-x-hidden px-8 py-8" : "overflow-hidden px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
         )}
       >
         <div className={cn(
           "glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col",
-          isKiosk ? "gap-8 p-10" : "gap-6 p-6 sm:p-8"
+          isKiosk ? "gap-8 p-10" : "gap-6 p-6 sm:p-8",
+          // Ensure shadows can render in kiosk mode
+          isKiosk && "overflow-y-auto overflow-x-hidden"
         )}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -469,7 +478,7 @@ export default function Questionnaire() {
                   className={cn(
                     "m-0 font-semibold leading-tight text-[var(--color-foreground)]",
                     isKiosk
-                      ? "text-3xl"
+                      ? "text-4xl leading-snug"
                       : "text-xl xs:text-2xl md:text-[1.85rem]"
                   )}
                   variants={questionHeaderVariants}
@@ -480,7 +489,7 @@ export default function Questionnaire() {
                   <motion.p
                     className={cn(
                       "m-0 text-muted",
-                      isKiosk ? "text-base" : "text-xs sm:text-sm"
+                      isKiosk ? "text-lg leading-relaxed" : "text-xs sm:text-sm"
                     )}
                     variants={questionHeaderVariants}
                   >
@@ -525,7 +534,11 @@ export default function Questionnaire() {
 
               <motion.section
                 ref={questionSectionRef}
-                className="page-panel__scroll flex flex-1 min-h-0 flex-col text-right"
+                className={cn(
+                  "page-panel__scroll flex flex-1 min-h-0 flex-col text-right",
+                  // Allow shadows to render in kiosk mode
+                  isKiosk && "overflow-visible"
+                )}
                 aria-describedby={helperId}
                 variants={questionHeaderVariants}
               >
@@ -595,7 +608,11 @@ export default function Questionnaire() {
                 onClick={handleBack}
                 disabled={flowState.currentStep === 0}
                 aria-label="بازگشت به مرحله قبلی"
-                className={`${ICON_BUTTON_BASE} sm:hidden`}
+                className={cn(
+                  ICON_BUTTON_BASE,
+                  "sm:hidden",
+                  isKiosk && "h-16 w-16 min-h-[64px] min-w-[64px]"
+                )}
               >
                 <svg
                   aria-hidden="true"
@@ -617,7 +634,10 @@ export default function Questionnaire() {
                 type="button"
                 onClick={handleBack}
                 disabled={flowState.currentStep === 0}
-                className={NAV_BUTTON_BASE}
+                className={cn(
+                  NAV_BUTTON_BASE,
+                  isKiosk && "min-h-[64px] px-6 py-3 text-lg"
+                )}
               >
                 <span>مرحله قبلی</span>
                 <svg
@@ -642,7 +662,11 @@ export default function Questionnaire() {
                 type="button"
                 onClick={handleReset}
                 aria-label="شروع مجدد پرسشنامه"
-                className={`${ICON_BUTTON_BASE} sm:hidden`}
+                className={cn(
+                  ICON_BUTTON_BASE,
+                  "sm:hidden",
+                  isKiosk && "h-16 w-16 min-h-[64px] min-w-[64px]"
+                )}
               >
                 <svg
                   aria-hidden="true"
@@ -670,7 +694,10 @@ export default function Questionnaire() {
               <button
                 type="button"
                 onClick={handleReset}
-                className={NAV_BUTTON_BASE}
+                className={cn(
+                  NAV_BUTTON_BASE,
+                  isKiosk && "min-h-[64px] px-6 py-3 text-lg"
+                )}
               >
                 <svg
                   aria-hidden="true"
@@ -707,7 +734,11 @@ export default function Questionnaire() {
                     ? "مشاهده پیشنهادها"
                     : "مرحله بعدی"
                 }
-                className={`${ICON_BUTTON_BASE} sm:hidden`}
+                className={cn(
+                  ICON_BUTTON_BASE,
+                  "sm:hidden",
+                  isKiosk && "h-16 w-16 min-h-[64px] min-w-[64px]"
+                )}
               >
                 <svg
                   aria-hidden="true"
@@ -729,7 +760,10 @@ export default function Questionnaire() {
                 type="button"
                 onClick={handleNext}
                 disabled={!canProceedNow}
-                className={NAV_BUTTON_BASE}
+                className={cn(
+                  NAV_BUTTON_BASE,
+                  isKiosk && "min-h-[64px] px-6 py-3 text-lg"
+                )}
               >
                 <svg
                   aria-hidden="true"

@@ -1,0 +1,128 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  VPS_DEPLOY_PATH: /opt/perfume-matcher
+  BACKEND_DOMAIN: kioskapi.gandom-perfume.ir
+  FRONTEND_DOMAIN: kiosk.gandom-perfume.ir
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment directory structure
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend
+            mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend
+            mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend/media/uploads
+          EOF
+
+      - name: Copy backend files
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '.venv' \
+            --exclude 'db.sqlite3' \
+            --exclude 'media/uploads/*' \
+            backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/backend/
+
+      - name: Copy frontend files
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude '.env.local' \
+            frontend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/frontend/
+
+
+      - name: Create backend .env file if not exists
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            if [ ! -f ${{ env.VPS_DEPLOY_PATH }}/backend/.env ]; then
+              cat > ${{ env.VPS_DEPLOY_PATH }}/backend/.env << 'ENVFILE'
+            SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+            DEBUG=False
+            ALLOWED_HOSTS=${{ env.BACKEND_DOMAIN }},${{ secrets.VPS_HOST }},localhost,127.0.0.1
+            CORS_ALLOWED_ORIGINS=https://${{ env.FRONTEND_DOMAIN }},http://${{ env.FRONTEND_DOMAIN }},http://localhost:3000
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            AI_MODEL=gpt-4o-mini
+            ADMIN_ACCESS_KEY=${{ secrets.ADMIN_ACCESS_KEY }}
+            ENVFILE
+            fi
+          EOF
+
+      - name: Create frontend .env.local file if not exists
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            if [ ! -f ${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local ]; then
+              cat > ${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local << 'ENVFILE'
+            NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
+            ENVFILE
+            fi
+          EOF
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd ${{ env.VPS_DEPLOY_PATH }}
+            
+            # Pull latest images or build if needed
+            docker compose pull || true
+            
+            # Build and start services
+            docker compose up -d --build
+            
+            # Run backend migrations
+            docker compose exec -T backend python manage.py migrate --noinput || true
+            
+            # Collect static files
+            docker compose exec -T backend python manage.py collectstatic --noinput || true
+            
+            # Reload Nginx if configuration exists
+            sudo nginx -t && sudo systemctl reload nginx || true
+            
+            # Show running containers
+            docker compose ps
+          EOF
+
+      - name: Health check
+        run: |
+          sleep 10
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            echo "Checking backend health..."
+            curl -f http://localhost:8000/api/perfumes/ || echo "Backend health check failed"
+            
+            echo "Checking frontend health..."
+            curl -f http://localhost:3000 || echo "Frontend health check failed"
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed!"
+          echo "Backend API: https://${{ env.BACKEND_DOMAIN }}"
+          echo "Frontend: https://${{ env.FRONTEND_DOMAIN }}"
+          echo "Backend (internal): http://localhost:8000"
+          echo "Frontend (internal): http://localhost:3000"
+

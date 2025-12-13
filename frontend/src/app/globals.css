@@ -821,7 +821,9 @@
     border-radius: var(--glass-radius-panel);
     position: relative;
     isolation: isolate;
-    overflow: hidden;
+    /* Allow shadows to render - use overflow-y: auto for scrolling, overflow-x: hidden to prevent horizontal scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--glass-base-panel);
     background-image: var(--glass-glow-panel), var(--glass-sheen-overlay);
     backdrop-filter: blur(var(--glass-blur-panel)) saturate(140%);
@@ -831,6 +833,17 @@
     gap: clamp(20px, 3vw, 36px);
     --glass-highlight-active: var(--glass-highlight-panel);
     --glass-glow-active: var(--glass-glow-panel);
+  }
+
+  /* In kiosk mode, add extra padding to accommodate larger shadows */
+  @media (min-height: 1024px) {
+    @media (max-width: 1023px) {
+      .page-panel {
+        /* Add padding to accommodate shadows that extend beyond element boundaries */
+        padding: clamp(24px, 3.5vw, 52px);
+        padding-block: clamp(22px, 3.5vh, 44px) !important;
+      }
+    }
   }
 
   @media (max-height: 780px) {
@@ -849,6 +862,19 @@
     min-height: 0;
     padding-inline-end: clamp(6px, 1vw, 18px);
     scroll-behavior: smooth;
+    /* Allow shadows to render - don't clip them */
+    overflow: visible;
+  }
+
+  /* In kiosk mode, add padding to accommodate shadows */
+  @media (min-height: 1024px) {
+    @media (max-width: 1023px) {
+      .page-panel__scroll {
+        /* Add padding to accommodate shadows */
+        padding: clamp(8px, 1.5vw, 24px);
+        padding-inline-end: clamp(10px, 1.5vw, 28px);
+      }
+    }
   }
 
   .lux-divider {
@@ -1028,6 +1054,38 @@
   .touch-feedback:active {
     transform: scale(0.98);
     box-shadow: 0 2px 8px rgba(var(--shadow-color) / 0.15);
+  }
+
+  /* Kiosk-specific touch targets and utilities */
+  /* Applied via conditional classes in components using isKiosk hook */
+  .touch-target-kiosk {
+    min-height: 72px;
+    min-width: 72px;
+    padding: 18px;
+  }
+
+  /* Kiosk typography scale */
+  .text-kiosk-base { font-size: 1.125rem; } /* 18px */
+  .text-kiosk-lg { font-size: 1.5rem; } /* 24px */
+  .text-kiosk-xl { font-size: 2rem; } /* 32px */
+  .text-kiosk-2xl { font-size: 2.5rem; } /* 40px */
+  .text-kiosk-3xl { font-size: 3rem; } /* 48px */
+
+  /* Kiosk spacing */
+  .gap-kiosk { gap: 1.5rem; } /* 24px */
+  .p-kiosk { padding: 2rem; } /* 32px */
+  .px-kiosk { padding-left: 2rem; padding-right: 2rem; }
+  .py-kiosk { padding-top: 2rem; padding-bottom: 2rem; }
+
+  /* Enhanced touch feedback for kiosk */
+  .touch-feedback-kiosk:active {
+    transform: scale(0.96);
+    box-shadow: 0 4px 12px rgba(var(--shadow-color) / 0.2);
+  }
+
+  /* Hide focus rings in kiosk mode (touch-only) - applied via conditional classes */
+  .kiosk-no-focus *:focus-visible {
+    outline: none;
   }
 
   .font-persian {

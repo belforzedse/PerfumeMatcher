@@ -19,6 +19,9 @@ import {
 const isDev = process.env.NODE_ENV === "development";
 const QUESTIONNAIRE_TIMEOUT_MS = isDev ? 1000_000 : 30_000; // 30 seconds (disabled in dev)
 const RECOMMENDATIONS_TIMEOUT_MS = isDev ? 0 : 120_000; // 2 minutes (disabled in dev)
+// Kiosk mode timeouts (longer for better UX)
+const QUESTIONNAIRE_TIMEOUT_MS_KIOSK = isDev ? 1000_000 : 45_000; // 45 seconds in kiosk
+const RECOMMENDATIONS_TIMEOUT_MS_KIOSK = isDev ? 0 : 180_000; // 3 minutes in kiosk
 const NON_INTERACTIVE_KEYS = new Set([
   "Shift",
   "Meta",
@@ -64,13 +67,27 @@ export default function KioskFrame({
   const isQuestionnaire = pathname === "/questionnaire";
   const isRecommendations = pathname === "/recommendations";
 
-  // Determine timeout based on current page
+  // Detect kiosk mode (height >= 1024px, width < height, width >= 600px)
+  const [isKiosk, setIsKiosk] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkKiosk = () => {
+      const height = window.innerHeight;
+      const width = window.innerWidth;
+      setIsKiosk(height >= 1024 && width < height && width >= 600);
+    };
+    checkKiosk();
+    window.addEventListener("resize", checkKiosk);
+    return () => window.removeEventListener("resize", checkKiosk);
+  }, []);
+
+  // Determine timeout based on current page and kiosk mode
   const IDLE_TIMEOUT_MS = useMemo(() => {
     if (isHome) return 0; // No timeout on home
-    if (isQuestionnaire) return QUESTIONNAIRE_TIMEOUT_MS;
-    if (isRecommendations) return RECOMMENDATIONS_TIMEOUT_MS;
-    return 120_000; // Default 2 minutes for other pages
-  }, [isHome, isQuestionnaire, isRecommendations]);
+    if (isQuestionnaire) return isKiosk ? QUESTIONNAIRE_TIMEOUT_MS_KIOSK : QUESTIONNAIRE_TIMEOUT_MS;
+    if (isRecommendations) return isKiosk ? RECOMMENDATIONS_TIMEOUT_MS_KIOSK : RECOMMENDATIONS_TIMEOUT_MS;
+    return isKiosk ? 180_000 : 120_000; // Default timeout (longer in kiosk)
+  }, [isHome, isQuestionnaire, isRecommendations, isKiosk]);
 
   useEffect(() => {
     if (typeof window === "undefined" || isHome || IDLE_TIMEOUT_MS === 0) {

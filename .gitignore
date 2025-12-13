@@ -213,3 +213,28 @@ temp/
 *.sln
 *.sw?
 
+# Deployment
+*.pem
+deploy_key
+deploy_key.pub
+*.key
+
+# Data files (keep structure, ignore content)
+data/*.json
+data/*.txt
+!data/.gitkeep
+
+# Excel files
+*.xlsx
+*.xls
+
+# CSV files (except templates)
+*.csv
+!**/templates/*.csv
+
+# Media uploads (keep structure)
+backend/media/uploads/*
+!backend/media/uploads/.gitkeep
+frontend/public/uploads/*
+!frontend/public/uploads/.gitkeep
+

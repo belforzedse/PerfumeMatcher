@@ -6,14 +6,11 @@ services:
     build:
       context: .
       args:
-
-        NEXT_PUBLIC_STRAPI_URL: ${NEXT_PUBLIC_STRAPI_URL}
-        NEXT_PUBLIC_STRAPI_TOKEN: ${NEXT_PUBLIC_STRAPI_TOKEN}
+        NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-http://localhost:8000}
     env_file:
-      - .env
+      - .env.local
     environment:
-      NEXT_PUBLIC_STRAPI_URL: ${NEXT_PUBLIC_STRAPI_URL}
-      NEXT_PUBLIC_STRAPI_TOKEN: ${NEXT_PUBLIC_STRAPI_TOKEN}
+      NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-http://localhost:8000}
     ports:
-      - "3000:3000" # ✅ run on port 80 for production
+      - "3000:3000"
     restart: always

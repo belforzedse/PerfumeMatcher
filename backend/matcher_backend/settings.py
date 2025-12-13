@@ -25,12 +25,14 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ux*b(jku(^p6v&)$%!a8kdv&^^wlg#*@$-6vx!hyfeva#l175n'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ux*b(jku(^p6v&)$%!a8kdv&^^wlg#*@$-6vx!hyfeva#l175n')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.33.183', '*']  # Allow all in development
+# Parse ALLOWED_HOSTS from environment or use default
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.33.183,*')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
 
 # Logging configuration
 LOGGING = {
@@ -91,11 +93,9 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOW_CREDENTIALS = True
 else:
-    # In production, use specific origins
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    # In production, use specific origins from environment or default
+    cors_origins_str = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_str.split(',')]
     CORS_ALLOW_CREDENTIALS = True
 
 # Allow common headers

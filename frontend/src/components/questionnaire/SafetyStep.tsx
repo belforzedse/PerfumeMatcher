@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useFadeScaleVariants, useStaggeredListVariants } from "@/lib/motion";
 import type { SafetyChoice } from "@/lib/questionnaire-mapper";
+import { useKioskMode } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
 interface SafetyStepProps {
   safetyChoices: SafetyChoice[];
@@ -11,6 +13,7 @@ interface SafetyStepProps {
 }
 
 export default function SafetyStep({ safetyChoices, selected, onToggle }: SafetyStepProps) {
+  const isKiosk = useKioskMode();
   const containerVariants = useStaggeredListVariants({
     delayChildren: 0.1,
     staggerChildren: 0.05,
@@ -40,11 +43,14 @@ export default function SafetyStep({ safetyChoices, selected, onToggle }: Safety
             variants={itemVariants}
             animate={isSelected ? { scale: [1, 1.08, 1.02] } : {}}
             transition={{ duration: 0.4 }}
-            className={`glass-surface backdrop-blur-xl glass-chip-gradient-border relative flex min-h-[60px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-center transition-all duration-300 sm:min-h-[68px] sm:px-5 ${
+            className={cn(
+              "glass-surface backdrop-blur-xl glass-chip-gradient-border relative flex min-h-[60px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-center transition-all duration-300 sm:min-h-[68px] sm:px-5",
+              "tap-highlight touch-target touch-feedback focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]",
               isSelected
                 ? "border-2 border-[var(--color-accent)] bg-gradient-to-br from-[var(--color-accent-soft)]/90 to-[var(--color-accent-soft)]/60 shadow-strong scale-[1.02] ring-2 ring-[var(--color-accent)]/20"
-                : "border border-[var(--color-border)] hover:bg-white/10 hover:shadow-soft hover:border-[var(--color-accent)]/30"
-            } tap-highlight touch-target touch-feedback focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]`}
+                : "border border-[var(--color-border)] hover:bg-white/10 hover:shadow-soft hover:border-[var(--color-accent)]/30",
+              isKiosk && "min-h-[80px] gap-3 px-6 py-4"
+            )}
           >
             {isSelected && (
               <>
@@ -64,11 +70,13 @@ export default function SafetyStep({ safetyChoices, selected, onToggle }: Safety
                 </motion.span>
               </>
             )}
-            <span className={`relative z-10 text-sm font-semibold sm:text-base transition-colors duration-300 ${
+            <span className={cn(
+              "relative z-10 text-sm font-semibold sm:text-base transition-colors duration-300",
               isSelected 
                 ? "text-[var(--color-accent)]" 
-                : "text-[var(--color-foreground)]"
-            }`}>
+                : "text-[var(--color-foreground)]",
+              isKiosk && "text-base sm:text-lg"
+            )}>
               {safety.label}
             </span>
             {isSelected && (

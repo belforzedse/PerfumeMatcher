@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { BiPencil } from "react-icons/bi";
 
 import { useFadeScaleVariants, useStaggeredListVariants } from "@/lib/motion";
@@ -14,6 +14,8 @@ import {
   getVibePairs,
   getIntensityChoices,
 } from "@/lib/questionnaire-mapper";
+import { useKioskMode } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
 interface ReviewScreenProps {
   responses: UserResponses;
@@ -37,35 +39,68 @@ function SectionHeader({
   count,
   onEdit,
   className = "",
+  isKiosk = false,
 }: {
   title: string;
   subtitle?: string;
   count: number;
   onEdit: () => void;
   className?: string;
+  isKiosk?: boolean;
 }) {
   return (
     <div
-      className={[
+      className={cn(
         "col-span-full flex items-center justify-between",
-        className,
-      ].join(" ")}
+        className
+      )}
     >
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[var(--color-foreground)]">
+        <div className={cn("flex items-center gap-2", isKiosk && "gap-3")}>
+          <span
+            className={cn(
+              "font-semibold text-[var(--color-foreground)]",
+              isKiosk ? "text-sm sm:text-base" : "text-xs"
+            )}
+          >
             {title}
           </span>
-          <span className="text-[11px] text-muted">({count})</span>
+          <span
+            className={cn("text-muted", isKiosk ? "text-sm" : "text-[11px]")}
+          >
+            ({count})
+          </span>
         </div>
+
         {subtitle ? (
-          <p className="m-0 mt-0.5 text-[11px] text-muted line-clamp-1">
+          <p
+            className={cn(
+              "m-0 mt-0.5 text-muted line-clamp-1",
+              isKiosk ? "text-sm" : "text-[11px]"
+            )}
+          >
             {subtitle}
           </p>
         ) : null}
       </div>
 
-    
+      {/* ✅ Only show edit control in kiosk mode */}
+      {isKiosk ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          className={cn(
+            "tap-highlight touch-target touch-feedback",
+            "inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/10 px-4 py-2",
+            "backdrop-blur-md transition-transform duration-150 hover:scale-[1.02]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]"
+          )}
+          aria-label={`ویرایش بخش ${title}`}
+        >
+          <BiPencil className="text-base" />
+          <span className="text-sm font-semibold">ویرایش</span>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -75,14 +110,16 @@ function Chip({
   isRtl,
   variants,
   onClick,
+  isKiosk = false,
 }: {
   chip: ReviewChip;
   isRtl: boolean;
-  variants: any;
+  variants: Variants;
   onClick: () => void;
+  isKiosk?: boolean;
 }) {
   const base =
-    "glass-chip glass-chip--compact inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold";
+    "glass-chip glass-chip--compact inline-flex items-center rounded-full font-semibold";
   const layout = isRtl ? "flex-row-reverse" : "flex-row";
 
   const tone =
@@ -97,13 +134,14 @@ function Chip({
       type="button"
       variants={variants}
       onClick={onClick}
-      className={[
+      className={cn(
         "tap-highlight touch-target touch-feedback",
         "transition-transform duration-150 hover:scale-[1.02]",
         base,
         tone,
         layout,
-      ].join(" ")}
+        isKiosk ? "gap-2.5 px-4 py-3 text-sm" : "gap-1.5 px-3 py-2 text-xs"
+      )}
     >
       {chip.icon ? (
         <span
@@ -115,11 +153,33 @@ function Chip({
               : "text-[var(--color-foreground)]"
           }
         >
-          <Icon emoji={chip.icon} size={16} />
+          <Icon emoji={chip.icon} size={isKiosk ? 18 : 16} />
         </span>
       ) : null}
-      <span className="line-clamp-1">{chip.label}</span>
+      <span className={cn("line-clamp-1", isKiosk && "max-w-[30ch]")}>
+        {chip.label}
+      </span>
     </motion.button>
+  );
+}
+
+function KioskCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-3xl",
+        "p-6",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -128,16 +188,18 @@ export default function ReviewScreen({
   answers,
   onEdit,
 }: ReviewScreenProps) {
+  const isKiosk = useKioskMode();
+
   const containerVariants = useStaggeredListVariants({
     delayChildren: 0.04,
     staggerChildren: 0.02,
   });
 
   const itemVariants = useFadeScaleVariants({
-    y: 8,
+    y: isKiosk ? 10 : 8,
     scale: 0.99,
     blur: 6,
-  });
+  }) as Variants;
 
   const isRtl = useMemo(() => {
     if (typeof window === "undefined") return true;
@@ -250,6 +312,203 @@ export default function ReviewScreen({
       .filter(Boolean) as ReviewChip[];
   }, [answers.noteDislikes, noteMap]);
 
+  // ✅ KIOSK LAYOUT (only)
+  if (isKiosk) {
+    const sceneCount = sceneChips.length;
+    const vibeCount = vibeChips.length;
+    const noteCount = likeChips.length + dislikeChips.length;
+
+    return (
+      <motion.div
+        dir="rtl"
+        className={cn(
+          "h-full min-h-0 w-full",
+          // fill the kiosk panel better (less dead space)
+          "grid grid-cols-12 grid-rows-[auto_minmax(0,1fr)] gap-5"
+        )}
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        {/* Summary strip (fills top a bit and adds clarity) */}
+        <div className="col-span-12">
+          <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-3xl px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-semibold text-[var(--color-foreground)]">
+                  خلاصه انتخاب‌ها
+                </span>
+
+                <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-[var(--color-foreground)]">
+                  صحنه‌ها: <span className="font-semibold">{sceneCount}</span>
+                </span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-[var(--color-foreground)]">
+                  شخصیت:{" "}
+                  <span className="font-semibold">
+                    {vibeCount + (intensityChip ? 1 : 0)}
+                  </span>
+                </span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-[var(--color-foreground)]">
+                  نُت‌ها: <span className="font-semibold">{noteCount}</span>
+                </span>
+              </div>
+
+              <div className="text-sm text-muted">
+                برای ویرایش، روی هر مورد کلیک کنید
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main grid: left big (notes), right stack (scenes + personality) */}
+        <div className="col-span-7 min-h-0">
+          <KioskCard className="h-full min-h-0 flex flex-col">
+            <SectionHeader
+              title="نُت‌ها"
+              subtitle="دوست داری / دوست نداری"
+              count={noteCount}
+              onEdit={() => onEdit("notes")}
+              isKiosk
+            />
+
+            <div className="mt-5 grid min-h-0 flex-1 grid-cols-2 gap-4">
+              {/* Likes */}
+              <div className="rounded-3xl border border-black/10 bg-white/6 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-[var(--color-accent)]">
+                    دوست دارم
+                  </span>
+                  <span className="text-sm text-muted">
+                    ({likeChips.length})
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {likeChips.length ? (
+                    likeChips.map((c) => (
+                      <Chip
+                        key={c.id}
+                        chip={c}
+                        isRtl={isRtl}
+                        variants={itemVariants}
+                        onClick={() => onEdit(c.editSection)}
+                        isKiosk
+                      />
+                    ))
+                  ) : (
+                    <div className="mt-6 w-full text-center text-sm text-muted">
+                      انتخاب نشده
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dislikes */}
+              <div className="rounded-3xl border border-black/10 bg-white/6 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-red-700">
+                    دوست ندارم
+                  </span>
+                  <span className="text-sm text-muted">
+                    ({dislikeChips.length})
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {dislikeChips.length ? (
+                    dislikeChips.map((c) => (
+                      <Chip
+                        key={c.id}
+                        chip={c}
+                        isRtl={isRtl}
+                        variants={itemVariants}
+                        onClick={() => onEdit(c.editSection)}
+                        isKiosk
+                      />
+                    ))
+                  ) : (
+                    <div className="mt-6 w-full text-center text-sm text-muted">
+                      انتخاب نشده
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </KioskCard>
+        </div>
+
+        <div className="col-span-5 min-h-0 flex flex-col gap-5">
+          {/* Scenes */}
+          {sceneChips.length > 0 ? (
+            <KioskCard className="min-h-0 flex-1 flex flex-col">
+              <SectionHeader
+                title="صحنه‌ها"
+                subtitle="جاهایی که دوست داری عطر تو اون فضاها حس بشه"
+                count={sceneChips.length}
+                onEdit={() => onEdit("scenes")}
+                isKiosk
+              />
+
+              <div className="mt-5 flex-1">
+                <div className="flex flex-wrap gap-3 content-start">
+                  {sceneChips.map((c) => (
+                    <Chip
+                      key={c.id}
+                      chip={c}
+                      isRtl={isRtl}
+                      variants={itemVariants}
+                      onClick={() => onEdit(c.editSection)}
+                      isKiosk
+                    />
+                  ))}
+                </div>
+              </div>
+            </KioskCard>
+          ) : null}
+
+          {/* Personality */}
+          {vibeChips.length > 0 || intensityChip ? (
+            <KioskCard className="min-h-0 flex-1 flex flex-col">
+              <SectionHeader
+                title="شخصیت"
+                subtitle="حس‌و‌حال + شدت حضور"
+                count={vibeChips.length + (intensityChip ? 1 : 0)}
+                onEdit={() => onEdit("vibes")}
+                isKiosk
+              />
+
+              <div className="mt-5 flex-1">
+                <div className="flex flex-wrap gap-3 content-start">
+                  {intensityChip ? (
+                    <Chip
+                      chip={intensityChip}
+                      isRtl={isRtl}
+                      variants={itemVariants}
+                      onClick={() => onEdit(intensityChip.editSection)}
+                      isKiosk
+                    />
+                  ) : null}
+
+                  {vibeChips.map((c) => (
+                    <Chip
+                      key={c.id}
+                      chip={c}
+                      isRtl={isRtl}
+                      variants={itemVariants}
+                      onClick={() => onEdit(c.editSection)}
+                      isKiosk
+                    />
+                  ))}
+                </div>
+              </div>
+            </KioskCard>
+          ) : null}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ✅ NORMAL MODE: keep exactly your original structure (pre-kiosk edits)
   return (
     <motion.div
       className="grid grid-cols-1 gap-3 sm:gap-4"
@@ -265,6 +524,7 @@ export default function ReviewScreen({
             subtitle="جاهایی که دوست داری عطر تو اون فضاها حس بشه"
             count={sceneChips.length}
             onEdit={() => onEdit("scenes")}
+            isKiosk={false}
           />
           <div className="col-span-full flex flex-wrap gap-2">
             {sceneChips.map((c) => (
@@ -274,6 +534,7 @@ export default function ReviewScreen({
                 isRtl={isRtl}
                 variants={itemVariants}
                 onClick={() => onEdit(c.editSection)}
+                isKiosk={false}
               />
             ))}
           </div>
@@ -288,6 +549,7 @@ export default function ReviewScreen({
             subtitle="حس‌و‌حال + شدت حضور"
             count={vibeChips.length + (intensityChip ? 1 : 0)}
             onEdit={() => onEdit("vibes")}
+            isKiosk={false}
           />
 
           <div className="col-span-full flex flex-wrap gap-2">
@@ -297,6 +559,7 @@ export default function ReviewScreen({
                 isRtl={isRtl}
                 variants={itemVariants}
                 onClick={() => onEdit(intensityChip.editSection)}
+                isKiosk={false}
               />
             ) : null}
 
@@ -307,6 +570,7 @@ export default function ReviewScreen({
                 isRtl={isRtl}
                 variants={itemVariants}
                 onClick={() => onEdit(c.editSection)}
+                isKiosk={false}
               />
             ))}
           </div>
@@ -321,6 +585,7 @@ export default function ReviewScreen({
             subtitle="دوست داری / دوست نداری"
             count={likeChips.length + dislikeChips.length}
             onEdit={() => onEdit("notes")}
+            isKiosk={false}
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -343,6 +608,7 @@ export default function ReviewScreen({
                       isRtl={isRtl}
                       variants={itemVariants}
                       onClick={() => onEdit(c.editSection)}
+                      isKiosk={false}
                     />
                   ))
                 ) : (
@@ -370,6 +636,7 @@ export default function ReviewScreen({
                       isRtl={isRtl}
                       variants={itemVariants}
                       onClick={() => onEdit(c.editSection)}
+                      isKiosk={false}
                     />
                   ))
                 ) : (
