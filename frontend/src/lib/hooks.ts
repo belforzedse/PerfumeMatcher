@@ -36,6 +36,7 @@ export function useViewportHeight(minHeight: number = 768): boolean {
 /**
  * Hook to detect kiosk mode: tall portrait displays (height >= 1024px and width < height)
  * Useful for showing special kiosk-style UI on vertical displays
+ * Excludes mobile phones by requiring minimum width of 600px
  * 
  * @returns boolean indicating if viewport is in kiosk mode
  */
@@ -49,7 +50,8 @@ export function useKioskMode(): boolean {
     const checkKiosk = () => {
       const height = window.innerHeight;
       const width = window.innerWidth;
-      setIsKiosk(height >= 1024 && width < height);
+      // Require: height >= 1024px, width < height (portrait), and width >= 600px (exclude phones)
+      setIsKiosk(height >= 1024 && width < height && width >= 600);
     };
 
     // Check immediately
