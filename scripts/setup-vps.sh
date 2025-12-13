@@ -22,7 +22,7 @@ echo "    API domain: $API_DOMAIN"
 echo "==> Updating apt and installing dependencies..."
 apt update
 apt upgrade -y
-apt install -y curl docker.io docker-compose nginx certbot python3-certbot-nginx ufw jq
+apt install -y curl docker.io nginx certbot python3-certbot-nginx ufw jq
 
 if ! id -u deploy >/dev/null 2>&1; then
   echo "==> Creating deploy user..."
@@ -32,7 +32,21 @@ fi
 echo "==> Ensuring Docker service is running..."
 systemctl enable --now docker
 
+# Install Docker Compose v2 (plugin)
+echo "==> Installing Docker Compose v2..."
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
 usermod -aG docker deploy || true
+
+# Configure passwordless sudo for deploy user (for nginx reload)
+echo "deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /bin/systemctl restart nginx" > /etc/sudoers.d/deploy
+chmod 440 /etc/sudoers.d/deploy
+
+# Configure passwordless sudo for deploy user (for nginx reload)
+echo "deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /bin/systemctl restart nginx" > /etc/sudoers.d/deploy
+chmod 440 /etc/sudoers.d/deploy
 
 echo "==> Configuring UFW..."
 ufw allow 22/tcp || true
