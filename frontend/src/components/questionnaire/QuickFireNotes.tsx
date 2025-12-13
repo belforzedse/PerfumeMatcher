@@ -128,25 +128,25 @@ export default function QuickFireNotes({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid h-full w-full grid-rows-[auto_1fr_auto] gap-3 overflow-hidden">
+      <div className="grid h-full w-full grid-rows-[auto_1fr_auto] gap-2 sm:gap-3 overflow-hidden">
         {/* Header */}
-        <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-2xl px-4 py-3">
-          <div className="flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-2xl px-3 py-2 sm:px-4 sm:py-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 text-[10px] sm:text-xs">
             <span className="font-medium text-muted">
               {selectedLikes.length + selectedDislikes.length} از{" "}
               {maxSelections * 2} انتخاب شده
             </span>
 
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5">
-                <FaHeart className="text-[var(--color-accent)] text-xs" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="flex items-center gap-1 sm:gap-1.5">
+                <FaHeart className="text-[var(--color-accent)] text-[10px] sm:text-xs" />
                 <span className="font-semibold">
                   {selectedLikes.length}/{maxSelections}
                 </span>
               </span>
               <span className="text-muted">•</span>
-              <span className="flex items-center gap-1.5">
-                <FaTimes className="text-muted text-xs" />
+              <span className="flex items-center gap-1 sm:gap-1.5">
+                <FaTimes className="text-muted text-[10px] sm:text-xs" />
                 <span className="font-semibold">
                   {selectedDislikes.length}/{maxSelections}
                 </span>
@@ -154,23 +154,23 @@ export default function QuickFireNotes({
             </div>
           </div>
 
-          <p className="m-0 mt-2 text-center text-[10px] text-muted sm:text-xs">
+          <p className="m-0 mt-1.5 sm:mt-2 text-center text-[9px] sm:text-[10px] text-muted">
             رایحه‌ها را بکشید و در سبد مناسب رها کنید
           </p>
         </div>
 
         {/* Available grid */}
-        <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border min-h-0 rounded-2xl p-3 sm:p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="m-0 text-sm font-semibold text-[var(--color-foreground)]">
+        <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border min-h-0 rounded-2xl p-2 sm:p-4">
+          <div className="mb-1.5 sm:mb-2 flex items-center justify-between">
+            <h3 className="m-0 text-xs sm:text-sm font-semibold text-[var(--color-foreground)]">
               رایحه‌های موجود
             </h3>
-            <span className="text-xs text-muted">
+            <span className="text-[10px] sm:text-xs text-muted">
               ({availableNotes.length})
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5 md:grid-cols-6">
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2.5 md:grid-cols-6">
             {availableNotes.map((note) => (
               <DraggableNote
                 key={note.value}
@@ -188,7 +188,7 @@ export default function QuickFireNotes({
         </div>
 
         {/* Baskets (slightly bigger) */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <DropZone
             id="like-basket"
             title="دوست دارم"
@@ -226,11 +226,15 @@ export default function QuickFireNotes({
                 className={[
                   "glass-card backdrop-blur-xl glass-button-gradient-border",
                   // match tile size
-                  "flex h-[96px] w-[120px] flex-col items-center justify-center gap-1 rounded-3xl px-2 py-2 shadow-strong",
+                  "flex h-[65px] sm:h-[96px] w-[85px] sm:w-[120px] flex-col items-center justify-center gap-0 sm:gap-1 rounded-2xl sm:rounded-3xl px-0.5 py-0.5 sm:px-2 sm:py-2 shadow-strong",
                 ].join(" ")}
               >
-                {activeNote.icon && <Icon emoji={activeNote.icon} size={30} />}
-                <span className="line-clamp-1 text-[10px] font-semibold text-center text-[var(--color-foreground)]">
+                {activeNote.icon && (
+                  <span className="w-5 h-5 sm:w-[30px] sm:h-[30px] flex items-center justify-center">
+                    <Icon emoji={activeNote.icon} size={20} className="w-full h-full" />
+                  </span>
+                )}
+                <span className="line-clamp-1 text-[9px] sm:text-[10px] font-semibold text-center text-[var(--color-foreground)] leading-normal">
                   {activeNote.label}
                 </span>
               </motion.div>
@@ -273,14 +277,18 @@ function DraggableNote({
       {...attributes}
       className={[
         "glass-card backdrop-blur-xl glass-button-gradient-border",
-        "flex h-[96px] w-full flex-col items-center justify-center gap-1 rounded-3xl px-2 py-2",
+        "flex h-[65px] sm:h-[96px] w-full flex-col items-center justify-center gap-0 sm:gap-1 rounded-2xl sm:rounded-3xl px-0.5 py-0.5 sm:px-2 sm:py-2",
         "select-none touch-none cursor-grab active:cursor-grabbing",
         "transition-transform duration-200 hover:scale-[1.015]",
         isActive || isDragging ? "opacity-25" : "opacity-100",
       ].join(" ")}
     >
-      {note.icon && <Icon emoji={note.icon} size={30} />}
-      <span className="line-clamp-1 text-[10px] font-semibold text-center text-[var(--color-foreground)]">
+      {note.icon && (
+        <span className="w-5 h-5 sm:w-[30px] sm:h-[30px] flex items-center justify-center">
+          <Icon emoji={note.icon} size={20} className="w-full h-full" />
+        </span>
+      )}
+      <span className="line-clamp-1 text-[9px] sm:text-[10px] font-semibold text-center text-[var(--color-foreground)] leading-normal">
         {note.label}
       </span>
     </button>
@@ -319,8 +327,8 @@ function DropZone({
       className={[
         "glass-surface backdrop-blur-xl glass-button-gradient-border",
         // slightly bigger basket
-        "rounded-2xl px-4 py-3 sm:px-5 sm:py-4",
-        "min-h-[150px] sm:min-h-[170px]",
+        "rounded-2xl px-3 py-2 sm:px-5 sm:py-4",
+        "min-h-[120px] sm:min-h-[170px]",
         "transition-all duration-200",
         isOver && canDrop
           ? theme === "like"
@@ -330,14 +338,14 @@ function DropZone({
         !canDrop ? "opacity-70" : "",
       ].join(" ")}
     >
-      <div className="mb-2 flex items-center justify-center gap-1.5">
+      <div className="mb-1.5 sm:mb-2 flex items-center justify-center gap-1 sm:gap-1.5">
         {icon}
-        <span className="text-xs font-semibold text-[var(--color-foreground)]">
+        <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-foreground)]">
           {title} ({count}/{maxCount})
         </span>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-1.5">
+      <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5">
         <AnimatePresence initial={false}>
           {items.map((note) => (
             <motion.button

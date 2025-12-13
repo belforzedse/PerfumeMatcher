@@ -30,7 +30,7 @@ export default function PairwiseChoice({
       initial="hidden"
       animate="show"
     >
-      <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+      <div className="relative flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:gap-6">
         <motion.button
           onClick={() => onSelect("left")}
           variants={itemVariants}
@@ -72,6 +72,22 @@ export default function PairwiseChoice({
             )}
           </div>
         </motion.button>
+
+        {showNotSure && (
+          <motion.button
+            onClick={() => onSelect("none")}
+            variants={itemVariants}
+            className={`glass-surface mx-auto w-full max-w-md rounded-2xl px-6 py-4 text-center transition-all duration-300 sm:hidden ${
+              selected === "none"
+                ? "bg-[var(--color-accent-soft)] border-2 border-[var(--color-accent)] scale-[1.02]"
+                : "border border-[var(--color-border)] hover:bg-white/10 hover:scale-[1.01]"
+            } tap-highlight touch-target touch-feedback focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]`}
+          >
+            <span className="text-sm font-medium text-[var(--color-foreground)] sm:text-base">
+              ترجیح نمی‌دهم
+            </span>
+          </motion.button>
+        )}
 
         <motion.button
           onClick={() => onSelect("right")}
@@ -120,7 +136,7 @@ export default function PairwiseChoice({
         <motion.button
           onClick={() => onSelect("none")}
           variants={itemVariants}
-          className={`glass-surface mx-auto w-full max-w-md rounded-2xl px-6 py-4 text-center transition-all duration-300 ${
+          className={`hidden sm:block glass-surface mx-auto w-full max-w-md rounded-2xl px-6 py-4 text-center transition-all duration-300 ${
             selected === "none"
               ? "bg-[var(--color-accent-soft)] border-2 border-[var(--color-accent)] scale-[1.02]"
               : "border border-[var(--color-border)] hover:bg-white/10 hover:scale-[1.01]"

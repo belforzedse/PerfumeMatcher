@@ -1,16 +1,19 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
+import { BiPencil } from "react-icons/bi";
+
 import { useFadeScaleVariants, useStaggeredListVariants } from "@/lib/motion";
 import type { QuestionnaireAnswers } from "@/lib/questionnaire";
-import {
-  getSceneLabel,
-  getVibeLabel,
-  getIntensityLabel,
-  getSafetyLabel,
-} from "@/lib/questionnaire-mapper";
-import { LABEL_LOOKUP } from "@/lib/kiosk-options";
 import type { UserResponses } from "@/lib/questionnaire-mapper";
+import { NOTE_CHOICES } from "@/lib/kiosk-options";
+import { Icon } from "@/lib/icons";
+import {
+  getSceneChoices,
+  getVibePairs,
+  getIntensityChoices,
+} from "@/lib/questionnaire-mapper";
 
 interface ReviewScreenProps {
   responses: UserResponses;
@@ -18,149 +21,365 @@ interface ReviewScreenProps {
   onEdit: (section: string) => void;
 }
 
-export default function ReviewScreen({ responses, answers, onEdit }: ReviewScreenProps) {
+type ChipKind = "neutral" | "accent" | "danger";
+
+type ReviewChip = {
+  id: string;
+  label: string;
+  icon?: string;
+  editSection: string;
+  kind: ChipKind;
+};
+
+function SectionHeader({
+  title,
+  subtitle,
+  count,
+  onEdit,
+  className = "",
+}: {
+  title: string;
+  subtitle?: string;
+  count: number;
+  onEdit: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={[
+        "col-span-full flex items-center justify-between",
+        className,
+      ].join(" ")}
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-[var(--color-foreground)]">
+            {title}
+          </span>
+          <span className="text-[11px] text-muted">({count})</span>
+        </div>
+        {subtitle ? (
+          <p className="m-0 mt-0.5 text-[11px] text-muted line-clamp-1">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+
+    
+    </div>
+  );
+}
+
+function Chip({
+  chip,
+  isRtl,
+  variants,
+  onClick,
+}: {
+  chip: ReviewChip;
+  isRtl: boolean;
+  variants: any;
+  onClick: () => void;
+}) {
+  const base =
+    "glass-chip glass-chip--compact inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold";
+  const layout = isRtl ? "flex-row-reverse" : "flex-row";
+
+  const tone =
+    chip.kind === "danger"
+      ? "border border-red-500/25 bg-red-500/8 text-red-700"
+      : chip.kind === "accent"
+      ? "border border-[var(--color-accent)]/22 bg-[var(--color-accent-soft)]/14 text-[var(--color-accent)]"
+      : "border border-[var(--color-border)] bg-white/10 text-[var(--color-foreground)]";
+
+  return (
+    <motion.button
+      type="button"
+      variants={variants}
+      onClick={onClick}
+      className={[
+        "tap-highlight touch-target touch-feedback",
+        "transition-transform duration-150 hover:scale-[1.02]",
+        base,
+        tone,
+        layout,
+      ].join(" ")}
+    >
+      {chip.icon ? (
+        <span
+          className={
+            chip.kind === "danger"
+              ? "text-red-600"
+              : chip.kind === "accent"
+              ? "text-[var(--color-accent)]"
+              : "text-[var(--color-foreground)]"
+          }
+        >
+          <Icon emoji={chip.icon} size={16} />
+        </span>
+      ) : null}
+      <span className="line-clamp-1">{chip.label}</span>
+    </motion.button>
+  );
+}
+
+export default function ReviewScreen({
+  responses,
+  answers,
+  onEdit,
+}: ReviewScreenProps) {
   const containerVariants = useStaggeredListVariants({
-    delayChildren: 0.1,
-    staggerChildren: 0.06,
+    delayChildren: 0.04,
+    staggerChildren: 0.02,
   });
 
   const itemVariants = useFadeScaleVariants({
-    y: 16,
-    scale: 0.98,
-    blur: 8,
+    y: 8,
+    scale: 0.99,
+    blur: 6,
   });
+
+  const isRtl = useMemo(() => {
+    if (typeof window === "undefined") return true;
+    const dir = document.documentElement.getAttribute("dir");
+    if (dir) return dir.toLowerCase() === "rtl";
+    return getComputedStyle(document.documentElement).direction === "rtl";
+  }, []);
+
+  // Preload mappings once
+  const sceneChoices = useMemo(() => getSceneChoices(), []);
+  const vibePairs = useMemo(() => getVibePairs(), []);
+  const intensityChoices = useMemo(() => getIntensityChoices(), []);
+
+  const sceneMap = useMemo(
+    () => new Map(sceneChoices.map((s) => [s.id, s])),
+    [sceneChoices]
+  );
+  const vibeMap = useMemo(
+    () => new Map(vibePairs.map((v) => [v.id, v])),
+    [vibePairs]
+  );
+  const intensityMap = useMemo(
+    () => new Map(intensityChoices.map((i) => [i.id, i])),
+    [intensityChoices]
+  );
+  const noteMap = useMemo(
+    () => new Map(NOTE_CHOICES.map((n) => [n.value, n])),
+    []
+  );
+
+  const sceneChips: ReviewChip[] = useMemo(() => {
+    return (responses.scenes ?? [])
+      .map((id) => {
+        const s = sceneMap.get(id);
+        if (!s) return null;
+        return {
+          id: `scene-${id}`,
+          label: s.label,
+          icon: s.icon,
+          editSection: "scenes",
+          kind: "neutral" as const,
+        };
+      })
+      .filter(Boolean) as ReviewChip[];
+  }, [responses.scenes, sceneMap]);
+
+  const vibeChips: ReviewChip[] = useMemo(() => {
+    const chips: ReviewChip[] = [];
+    (responses.vibePairs ?? []).forEach((entry, idx) => {
+      if (!entry) return;
+      const [vibeId, side] = entry.split(":");
+      const v = vibeMap.get(vibeId);
+      if (!v) return;
+      const chosen = side === "left" ? v.left : v.right;
+      if (!chosen) return;
+
+      chips.push({
+        id: `vibe-${entry}-${idx}`,
+        label: chosen.label,
+        icon: chosen.icon,
+        editSection: "vibes",
+        kind: "neutral",
+      });
+    });
+    return chips;
+  }, [responses.vibePairs, vibeMap]);
+
+  const intensityChip: ReviewChip | null = useMemo(() => {
+    if (!responses.intensity) return null;
+    const it = intensityMap.get(responses.intensity);
+    if (!it) return null;
+    return {
+      id: `intensity-${responses.intensity}`,
+      label: it.label,
+      icon: it.icon,
+      editSection: "intensity",
+      kind: "accent",
+    };
+  }, [responses.intensity, intensityMap]);
+
+  const likeChips: ReviewChip[] = useMemo(() => {
+    return (answers.noteLikes ?? [])
+      .map((val) => {
+        const n = noteMap.get(val);
+        if (!n) return null;
+        return {
+          id: `like-${val}`,
+          label: n.label,
+          icon: n.icon,
+          editSection: "notes",
+          kind: "accent" as const,
+        };
+      })
+      .filter(Boolean) as ReviewChip[];
+  }, [answers.noteLikes, noteMap]);
+
+  const dislikeChips: ReviewChip[] = useMemo(() => {
+    return (answers.noteDislikes ?? [])
+      .map((val) => {
+        const n = noteMap.get(val);
+        if (!n) return null;
+        return {
+          id: `dislike-${val}`,
+          label: n.label,
+          icon: n.icon,
+          editSection: "notes",
+          kind: "danger" as const,
+        };
+      })
+      .filter(Boolean) as ReviewChip[];
+  }, [answers.noteDislikes, noteMap]);
 
   return (
     <motion.div
-      className="flex flex-col gap-4"
+      className="grid grid-cols-1 gap-3 sm:gap-4"
       variants={containerVariants}
       initial="hidden"
       animate="show"
     >
-      {responses.scenes.length > 0 && (
-        <motion.div variants={itemVariants} className="glass-card backdrop-blur-xl glass-button-gradient-border rounded-2xl p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-              صحنه‌های انتخاب شده
-            </h3>
-            <button
-              onClick={() => onEdit("scenes")}
-              className="btn-ghost text-xs sm:text-sm tap-highlight touch-target touch-feedback"
-            >
-              ویرایش
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {responses.scenes.map((sceneId) => (
-              <span
-                key={sceneId}
-                className="glass-chip glass-chip--compact glass-chip--muted text-xs sm:text-sm"
-              >
-                {getSceneLabel(sceneId)}
-              </span>
+      {/* Scenes */}
+      {sceneChips.length > 0 ? (
+        <div className="grid grid-cols-1 gap-2">
+          <SectionHeader
+            title="صحنه‌ها"
+            subtitle="جاهایی که دوست داری عطر تو اون فضاها حس بشه"
+            count={sceneChips.length}
+            onEdit={() => onEdit("scenes")}
+          />
+          <div className="col-span-full flex flex-wrap gap-2">
+            {sceneChips.map((c) => (
+              <Chip
+                key={c.id}
+                chip={c}
+                isRtl={isRtl}
+                variants={itemVariants}
+                onClick={() => onEdit(c.editSection)}
+              />
             ))}
           </div>
-        </motion.div>
-      )}
+        </div>
+      ) : null}
 
-      {responses.vibePairs.length > 0 && (
-        <motion.div variants={itemVariants} className="glass-card backdrop-blur-xl glass-button-gradient-border rounded-2xl p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-              ترجیحات استایل
-            </h3>
-            <button
-              onClick={() => onEdit("vibes")}
-              className="btn-ghost text-xs sm:text-sm tap-highlight touch-target touch-feedback"
-            >
-              ویرایش
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {responses.vibePairs.map((vibeId, index) => (
-              <span
-                key={`${vibeId}-${index}`}
-                className="glass-chip glass-chip--compact glass-chip--muted text-xs sm:text-sm"
-              >
-                {getVibeLabel(vibeId, "left")} / {getVibeLabel(vibeId, "right")}
-              </span>
+      {/* Personality: vibes + intensity together (dense) */}
+      {vibeChips.length > 0 || intensityChip ? (
+        <div className="grid grid-cols-1 gap-2">
+          <SectionHeader
+            title="شخصیت"
+            subtitle="حس‌و‌حال + شدت حضور"
+            count={vibeChips.length + (intensityChip ? 1 : 0)}
+            onEdit={() => onEdit("vibes")}
+          />
+
+          <div className="col-span-full flex flex-wrap gap-2">
+            {intensityChip ? (
+              <Chip
+                chip={intensityChip}
+                isRtl={isRtl}
+                variants={itemVariants}
+                onClick={() => onEdit(intensityChip.editSection)}
+              />
+            ) : null}
+
+            {vibeChips.map((c) => (
+              <Chip
+                key={c.id}
+                chip={c}
+                isRtl={isRtl}
+                variants={itemVariants}
+                onClick={() => onEdit(c.editSection)}
+              />
             ))}
           </div>
-        </motion.div>
-      )}
+        </div>
+      ) : null}
 
-      {responses.intensity && (
-        <motion.div variants={itemVariants} className="glass-card backdrop-blur-xl glass-button-gradient-border rounded-2xl p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-              شدت
-            </h3>
-            <button
-              onClick={() => onEdit("intensity")}
-              className="btn-ghost text-xs sm:text-sm tap-highlight touch-target touch-feedback"
-            >
-              ویرایش
-            </button>
-          </div>
-          <span className="glass-chip glass-chip--compact glass-chip--accent text-xs sm:text-sm">
-            {getIntensityLabel(responses.intensity)}
-          </span>
-        </motion.div>
-      )}
+      {/* Notes: 2-column feel on mobile without big cards */}
+      {likeChips.length > 0 || dislikeChips.length > 0 ? (
+        <div className="grid grid-cols-1 gap-2">
+          <SectionHeader
+            title="نُت‌ها"
+            subtitle="دوست داری / دوست نداری"
+            count={likeChips.length + dislikeChips.length}
+            onEdit={() => onEdit("notes")}
+          />
 
-      {answers.noteLikes.length > 0 && (
-        <motion.div variants={itemVariants} className="glass-card backdrop-blur-xl glass-button-gradient-border rounded-2xl p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-              رایحه‌های مورد علاقه
-            </h3>
-            <button
-              onClick={() => onEdit("notes")}
-              className="btn-ghost text-xs sm:text-sm tap-highlight touch-target touch-feedback"
-            >
-              ویرایش
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {answers.noteLikes.map((note) => (
-              <span
-                key={note}
-                className="glass-chip glass-chip--compact glass-chip--accent text-xs sm:text-sm"
-              >
-                {LABEL_LOOKUP[note] || note}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-      )}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {/* Likes */}
+            <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-2xl p-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[var(--color-accent)]">
+                  دوست دارم
+                </span>
+                <span className="text-[11px] text-muted">
+                  ({likeChips.length})
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {likeChips.length ? (
+                  likeChips.map((c) => (
+                    <Chip
+                      key={c.id}
+                      chip={c}
+                      isRtl={isRtl}
+                      variants={itemVariants}
+                      onClick={() => onEdit(c.editSection)}
+                    />
+                  ))
+                ) : (
+                  <span className="text-[11px] text-muted">انتخاب نشده</span>
+                )}
+              </div>
+            </div>
 
-      {answers.noteDislikes.length > 0 && (
-        <motion.div variants={itemVariants} className="glass-card backdrop-blur-xl glass-button-gradient-border rounded-2xl p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="m-0 text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-              رایحه‌های غیرقابل قبول
-            </h3>
-            <button
-              onClick={() => onEdit("notes")}
-              className="btn-ghost text-xs sm:text-sm tap-highlight touch-target touch-feedback"
-            >
-              ویرایش
-            </button>
+            {/* Dislikes */}
+            <div className="glass-surface backdrop-blur-xl glass-chip-gradient-border rounded-2xl p-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-red-700">
+                  دوست ندارم
+                </span>
+                <span className="text-[11px] text-muted">
+                  ({dislikeChips.length})
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {dislikeChips.length ? (
+                  dislikeChips.map((c) => (
+                    <Chip
+                      key={c.id}
+                      chip={c}
+                      isRtl={isRtl}
+                      variants={itemVariants}
+                      onClick={() => onEdit(c.editSection)}
+                    />
+                  ))
+                ) : (
+                  <span className="text-[11px] text-muted">انتخاب نشده</span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {answers.noteDislikes.map((note) => (
-              <span
-                key={note}
-                className="glass-chip glass-chip--compact glass-chip--muted text-xs sm:text-sm border-red-500/30"
-              >
-                {LABEL_LOOKUP[note] || note}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-      )}
+        </div>
+      ) : null}
     </motion.div>
   );
 }
-
-
