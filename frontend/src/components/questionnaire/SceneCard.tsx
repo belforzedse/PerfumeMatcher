@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useFadeScaleVariants, useStaggeredListVariants } from "@/lib/motion";
 import type { SceneChoice } from "@/lib/questionnaire-mapper";
@@ -16,7 +17,6 @@ interface SceneCardProps {
 
 /**
  * Placeholder images (picsum). Replace these with your own uploaded images later.
- * NOTE: we do NOT rely on Picsum params for grayscale etc — grayscale is done via CSS filters.
  */
 const SCENE_IMAGES: Record<string, string> = {
   "morning-cafe": "https://picsum.photos/seed/morning-cafe/900/1200",
@@ -29,96 +29,143 @@ const SCENE_IMAGES: Record<string, string> = {
   "gift-occasion": "https://picsum.photos/seed/gift-occasion/900/1200",
 };
 
-function OrnateFrameOverlay({ selected }: { selected: boolean }) {
-  // Ornate border that frames the card from outside
-  const borderColor = selected 
-    ? "rgba(255,255,255,0.9)" 
-    : "rgba(255,255,255,0.65)";
-  const innerColor = selected
-    ? "rgba(255,255,255,0.4)"
-    : "rgba(255,255,255,0.28)";
-  
+/**
+ * Minarets and points - rendered OUTSIDE button to not extend click area.
+ */
+function FrameDecorations({ selected }: { selected: boolean }) {
+  const borderColor = selected
+    ? "rgba(160, 140, 100, 1)"
+    : "rgba(120, 105, 75, 0.85)";
+
   return (
-    <svg
-      className="pointer-events-none absolute inset-0 z-10 h-full w-full"
-      viewBox="0 0 100 140"
-      preserveAspectRatio="none"
-      fill="none"
-      aria-hidden="true"
-    >
-      {/* Outer ornate border */}
-      <path
-        d="
-          M3 8
-          Q3 3 8 3
-          H92
-          Q97 3 97 8
-          V132
-          Q97 137 92 137
-          H8
-          Q3 137 3 132
-          V8
-          Z
-        "
-        stroke={borderColor}
-        strokeWidth="2.5"
-        fill="none"
+    <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-30">
+      {/* Top center point */}
+      <div
+        className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeft: "6px solid transparent",
+          borderRight: "6px solid transparent",
+          borderBottom: `8px solid ${borderColor}`,
+        }}
+      />
+
+      {/* Bottom center point */}
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeft: "6px solid transparent",
+          borderRight: "6px solid transparent",
+          borderTop: `8px solid ${borderColor}`,
+        }}
+      />
+
+      {/* Minaret - Left */}
+      <div className="absolute left-[10px] top-0 flex -translate-y-[100%] flex-col items-center">
+        <div
+          className="h-[5px] w-[5px] rounded-full"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[3px] w-[2px]"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[5px] w-[10px] rounded-t-full"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[12px] w-[6px] rounded-b-sm"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+      </div>
+
+      {/* Minaret - Right */}
+      <div className="absolute right-[10px] top-0 flex -translate-y-[100%] flex-col items-center">
+        <div
+          className="h-[5px] w-[5px] rounded-full"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[3px] w-[2px]"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[5px] w-[10px] rounded-t-full"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+        <div
+          className="h-[12px] w-[6px] rounded-b-sm"
+          style={{ backgroundColor: borderColor, opacity: selected ? 1 : 0.7 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Frame borders only - inside button, no overflow elements.
+ */
+function FrameBorders({ selected }: { selected: boolean }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {/* Outer frame border */}
+      <div
+        className={cn(
+          "absolute inset-[3px] rounded-[20px] border-2",
+          selected
+            ? "border-[rgba(160,140,100,1)]"
+            : "border-[rgba(120,105,75,0.6)]"
+        )}
       />
 
       {/* Inner decorative border */}
-      <path
-        d="
-          M8 12
-          Q8 8 12 8
-          H88
-          Q92 8 92 12
-          V128
-          Q92 132 88 132
-          H12
-          Q8 132 8 128
-          V12
-          Z
-        "
-        stroke={innerColor}
-        strokeWidth="1.5"
-        fill="none"
+      <div
+        className={cn(
+          "absolute inset-[9px] rounded-[16px] border",
+          selected
+            ? "border-[rgba(160,140,100,0.35)]"
+            : "border-[rgba(120,105,75,0.2)]"
+        )}
       />
 
-      {/* Corner flourishes - top left */}
-      <path
-        d="M12 10 C8 10 8 14 8 18"
-        stroke={borderColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
+      {/* Corner ornaments */}
+      <div
+        className={cn(
+          "absolute left-[6px] top-[6px] h-4 w-4 rounded-tl-[14px] border-l-2 border-t-2",
+          selected
+            ? "border-[rgba(180,160,120,1)]"
+            : "border-[rgba(140,120,90,0.6)]"
+        )}
       />
-      {/* Corner flourishes - top right */}
-      <path
-        d="M88 10 C92 10 92 14 92 18"
-        stroke={borderColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
+      <div
+        className={cn(
+          "absolute right-[6px] top-[6px] h-4 w-4 rounded-tr-[14px] border-r-2 border-t-2",
+          selected
+            ? "border-[rgba(180,160,120,1)]"
+            : "border-[rgba(140,120,90,0.6)]"
+        )}
       />
-      {/* Corner flourishes - bottom left */}
-      <path
-        d="M12 130 C8 130 8 126 8 122"
-        stroke={borderColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
+      <div
+        className={cn(
+          "absolute bottom-[6px] left-[6px] h-4 w-4 rounded-bl-[14px] border-b-2 border-l-2",
+          selected
+            ? "border-[rgba(180,160,120,1)]"
+            : "border-[rgba(140,120,90,0.6)]"
+        )}
       />
-      {/* Corner flourishes - bottom right */}
-      <path
-        d="M88 130 C92 130 92 126 92 122"
-        stroke={borderColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
+      <div
+        className={cn(
+          "absolute bottom-[6px] right-[6px] h-4 w-4 rounded-br-[14px] border-b-2 border-r-2",
+          selected
+            ? "border-[rgba(180,160,120,1)]"
+            : "border-[rgba(140,120,90,0.6)]"
+        )}
       />
-
-      {/* Additional decorative elements */}
-      <circle cx="50" cy="8" r="1.5" fill={borderColor} opacity="0.8" />
-      <circle cx="50" cy="132" r="1.5" fill={borderColor} opacity="0.8" />
-      <circle cx="8" cy="70" r="1.5" fill={borderColor} opacity="0.8" />
-      <circle cx="92" cy="70" r="1.5" fill={borderColor} opacity="0.8" />
-    </svg>
+    </div>
   );
 }
 
@@ -128,8 +175,7 @@ export default function SceneCard({
   maxSelections,
   onToggle,
 }: SceneCardProps) {
-  // Back to your original “kiosk height” gate (undo the testing threshold).
-  const isKioskHeight = useViewportHeight(768);
+  const useImageCards = useViewportHeight(600);
 
   const containerVariants = useStaggeredListVariants({
     delayChildren: 0.12,
@@ -137,20 +183,18 @@ export default function SceneCard({
   });
 
   const itemVariants = useFadeScaleVariants({
-    y: 16,
-    scale: 0.97,
-    blur: 8,
+    y: 18,
+    scale: 0.96,
+    blur: 10,
   });
+
+  const gridClass = useImageCards
+    ? "grid grid-cols-2 sm:grid-cols-3 w-full gap-4 sm:gap-5"
+    : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 w-full gap-3 sm:gap-4";
 
   return (
     <motion.div
-      className={cn(
-        "grid w-full gap-3 sm:gap-4",
-        // Bigger, more “kiosk-filling” layout when tall enough
-        isKioskHeight
-          ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4"
-          : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-      )}
+      className={gridClass}
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -158,12 +202,7 @@ export default function SceneCard({
       {scenes.map((scene) => {
         const isSelected = selected.includes(scene.id);
         const disabled = !isSelected && selected.length >= maxSelections;
-
-        const img = SCENE_IMAGES[scene.id];
-
-        // In “non-kiosk height” mode you said you want it closer to the old style.
-        // So we only do the big image cards when isKioskHeight is true.
-        const useImageCard = Boolean(img) && isKioskHeight;
+        const imageUrl = useImageCards ? SCENE_IMAGES[scene.id] : null;
 
         return (
           <motion.div
@@ -171,152 +210,144 @@ export default function SceneCard({
             variants={itemVariants}
             className={cn(
               "relative",
-              useImageCard
-                ? cn(
-                    // Image card sizing with border wrapper - add padding for border
-                    "aspect-[3/4] min-h-[190px] sm:min-h-[240px]",
-                    "p-[3px]"
-                  )
-                : ""
+              useImageCards && "pt-[25px] pb-[4px]" // Space for minarets top, point bottom
             )}
           >
-            {/* Ornate frame border - wraps the entire card from outside */}
-            {useImageCard && (
-              <OrnateFrameOverlay selected={isSelected} />
-            )}
+            {/* Decorations OUTSIDE the button */}
+            {useImageCards && <FrameDecorations selected={isSelected} />}
 
             <motion.button
               type="button"
               onClick={() => !disabled && onToggle(scene.id)}
               disabled={disabled}
               className={cn(
-                "relative h-full w-full overflow-hidden text-right transition-all duration-300",
-                "rounded-2xl sm:rounded-3xl",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]",
-                disabled ? "opacity-45 cursor-not-allowed" : "hover:scale-[1.02]",
-                useImageCard
-                  ? cn(
-                      // Image card - full size, border is outside wrapper
-                      "shadow-soft hover:shadow-strong"
-                    )
-                  : cn(
-                      // Old-ish glass fallback (compact)
+                "group relative w-full overflow-hidden text-right",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2",
+                disabled
+                  ? "cursor-not-allowed opacity-55"
+                  : "tap-highlight touch-target touch-feedback",
+                useImageCards
+                  ? [
+                      "rounded-[20px]",
+                      "min-h-[220px] sm:min-h-[260px]",
+                      "aspect-[3/4]",
+                      "transition-transform duration-200 hover:scale-[1.01]",
+                    ]
+                  : [
                       "glass-card backdrop-blur-xl glass-button-gradient-border",
-                      "min-h-[110px] sm:min-h-[140px]",
-                      "p-4 sm:p-5",
-                      isSelected
-                        ? "border-2 border-[var(--color-accent)]/55 shadow-strong"
-                        : "border border-[var(--color-border)] hover:shadow-soft"
-                    )
+                      "rounded-2xl p-4 sm:p-5",
+                      "min-h-[120px] sm:min-h-[150px]",
+                      "border border-[var(--color-border)]",
+                      "transition-transform duration-200 hover:scale-[1.02] hover:shadow-soft",
+                      isSelected &&
+                        "border-2 border-[var(--color-accent)] bg-gradient-to-br from-white/90 to-[var(--color-accent-soft)]/40 shadow-strong",
+                    ]
               )}
             >
-              {/* IMAGE MODE (kiosk height) */}
-              {useImageCard ? (
+              {useImageCards ? (
                 <>
-                  {/* Background image - full size, border is outside wrapper */}
-                  <img
-                    src={img}
-                    alt=""
-                    className={cn(
-                      "absolute inset-0 h-full w-full object-cover",
-                      "transition-[filter,transform] duration-500",
-                      // grayscale ONLY when NOT selected
-                      !isSelected
-                        ? "grayscale contrast-[1.05] brightness-[0.92]"
-                        : "grayscale-0",
-                      // subtle zoom on hover (but not when disabled)
-                      !disabled && "group-hover:scale-[1.03]"
-                    )}
-                    draggable={false}
-                  />
+                  {/* Image layer */}
+                  {imageUrl && (
+                    <Image
+                      src={imageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className={cn(
+                        "object-cover rounded-[20px]",
+                        !isSelected && "grayscale",
+                        "transition-[filter] duration-300",
+                        !isSelected && "group-hover:grayscale-0"
+                      )}
+                      loading="lazy"
+                      unoptimized
+                    />
+                  )}
 
-                  {/* Bottom gradient only (no extra color overlay, no gold) */}
+                  {/* Bottom gradient */}
                   <div
-                    className={cn(
-                      "absolute inset-0",
-                      // stronger at bottom; lighter at top
-                      "bg-gradient-to-t from-black/80 via-black/25 to-black/5"
-                    )}
                     aria-hidden="true"
+                    className="absolute inset-0 rounded-[20px] bg-gradient-to-t from-black/85 via-black/30 to-black/0"
                   />
 
-                {/* Selected indicator */}
-                {isSelected && (
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="pointer-events-none absolute left-4 top-4 z-30 rounded-full bg-white/18 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md"
-                  >
-                    انتخاب شده
-                  </motion.span>
-                )}
+                  {/* Frame borders (inside button - no overflow) */}
+                  <FrameBorders selected={isSelected} />
 
-                {/* Icon chip (top-right, subtle) */}
-                {scene.icon && (
-                  <div className="pointer-events-none absolute right-4 top-4 z-30">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20">
-                      <Icon
-                        emoji={scene.icon}
-                        size={20}
-                        className="text-white"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Content bottom (sit where gradient is strong) */}
-                <div className="absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
-                  <h3 className="m-0 text-base font-semibold text-white sm:text-lg">
-                    {scene.label}
-                  </h3>
-
-                  {scene.description && (
-                    <p className="m-0 mt-1 text-xs text-white/80 sm:text-sm">
-                      {scene.description}
-                    </p>
-                  )}
-
-                  <div className="mt-3 h-[2px] w-10 rounded-full bg-white/40" />
-                </div>
-
-                {/* Click affordance */}
-                <span className="pointer-events-none absolute inset-0 ring-1 ring-white/10" />
-              </>
-            ) : (
-              /* FALLBACK MODE (old-ish) */
-              <>
-                <div className="flex items-start justify-between gap-3">
-                  {scene.icon && (
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/30">
-                      <Icon emoji={scene.icon} size={22} />
-                    </span>
-                  )}
+                  {/* Selected badge */}
                   {isSelected && (
-                    <span className="glass-chip glass-chip--compact glass-chip--accent text-[10px] font-semibold">
+                    <span className="absolute left-4 top-4 z-30 rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20">
                       انتخاب شده
                     </span>
                   )}
-                </div>
 
-                <div className="mt-3 space-y-1">
-                  <h3
-                    className={cn(
-                      "m-0 text-base font-semibold sm:text-lg",
-                      isSelected
-                        ? "text-[var(--color-accent)]"
-                        : "text-[var(--color-foreground)]"
+                  {/* Content */}
+                  <div className="relative z-10 flex h-full flex-col px-5 pb-6 pt-5 sm:px-6 sm:pb-7">
+                    {scene.icon && (
+                      <div className="flex justify-center">
+                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-black/30 ring-1 ring-white/20">
+                          <Icon emoji={scene.icon} size={24} />
+                        </span>
+                      </div>
                     )}
-                  >
-                    {scene.label}
-                  </h3>
-                  {scene.description && (
-                    <p className="m-0 text-xs text-muted sm:text-sm">
-                      {scene.description}
-                    </p>
-                  )}
+
+                    <div className="mt-auto space-y-1.5 text-center">
+                      <h3 className="m-0 text-lg font-semibold leading-snug text-white sm:text-xl">
+                        {scene.label}
+                      </h3>
+
+                      {scene.description && (
+                        <p className="m-0 text-xs leading-relaxed text-white/80 sm:text-sm">
+                          {scene.description}
+                        </p>
+                      )}
+
+                      <div className="mx-auto mt-3 h-[2px] w-10 rounded-full bg-white/25" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Non-image card fallback */
+                <div className="flex h-full flex-col items-start justify-between gap-3">
+                  <div className="flex w-full items-start justify-between gap-2">
+                    {scene.icon && (
+                      <span className="flex h-10 w-10 items-center justify-center">
+                        <Icon emoji={scene.icon} size={32} />
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="glass-chip glass-chip--compact glass-chip--accent text-[10px] font-semibold sm:text-xs">
+                        انتخاب شده
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3
+                      className={cn(
+                        "m-0 text-base font-semibold sm:text-lg",
+                        isSelected
+                          ? "text-[var(--color-accent)]"
+                          : "text-[var(--color-foreground)]"
+                      )}
+                    >
+                      {scene.label}
+                    </h3>
+                    {scene.description && (
+                      <p
+                        className={cn(
+                          "m-0 text-xs sm:text-sm",
+                          isSelected
+                            ? "text-[var(--color-foreground)]/90"
+                            : "text-muted"
+                        )}
+                      >
+                        {scene.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </>
-            )}
+              )}
             </motion.button>
           </motion.div>
         );

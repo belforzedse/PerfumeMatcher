@@ -427,7 +427,7 @@ export default function Questionnaire() {
     <KioskFrame>
       <main
         aria-labelledby={headingId}
-        className="page-main flex min-h-0 w-full flex-1 items-center justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
+        className="page-main flex min-h-0 w-full flex-1 items-stretch overflow-hidden justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
       >
         <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col">
           <AnimatePresence mode="wait">

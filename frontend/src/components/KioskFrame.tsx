@@ -15,8 +15,10 @@ import {
   useMotionSafeTransition,
 } from "@/lib/motion";
 
-const QUESTIONNAIRE_TIMEOUT_MS = 30_000; // 30 seconds
-const RECOMMENDATIONS_TIMEOUT_MS = 120_000; // 2 minutes
+// In development, disable idle timer (0) or use much longer timeouts
+const isDev = process.env.NODE_ENV === "development";
+const QUESTIONNAIRE_TIMEOUT_MS = isDev ? 1000_000 : 30_000; // 30 seconds (disabled in dev)
+const RECOMMENDATIONS_TIMEOUT_MS = isDev ? 0 : 120_000; // 2 minutes (disabled in dev)
 const NON_INTERACTIVE_KEYS = new Set([
   "Shift",
   "Meta",

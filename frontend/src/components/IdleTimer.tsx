@@ -69,9 +69,10 @@ export default function IdleTimer({ timeoutMs, onIdle, isActive }: IdleTimerProp
       initial="hidden"
       animate="show"
       exit="exit"
+      
     >
       <div
-        className="idle-timer glass-chip glass-chip--compact glass-chip--pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent-strong)] focus-visible:outline-offset-2"
+        className="idle-timer glass-chip glass-chip--compact glass-chip--pill focus-visible:outline backdrop-blur-xl focus-visible:outline-[var(--color-accent-strong)] focus-visible:outline-offset-2"
         data-urgency={urgency}
         tabIndex={-1}
       >
