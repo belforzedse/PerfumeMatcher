@@ -16,7 +16,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,22 +83,22 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ${{ env.VPS_DEPLOY_PATH }}
-            
+
             # Pull latest images or build if needed
             docker compose pull || true
-            
+
             # Build and start services
             docker compose up -d --build
-            
+
             # Run backend migrations
             docker compose exec -T backend python manage.py migrate --noinput || true
-            
+
             # Collect static files
             docker compose exec -T backend python manage.py collectstatic --noinput || true
-            
+
             # Reload Nginx if configuration exists
             sudo nginx -t && sudo systemctl reload nginx || true
-            
+
             # Show running containers
             docker compose ps
           EOF
@@ -109,7 +109,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             echo "Checking backend health..."
             curl -f http://localhost:8000/api/perfumes/ || echo "Backend health check failed"
-            
+
             echo "Checking frontend health..."
             curl -f http://localhost:3000 || echo "Frontend health check failed"
           EOF
