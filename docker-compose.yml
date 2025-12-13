@@ -10,7 +10,7 @@ services:
       - DJANGO_SETTINGS_MODULE=matcher_backend.settings
     volumes:
       - ./backend/media:/app/media
-      - ./backend/db.sqlite3:/app/db.sqlite3
+      - ./backend/db:/app/db
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped

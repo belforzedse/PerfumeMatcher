@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Create media directory
-RUN mkdir -p /app/media/uploads
+# Create media and database directories
+RUN mkdir -p /app/media/uploads && mkdir -p /app/db
 
 # Collect static files (will be run again in production)
 RUN python manage.py collectstatic --noinput || true
