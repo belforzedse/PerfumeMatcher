@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim
+# Use Python 3.12 slim image (required for Django 6.0+)
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
@@ -30,9 +30,6 @@ RUN python manage.py collectstatic --noinput || true
 
 # Expose port
 EXPOSE 8000
-
-# Install gunicorn for production
-RUN pip install gunicorn
 
 # Run migrations and start server with gunicorn
 CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn matcher_backend.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"]
