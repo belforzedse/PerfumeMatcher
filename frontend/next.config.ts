@@ -5,21 +5,6 @@ const nextConfig: NextConfig = {
   // Empty config silences the webpack compatibility warning
   turbopack: {},
 
-  // Allow production domain
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-Forwarded-Host',
-            value: 'kiosk.gandom-perfume.ir',
-          },
-        ],
-      },
-    ];
-  },
-
   // Keep webpack config for fallback support (use with --webpack flag)
   webpack: (config, { isServer }) => {
     // Prevent webpack from bundling Node.js modules on client-side
