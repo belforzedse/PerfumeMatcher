@@ -215,7 +215,7 @@ def recommend_rerank(request):
     # Call OpenAI with timeout
     try:
         api_key = settings.OPENAI_API_KEY
-        model = getattr(settings, "AI_MODEL", "gpt-4o-mini")
+        model = getattr(settings, "AI_MODEL", "gpt-5-mini")
         
         logger.info(f"Calling OpenAI with model: {model}, timeout: {timeout_ms}ms ({timeout_ms/1000.0:.1f}s)")
         logger.info(f"API key present: {bool(api_key)}, length: {len(api_key) if api_key else 0}")
