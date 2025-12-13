@@ -33,3 +33,35 @@ export function useViewportHeight(minHeight: number = 768): boolean {
   return isTablet;
 }
 
+/**
+ * Hook to detect kiosk mode: tall portrait displays (height >= 1024px and width < height)
+ * Useful for showing special kiosk-style UI on vertical displays
+ * 
+ * @returns boolean indicating if viewport is in kiosk mode
+ */
+export function useKioskMode(): boolean {
+  const [isKiosk, setIsKiosk] = useState(false);
+
+  useEffect(() => {
+    // SSR-safe: only run on client
+    if (typeof window === "undefined") return;
+
+    const checkKiosk = () => {
+      const height = window.innerHeight;
+      const width = window.innerWidth;
+      setIsKiosk(height >= 1024 && width < height);
+    };
+
+    // Check immediately
+    checkKiosk();
+
+    // Listen for resize events
+    window.addEventListener("resize", checkKiosk);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkKiosk);
+  }, []);
+
+  return isKiosk;
+}
+

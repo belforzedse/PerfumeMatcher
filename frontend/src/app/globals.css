@@ -56,6 +56,47 @@
   unicode-range: U+06F0-U+06F9; /* Persian numerals */
 }
 
+/* Rokh Font Face Declarations */
+@font-face {
+  font-family: 'Rokh';
+  src: url('/fonts/rokh/woff2/Rokh-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rokh';
+  src: url('/fonts/rokh/woff2/Rokh-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rokh';
+  src: url('/fonts/rokh/woff2/Rokh-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rokh';
+  src: url('/fonts/rokh/woff2/Rokh-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rokh';
+  src: url('/fonts/rokh/woff2/Rokh-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #f6f5f2;
   --background-soft: #eceae5;
@@ -152,6 +193,7 @@
   --font-sans: 'Peyda', 'IRANSansX', 'IRANYekan', 'Tahoma', Arial, sans-serif;
   --font-serif: 'Playfair Display', 'Times New Roman', serif;
   --font-mono: var(--font-geist-mono);
+  --font-rokh: 'Rokh', serif;
   --shadow-soft: 0 22px 55px rgba(var(--shadow-color) / 0.09);
   --shadow-strong: 0 32px 75px rgba(var(--shadow-color) / 0.16);
 }
@@ -992,6 +1034,10 @@
     font-family: var(--font-sans);
   }
 
+  .font-rokh {
+    font-family: var(--font-rokh);
+  }
+
   .shadow-soft {
     box-shadow: var(--shadow-soft);
   }
@@ -1474,4 +1520,64 @@ input.slider-thumb-accent::-moz-range-track {
   .animate-button-ripple {
     animation: button-ripple 0.6s ease-out;
   }
+
+/* Gradient border for scene cards (more metallic) */
+.scene-card-gradient-border-gold {
+  background-image:
+    linear-gradient(120deg,
+      #3b2b00 0%,
+      #7a5a10 10%,
+      #d4af37 22%,
+      #ffe8a3 35%,
+      #fff4cc 45%,
+      #d4af37 58%,
+      #ffe8a3 72%,
+      #7a5a10 88%,
+      #3b2b00 100%
+    ),
+    linear-gradient(60deg,
+      rgba(255,255,255,.40) 0%,
+      rgba(255,255,255,0) 35%,
+      rgba(0,0,0,.25) 75%,
+      rgba(255,255,255,.15) 100%
+    );
+  background-blend-mode: overlay;
+  border-radius: 1.5rem;
+  padding: 4px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+
+.scene-card-gradient-border-silver {
+  background-image:
+    linear-gradient(120deg,
+      #2f2f2f 0%,
+      #7a7a7a 12%,
+      #cfcfcf 24%,
+      #f7f7f7 36%,
+      #ffffff 45%,
+      #bdbdbd 58%,
+      #f7f7f7 72%,
+      #7a7a7a 88%,
+      #2f2f2f 100%
+    ),
+    linear-gradient(60deg,
+      rgba(255,255,255,.45) 0%,
+      rgba(255,255,255,0) 40%,
+      rgba(0,0,0,.22) 78%,
+      rgba(255,255,255,.14) 100%
+    );
+  background-blend-mode: overlay;
+  border-radius: 1.5rem;
+  padding: 4px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+
+.scene-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(1.5rem - 4px);
+  overflow: hidden;
+}
+
 }
