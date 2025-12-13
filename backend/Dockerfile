@@ -23,11 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Create media and database directories
-RUN mkdir -p /app/media/uploads && mkdir -p /app/db
-
-# Collect static files (will be run again in production)
-RUN python manage.py collectstatic --noinput || true
+# Create media, database, and static directories
+RUN mkdir -p /app/media/uploads && mkdir -p /app/db && mkdir -p /app/staticfiles
 
 # Expose port
 EXPOSE 8000
