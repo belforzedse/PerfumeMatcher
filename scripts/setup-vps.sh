@@ -80,13 +80,13 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Port \$server_port;
-        
+
         # CORS headers
         add_header Access-Control-Allow-Origin \$http_origin always;
         add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
         add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Admin-Key" always;
         add_header Access-Control-Allow-Credentials true always;
-        
+
         if (\$request_method = 'OPTIONS') {
             return 204;
         }
@@ -121,12 +121,12 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Port \$server_port;
-        
+
         # WebSocket support
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        
+
         # Timeouts
         proxy_read_timeout 300s;
         proxy_connect_timeout 75s;
