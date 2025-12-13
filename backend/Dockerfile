@@ -13,6 +13,7 @@ ENV DJANGO_SETTINGS_MODULE=matcher_backend.settings
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
