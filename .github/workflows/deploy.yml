@@ -82,11 +82,25 @@ jobs:
             fi
           "
 
-      - name: Create frontend .env.local file if not exists
+      - name: Ensure frontend env (backend URL + admin key)
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -c "
-            if [ ! -f ${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local ]; then
-              echo 'NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}' > ${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local
+            ENV_FILE=${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local
+            mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend
+            touch \$ENV_FILE
+
+            # Ensure NEXT_PUBLIC_BACKEND_BASE_URL is set/updated
+            if grep -q '^NEXT_PUBLIC_BACKEND_BASE_URL=' \$ENV_FILE; then
+              sed -i 's|^NEXT_PUBLIC_BACKEND_BASE_URL=.*|NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}|' \$ENV_FILE
+            else
+              echo 'NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}' >> \$ENV_FILE
+            fi
+
+            # Ensure NEXT_PUBLIC_ADMIN_KEY matches backend ADMIN_ACCESS_KEY
+            if grep -q '^NEXT_PUBLIC_ADMIN_KEY=' \$ENV_FILE; then
+              sed -i 's|^NEXT_PUBLIC_ADMIN_KEY=.*|NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}|' \$ENV_FILE
+            else
+              echo 'NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}' >> \$ENV_FILE
             fi
           "
 

@@ -67,7 +67,6 @@ server {
     listen [::]:80;
     server_name ${API_DOMAIN};
 
-    # Redirect HTTP to HTTPS (will be configured by Certbot)
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
@@ -108,22 +107,9 @@ server {
     listen 80;
     listen [::]:80;
     server_name ${FRONTEND_DOMAIN} www.${FRONTEND_DOMAIN};
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name ${FRONTEND_DOMAIN} www.${FRONTEND_DOMAIN};
-
-    # SSL certificate (will be configured by Certbot)
-    ssl_certificate /etc/letsencrypt/live/${API_DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${API_DOMAIN}/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
     location / {
         proxy_pass http://127.0.0.1:3000;
+        # Next.js 16 can reject unknown hosts; keep Host stable while preserving original host in forwarded headers
         proxy_set_header Host localhost;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -159,7 +145,7 @@ echo "==> Setting up SSL certificates..."
 # Get SSL certificates for both domains
 certbot --nginx -d ${API_DOMAIN} --non-interactive --agree-tos --email admin@gandom-perfume.ir --redirect || echo "Certificate for ${API_DOMAIN} may already exist or DNS not ready"
 
-certbot --nginx -d ${FRONTEND_DOMAIN} -d www.${FRONTEND_DOMAIN} --non-interactive --agree-tos --email admin@gandom-perfume.ir --redirect || echo "Certificate for ${FRONTEND_DOMAIN} may already exist or DNS not ready"
+certbot --nginx -d ${FRONTEND_DOMAIN} --non-interactive --agree-tos --email admin@gandom-perfume.ir --redirect || echo "Certificate for ${FRONTEND_DOMAIN} may already exist or DNS not ready"
 
 # Reload Nginx after SSL setup
 systemctl reload nginx
