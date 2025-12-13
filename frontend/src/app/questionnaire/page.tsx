@@ -33,6 +33,8 @@ import {
   getSafetyChoices,
   type UserResponses,
 } from "@/lib/questionnaire-mapper";
+import { useKioskMode } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 import PathSelector from "@/components/questionnaire/PathSelector";
 import SceneCard from "@/components/questionnaire/SceneCard";
 import PairwiseChoice from "@/components/questionnaire/PairwiseChoice";
@@ -107,6 +109,7 @@ const MICRO_REWARDS = [
 
 export default function Questionnaire() {
   const router = useRouter();
+  const isKiosk = useKioskMode();
   const [flowState, setFlowState] = useState<FlowState>(createInitialFlowState());
   const [answers, setAnswers] = useState<QuestionnaireAnswers | null>(null);
   const [microReward, setMicroReward] = useState<string | null>(null);
@@ -427,9 +430,15 @@ export default function Questionnaire() {
     <KioskFrame>
       <main
         aria-labelledby={headingId}
-        className="page-main flex min-h-0 w-full flex-1 items-stretch overflow-hidden justify-center px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
+        className={cn(
+          "page-main flex min-h-0 w-full flex-1 items-stretch overflow-hidden justify-center",
+          isKiosk ? "px-8 py-8" : "px-2 py-4 sm:px-3 md:px-4 lg:px-6 xl:px-8"
+        )}
       >
-        <div className="glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col">
+        <div className={cn(
+          "glass-card backdrop-blur-xl glass-gradient-border page-panel flex h-full w-full min-h-0 flex-1 flex-col",
+          isKiosk ? "gap-8 p-10" : "gap-6 p-6 sm:p-8"
+        )}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep.id}
@@ -440,12 +449,15 @@ export default function Questionnaire() {
               exit="exit"
             >
               <motion.header
-                className="space-y-2 text-right"
+                className={cn("space-y-2 text-right", isKiosk && "space-y-4")}
                 variants={questionHeaderVariants}
               >
                 {flowState.path && (
                   <motion.p
-                    className="m-0 text-[11px] text-muted sm:text-xs"
+                    className={cn(
+                      "m-0 text-muted",
+                      isKiosk ? "text-sm" : "text-[11px] sm:text-xs"
+                    )}
                     aria-live="polite"
                     variants={questionHeaderVariants}
                   >
@@ -454,14 +466,22 @@ export default function Questionnaire() {
                 )}
                 <motion.h1
                   id={headingId}
-                  className="m-0 text-xl font-semibold leading-tight text-[var(--color-foreground)] xs:text-2xl md:text-[1.85rem]"
+                  className={cn(
+                    "m-0 font-semibold leading-tight text-[var(--color-foreground)]",
+                    isKiosk
+                      ? "text-3xl"
+                      : "text-xl xs:text-2xl md:text-[1.85rem]"
+                  )}
                   variants={questionHeaderVariants}
                 >
                   {currentStep.title}
                 </motion.h1>
                 {currentStep.description && (
                   <motion.p
-                    className="m-0 text-xs text-muted sm:text-sm"
+                    className={cn(
+                      "m-0 text-muted",
+                      isKiosk ? "text-base" : "text-xs sm:text-sm"
+                    )}
                     variants={questionHeaderVariants}
                   >
                     {currentStep.description}
@@ -470,7 +490,7 @@ export default function Questionnaire() {
               </motion.header>
 
               <motion.div
-                className="space-y-3 text-right"
+                className={cn("space-y-3 text-right", isKiosk && "space-y-4")}
                 variants={questionHeaderVariants}
               >
                 {flowState.path && (
