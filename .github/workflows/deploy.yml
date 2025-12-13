@@ -31,9 +31,15 @@ jobs:
       - name: Create deployment directory structure
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            # Ensure parent directory exists and has correct ownership
+            sudo mkdir -p ${{ env.VPS_DEPLOY_PATH }}
+            sudo chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }} || true
+            
+            # Create subdirectories
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend/media/uploads
+            mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend/.next
           EOF
 
       - name: Copy backend files
