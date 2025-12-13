@@ -4,6 +4,21 @@ const nextConfig: NextConfig = {
   // Turbopack is now the default bundler in Next.js 16
   // Empty config silences the webpack compatibility warning
   turbopack: {},
+  
+  // Allow production domain
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Forwarded-Host',
+            value: 'kiosk.gandom-perfume.ir',
+          },
+        ],
+      },
+    ];
+  },
 
   // Keep webpack config for fallback support (use with --webpack flag)
   webpack: (config, { isServer }) => {
