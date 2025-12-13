@@ -37,7 +37,7 @@ jobs:
               sudo mkdir -p ${{ env.VPS_DEPLOY_PATH }}
             fi
             sudo chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }} 2>/dev/null || true
-            
+
             # Create subdirectories (now with correct ownership)
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend

@@ -40,11 +40,7 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 usermod -aG docker deploy || true
 
-# Configure passwordless sudo for deploy user (for nginx reload)
-echo "deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /bin/systemctl restart nginx, /bin/mkdir, /usr/bin/chown" > /etc/sudoers.d/deploy
-chmod 440 /etc/sudoers.d/deploy
-
-# Configure passwordless sudo for deploy user (for nginx reload)
+# Configure passwordless sudo for deploy user (for nginx reload and directory operations)
 echo "deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /bin/systemctl restart nginx, /bin/mkdir, /usr/bin/chown" > /etc/sudoers.d/deploy
 chmod 440 /etc/sudoers.d/deploy
 
