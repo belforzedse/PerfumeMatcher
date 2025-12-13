@@ -82,14 +82,21 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
 
             # Use docker compose v2 (plugin)
             # Pull latest images or build if needed
             docker compose pull || true
 
-            # Build and start services
+            # Build and start services (this will fail if build fails)
             docker compose up -d --build
+
+            # Wait a bit for containers to start
+            sleep 5
+
+            # Check if containers are running
+            docker compose ps
 
             # Run backend migrations
             docker compose exec -T backend python manage.py migrate --noinput || true
@@ -100,7 +107,7 @@ jobs:
             # Reload Nginx if configuration exists
             sudo nginx -t && sudo systemctl reload nginx || true
 
-            # Show running containers
+            # Verify containers are still running
             docker compose ps
           EOF
 
