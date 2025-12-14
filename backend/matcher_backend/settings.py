@@ -135,10 +135,28 @@ WSGI_APPLICATION = 'matcher_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+def _resolve_sqlite_path(base_dir: Path) -> Path:
+    sqlite_path_env = os.getenv("SQLITE_PATH")
+    if sqlite_path_env:
+        candidate = Path(sqlite_path_env)
+        return candidate if candidate.is_absolute() else (base_dir / candidate)
+
+    # Prefer the legacy location if it exists (common for local dev).
+    legacy = base_dir / "db.sqlite3"
+    if legacy.exists():
+        return legacy
+
+    # Default for Docker deployments (paired with a volume mount to /app/db).
+    return base_dir / "db" / "db.sqlite3"
+
+
+SQLITE_PATH = _resolve_sqlite_path(BASE_DIR)
+SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db' / 'db.sqlite3',
+        'NAME': SQLITE_PATH,
     }
 }
 

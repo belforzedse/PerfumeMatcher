@@ -34,8 +34,35 @@ except NameError:
 
 def _is_admin(request: HttpRequest) -> bool:
     expected = getattr(settings, "ADMIN_ACCESS_KEY", None)
-    provided = request.headers.get("X-Admin-Key") or request.COOKIES.get("admin_key")
-    return bool(expected) and provided == expected
+    if not expected:
+        logger.warning("ADMIN_ACCESS_KEY not set in settings")
+        return False
+
+    # Try multiple ways to get the header (Django/DRF compatibility)
+    provided = (
+        request.headers.get("X-Admin-Key") or  # DRF Request object
+        request.META.get("HTTP_X_ADMIN_KEY") or  # Standard Django (X-Admin-Key -> HTTP_X_ADMIN_KEY)
+        request.META.get("X-Admin-Key") or  # Direct access
+        request.COOKIES.get("admin_key")  # Cookie fallback
+    )
+
+    # Debug logging (log to help diagnose - shows first/last chars for verification)
+    if provided != expected:
+        logger.warning(
+            f"Admin auth failed for {request.path}: "
+            f"header present={bool(provided)}, "
+            f"expected length={len(expected) if expected else 0}, "
+            f"provided length={len(provided) if provided else 0}, "
+            f"expected starts with={expected[:10] if expected else 'N/A'}, "
+            f"provided starts with={provided[:10] if provided else 'N/A'}"
+        )
+        # Also log all headers for debugging
+        logger.debug(f"Request headers: {dict(request.headers) if hasattr(request, 'headers') else 'N/A'}")
+        logger.debug(f"Request META keys containing 'ADMIN' or 'KEY': {[k for k in request.META.keys() if 'ADMIN' in k.upper() or 'KEY' in k.upper()]}")
+    else:
+        logger.info(f"Admin auth successful for {request.path}")
+
+    return provided == expected
 
 
 def _unauthorized():
@@ -56,15 +83,15 @@ def recommend(request):
 
     engine = get_engine()
     result = engine.recommend(serializer.validated_data)
-    
+
     # Limit to top 20 results
     top_results = result.get("results", [])[:20]
-    
+
     # Get full perfume data for the results
     candidate_ids = [r.get("id") for r in top_results]
     perfumes = Perfume.objects.filter(id__in=candidate_ids)
     perfume_map = {p.id: p for p in perfumes}
-    
+
     # Replace results with full perfume data
     full_results = []
     for r in top_results:
@@ -79,7 +106,7 @@ def recommend(request):
         else:
             # Fallback to original if perfume not found
             full_results.append(r)
-    
+
     result["results"] = full_results
     return Response(result)
 
@@ -108,9 +135,9 @@ def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]]
         "likedNotes": answers.get("noteLikes", [])[:6],
         "dislikedNotes": answers.get("noteDislikes", [])[:6],
     }
-    
+
     perfume_lines = "\n".join(json.dumps(p, ensure_ascii=False) for p in perfumes)
-    
+
     return f"""You are a perfume recommendation expert. Analyze user preferences and match them with perfumes.
 
 Task: Return JSON with rankings array. Each ranking must have:
@@ -118,7 +145,7 @@ Task: Return JSON with rankings array. Each ranking must have:
 - "matchPercentage": 0-100 score
 - "reasons": array of 1-2 SHORT phrases (max 5 words each) explaining the match in PERSIAN (Farsi)
 
-IMPORTANT: 
+IMPORTANT:
 - All reasons must be in PERSIAN (Farsi) language
 - Keep reasons concise. Examples: "مطابق با نت‌های مورد علاقه", "مناسب برای شب", "مطابق با شدت مورد نظر"
 - Return ONLY valid JSON
@@ -148,13 +175,13 @@ def recommend_rerank(request):
     top_k = min(int(request.GET.get("k", 30)), 50)  # Cap at 50
     timeout_ms = int(request.GET.get("timeout", 90000))  # Default 90s to test if OpenAI can respond
     timeout_ms = min(timeout_ms, 120000)  # Cap at 120s max
-    
+
     # Baseline matcher
     engine = get_engine()
     baseline = engine.recommend(answers)
     baseline_results = baseline.get("results", [])
     candidates = baseline_results[:top_k]
-    
+
     if not candidates:
         return Response(
             {
@@ -163,19 +190,19 @@ def recommend_rerank(request):
                 "elapsedMs": int((time.time() - start_time) * 1000),
             }
         )
-    
+
     # Load full perfume objects for top K
     candidate_ids = [item.get("id") for item in candidates]
     perfumes = Perfume.objects.filter(id__in=candidate_ids)
     perfume_map = {p.id: p for p in perfumes}
-    
+
     # Build compact JSON for OpenAI
     compact_perfumes = [
         _build_compact_perfume_json(perfume_map[pid])
         for pid in candidate_ids
         if pid in perfume_map
     ]
-    
+
     if not OPENAI_AVAILABLE:
         logger.warning("OpenAI library not available - using baseline")
         rankings = [
@@ -193,7 +220,7 @@ def recommend_rerank(request):
                 "elapsedMs": int((time.time() - start_time) * 1000),
             }
         )
-    
+
     if not settings.OPENAI_API_KEY:
         logger.warning("OPENAI_API_KEY not set - using baseline")
         rankings = [
@@ -211,22 +238,22 @@ def recommend_rerank(request):
                 "elapsedMs": int((time.time() - start_time) * 1000),
             }
         )
-    
+
     # Call OpenAI with timeout
     try:
         api_key = settings.OPENAI_API_KEY
         model = getattr(settings, "AI_MODEL", "gpt-5-mini")
-        
+
         logger.info(f"Calling OpenAI with model: {model}, timeout: {timeout_ms}ms ({timeout_ms/1000.0:.1f}s)")
         logger.info(f"API key present: {bool(api_key)}, length: {len(api_key) if api_key else 0}")
-        
+
         # Initialize OpenAI client with timeout and reduced retries
         # Use granular timeout: connect quickly, but allow longer read time
         # Set max_retries=0 to disable automatic retries - fail fast and fallback to baseline immediately
         timeout_seconds = timeout_ms / 1000.0
         read_timeout = max(10.0, timeout_seconds - 10.0)  # Ensure at least 10 seconds for read, reserve 10s for connect/write
         logger.info(f"Timeout breakdown: connect=10s, read={read_timeout:.1f}s, write=5s")
-        
+
         client = OpenAI(
             api_key=api_key,
             timeout=httpx.Timeout(
@@ -240,7 +267,7 @@ def recommend_rerank(request):
         prompt = _build_rerank_prompt(answers, compact_perfumes)
         prompt_tokens_estimate = len(prompt.split()) * 1.3  # Rough estimate: ~1.3 tokens per word
         logger.info(f"Prompt length: {len(prompt)} chars, {len(compact_perfumes)} perfumes, ~{int(prompt_tokens_estimate)} tokens (estimate)")
-        
+
         # Build parameters - some models don't support temperature
         create_params = {
             "model": model,
@@ -253,13 +280,13 @@ def recommend_rerank(request):
             ],
             "response_format": {"type": "json_object"},
         }
-        
+
         # Only add temperature for models that support it
         # GPT-5 series (gpt-5, gpt-5-mini, gpt-5-nano) only support default temperature (1)
         # o1 models also don't support custom temperature
         if not model.startswith("o1") and not model.startswith("gpt-5"):
             create_params["temperature"] = 0.2
-        
+
         # Make direct API call - OpenAI client handles timeout internally
         api_call_start = time.time()
         try:
@@ -267,7 +294,7 @@ def recommend_rerank(request):
             ai_response = client.chat.completions.create(**create_params)
             api_call_duration = time.time() - api_call_start
             logger.info(f"OpenAI API responded successfully in {api_call_duration:.2f}s")
-            
+
             # Log token usage if available
             if hasattr(ai_response, 'usage'):
                 usage = ai_response.usage
@@ -289,14 +316,14 @@ def recommend_rerank(request):
             error_msg = str(e)
             logger.error(f"Unexpected error during OpenAI call after {api_call_duration:.2f}s ({error_type}): {error_msg}")
             raise
-        
+
         # Extract content from response
         content = None
         if hasattr(ai_response, "choices") and ai_response.choices:
             choice = ai_response.choices[0]
             if hasattr(choice, "message") and hasattr(choice.message, "content"):
                 content = choice.message.content
-        
+
         if not content:
             logger.error(f"No content in OpenAI response. Response structure: {type(ai_response)}, has choices: {hasattr(ai_response, 'choices')}")
             if hasattr(ai_response, "choices") and ai_response.choices:
@@ -304,17 +331,17 @@ def recommend_rerank(request):
                 if hasattr(ai_response.choices[0], "message"):
                     logger.error(f"Message type: {type(ai_response.choices[0].message)}, has content: {hasattr(ai_response.choices[0].message, 'content')}")
             raise ValueError("No content in OpenAI response")
-        
+
         logger.debug(f"OpenAI response length: {len(content)} chars")
         parsed = json.loads(content)
         ai_rankings = parsed.get("rankings", [])
-        
+
         if not ai_rankings:
             logger.error(f"Empty rankings from OpenAI. Parsed keys: {list(parsed.keys())}")
             raise ValueError("Empty rankings from OpenAI")
-        
+
         logger.info(f"OpenAI returned {len(ai_rankings)} rankings")
-        
+
         # Normalize and validate rankings
         rankings = []
         seen_ids = set()
@@ -327,7 +354,7 @@ def recommend_rerank(request):
                     "matchPercentage": max(0, min(100, int(item.get("matchPercentage", 0)))),
                     "reasons": item.get("reasons", [])[:3] if isinstance(item.get("reasons"), list) else [],
                 })
-        
+
         # Fill missing IDs with baseline scores
         for item in candidates:
             if item.get("id") not in seen_ids:
@@ -336,7 +363,7 @@ def recommend_rerank(request):
                     "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
                     "reasons": [],
                 })
-        
+
         elapsed_ms = int((time.time() - start_time) * 1000)
         return Response(
             {
@@ -345,13 +372,13 @@ def recommend_rerank(request):
                 "elapsedMs": elapsed_ms,
             }
         )
-        
+
     except (TimeoutError, APITimeoutError, ValueError, KeyError, json.JSONDecodeError, APIError, BadRequestError, Exception) as e:
         # Fallback to baseline on any error
         error_type = type(e).__name__
         error_msg = str(e)
         logger.error(f"OpenAI rerank failed ({error_type}): {error_msg}", exc_info=True)
-        
+
         rankings = [
             {
                 "id": item.get("id"),
@@ -454,22 +481,22 @@ def admin_upload(request: HttpRequest):
     """
     if not _is_admin(request):
         return _unauthorized()
-    
+
     if "file" not in request.FILES:
         return Response(
             {"error": "فایل ارسال نشده است."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     file = request.FILES["file"]
-    
+
     # Validate file type
     if not file.content_type.startswith("image/"):
         return Response(
             {"error": "فقط فایل‌های تصویری مجاز است."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Validate file size (10MB max)
     max_size = 10 * 1024 * 1024  # 10MB
     if file.size > max_size:
@@ -477,13 +504,13 @@ def admin_upload(request: HttpRequest):
             {"error": "حجم فایل بیش از حد مجاز است (حداکثر 10 مگابایت)."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Save file to media directory
     import os
     import uuid
     from pathlib import Path
     from django.conf import settings
-    
+
     try:
         # Ensure MEDIA_ROOT exists
         if not hasattr(settings, 'MEDIA_ROOT') or not settings.MEDIA_ROOT:
@@ -492,23 +519,23 @@ def admin_upload(request: HttpRequest):
                 {"error": "تنظیمات سرور ناقص است."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
         # Create uploads directory if it doesn't exist
         upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads")
         os.makedirs(upload_dir, exist_ok=True)
         logger.info(f"Upload directory: {upload_dir}")
-        
+
         # Generate unique filename
         file_ext = Path(file.name).suffix or ".webp"
         unique_name = f"{uuid.uuid4()}{file_ext}"
         file_path = os.path.join(upload_dir, unique_name)
-        
+
         # Save file directly
         logger.info(f"Saving file to: {file_path}")
         with open(file_path, "wb+") as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
-        
+
         # Verify file was saved
         if not os.path.exists(file_path):
             logger.error(f"File was not saved: {file_path}")
@@ -516,10 +543,10 @@ def admin_upload(request: HttpRequest):
                 {"error": "ذخیره فایل با خطا مواجه شد."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
         file_size = os.path.getsize(file_path)
         logger.info(f"File saved successfully: {file_path} ({file_size} bytes)")
-        
+
         # Return URL (relative to MEDIA_URL)
         file_url = f"{settings.MEDIA_URL}uploads/{unique_name}"
         logger.info(f"File uploaded successfully: {file_url} -> {file_path}")

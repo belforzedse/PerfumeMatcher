@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -293,34 +293,124 @@ export default function AdminProductsPage() {
   const [editingPerfume, setEditingPerfume] = useState<AdminPerfume | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"name" | "brand" | "created" | "updated">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [filterBrand, setFilterBrand] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"basic" | "details" | "notes">("basic");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { section, listItem, status: statusVariants, stagger, transition, ease, shouldReduce } =
     useAdminMotionVariants();
 
   const trimmedSearchTerm = searchTerm.trim();
 
-  const filteredPerfumes = useMemo(() => {
-    if (!trimmedSearchTerm) {
-      return perfumes;
+  const filteredAndSortedPerfumes = useMemo(() => {
+    let filtered = perfumes;
+
+    // Apply search filter
+    if (trimmedSearchTerm) {
+      const normalisedSearch = trimmedSearchTerm.toLowerCase();
+      filtered = filtered.filter((perfume) => {
+        const nameFa = normaliseText(perfume.name_fa);
+        const nameEn = normaliseText(perfume.name_en);
+        const brandName = normaliseText(perfume.brand?.name);
+        const collectionName = normaliseText(perfume.collection?.name);
+
+        return (
+          nameFa.includes(normalisedSearch) ||
+          nameEn.includes(normalisedSearch) ||
+          brandName.includes(normalisedSearch) ||
+          collectionName.includes(normalisedSearch)
+        );
+      });
     }
 
-    const normalisedSearch = trimmedSearchTerm.toLowerCase();
-
-    return perfumes.filter((perfume) => {
-      const nameFa = normaliseText(perfume.name_fa);
-      const nameEn = normaliseText(perfume.name_en);
-      const brandName = normaliseText(perfume.brand?.name);
-      const collectionName = normaliseText(perfume.collection?.name);
-
-      return (
-        nameFa.includes(normalisedSearch) ||
-        nameEn.includes(normalisedSearch) ||
-        brandName.includes(normalisedSearch) ||
-        collectionName.includes(normalisedSearch)
+    // Apply brand filter
+    if (filterBrand) {
+      filtered = filtered.filter((perfume) => 
+        perfume.brand?.id.toString() === filterBrand
       );
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case "name":
+          comparison = a.name_fa.localeCompare(b.name_fa, 'fa');
+          break;
+        case "brand":
+          const brandA = a.brand?.name || "";
+          const brandB = b.brand?.name || "";
+          comparison = brandA.localeCompare(brandB, 'fa');
+          break;
+        case "created":
+          const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          comparison = createdA - createdB;
+          break;
+        case "updated":
+          const updatedA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+          const updatedB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          comparison = updatedA - updatedB;
+          break;
+      }
+      
+      return sortOrder === "asc" ? comparison : -comparison;
     });
-  }, [perfumes, trimmedSearchTerm]);
+
+    return sorted;
+  }, [perfumes, trimmedSearchTerm, filterBrand, sortBy, sortOrder]);
 
   const hasSearchTerm = trimmedSearchTerm.length > 0;
+
+  // Track form changes (only when editing)
+  const formValues = watch();
+  const initialFormValues = useRef<PerfumeFormValues | null>(null);
+  
+  useEffect(() => {
+    if (isEditing && editingPerfume) {
+      // Store initial values when entering edit mode
+      if (!initialFormValues.current) {
+        initialFormValues.current = {
+          nameFa: editingPerfume.name_fa,
+          nameEn: editingPerfume.name_en,
+          description: editingPerfume.description ?? "",
+          intensity: editingPerfume.intensity ?? "",
+          brandId: editingPerfume.brand?.id.toString() || "",
+          collectionId: editingPerfume.collection?.id.toString() || "",
+          gender: editingPerfume.gender ? editingPerfume.gender.split(", ").filter(v => v.length > 0) : [],
+          season: editingPerfume.season ? editingPerfume.season.split(", ").filter(v => v.length > 0) : [],
+          seasons: editingPerfume.seasons && editingPerfume.seasons.length > 0 ? editingPerfume.seasons : (editingPerfume.season ? editingPerfume.season.split(", ").filter(v => v.length > 0) : []),
+          family: editingPerfume.family ? editingPerfume.family.split(", ").filter(v => v.length > 0) : [],
+          character: editingPerfume.character ? editingPerfume.character.split(", ").filter(v => v.length > 0) : [],
+          strength: editingPerfume.strength ? editingPerfume.strength.split(", ")[0] : "",
+          notes: editingPerfume.notes,
+          image: editingPerfume.image || null,
+        };
+      }
+      
+      // Check if form has changed
+      const hasChanged = JSON.stringify(formValues) !== JSON.stringify(initialFormValues.current);
+      setHasUnsavedChanges(hasChanged);
+    } else {
+      initialFormValues.current = null;
+      setHasUnsavedChanges(false);
+    }
+  }, [formValues, isEditing, editingPerfume]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && isEditing) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isEditing]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -411,22 +501,30 @@ export default function AdminProductsPage() {
     reset({
       nameFa: perfume.name_fa,
       nameEn: perfume.name_en,
+      description: perfume.description ?? "",
       intensity: perfume.intensity ?? "",
       brandId: perfume.brand?.id.toString() || "",
       collectionId: perfume.collection?.id.toString() || "",
       gender: perfume.gender ? perfume.gender.split(", ").filter(v => v.length > 0) : [],
       season: perfume.season ? perfume.season.split(", ").filter(v => v.length > 0) : [],
+      seasons: perfume.seasons && perfume.seasons.length > 0 ? perfume.seasons : (perfume.season ? perfume.season.split(", ").filter(v => v.length > 0) : []),
       family: perfume.family ? perfume.family.split(", ").filter(v => v.length > 0) : [],
       character: perfume.character ? perfume.character.split(", ").filter(v => v.length > 0) : [],
+      strength: perfume.strength ? perfume.strength.split(", ")[0] : "",
       notes: perfume.notes,
-      image: null, // Don't populate image field when editing (user must upload a new file to change it)
+      image: perfume.image || null, // Show current image when editing
     });
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [reset]);
 
   const exitEditMode = useCallback(
     ({ preserveStatus = false }: { preserveStatus?: boolean } = {}) => {
       setEditingPerfume(null);
       setIsEditing(false);
+      setHasUnsavedChanges(false);
+      initialFormValues.current = null;
       reset(createDefaultValues());
 
       if (!preserveStatus) {
@@ -437,8 +535,37 @@ export default function AdminProductsPage() {
   );
 
   const handleCancelEdit = useCallback(() => {
+    if (hasUnsavedChanges) {
+      if (!confirm("تغییرات ذخیره نشده‌ای دارید. آیا مطمئن هستید که می‌خواهید ادامه دهید؟")) {
+        return;
+      }
+    }
+    setHasUnsavedChanges(false);
     exitEditMode({ preserveStatus: true });
-  }, [exitEditMode]);
+  }, [exitEditMode, hasUnsavedChanges]);
+
+  const handleDuplicate = useCallback((perfume: AdminPerfume) => {
+    // Create a new perfume based on existing one
+    reset({
+      nameFa: `${perfume.name_fa} (کپی)`,
+      nameEn: `${perfume.name_en} (Copy)`,
+      description: perfume.description ?? "",
+      intensity: perfume.intensity ?? "",
+      brandId: perfume.brand?.id.toString() || "",
+      collectionId: perfume.collection?.id.toString() || "",
+      gender: perfume.gender ? perfume.gender.split(", ").filter(v => v.length > 0) : [],
+      season: perfume.season ? perfume.season.split(", ").filter(v => v.length > 0) : [],
+      seasons: perfume.seasons && perfume.seasons.length > 0 ? perfume.seasons : (perfume.season ? perfume.season.split(", ").filter(v => v.length > 0) : []),
+      family: perfume.family ? perfume.family.split(", ").filter(v => v.length > 0) : [],
+      character: perfume.character ? perfume.character.split(", ").filter(v => v.length > 0) : [],
+      strength: perfume.strength ? perfume.strength.split(", ")[0] : "",
+      notes: perfume.notes,
+      image: perfume.image || null,
+    });
+    setIsEditing(false);
+    setEditingPerfume(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [reset]);
 
   const handleDelete = useCallback(async (perfume: AdminPerfume) => {
     if (!confirm(`آیا مطمئن هستید که می‌خواهید عطر "${perfume.name_fa}" را حذف کنید؟`)) {
@@ -539,10 +666,12 @@ export default function AdminProductsPage() {
         }
         await updatePerfume(editingPerfume.id.toString(), payload);
         setStatus({ type: "success", message: "محصول با موفقیت به‌روزرسانی شد." });
+        setHasUnsavedChanges(false);
         exitEditMode({ preserveStatus: true });
       } else {
         await createPerfume(payload);
         setStatus({ type: "success", message: "محصول جدید با موفقیت ثبت شد." });
+        setHasUnsavedChanges(false);
         reset(createDefaultValues());
       }
 
@@ -567,272 +696,336 @@ export default function AdminProductsPage() {
       variants={section}
     >
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold">
-          {isEditing ? `ویرایش عطر: ${editingPerfume?.name_fa}` : "محصولات / عطرها"}
-        </h2>
-        <p className="text-[var(--color-foreground-muted)]">
-          {isEditing
-            ? "اطلاعات عطر را ویرایش کنید و تغییرات را ذخیره نمایید."
-            : "اطلاعات کامل عطرهای فروشگاه را وارد کنید و ارتباط آن‌ها را با برند و کالکشن مشخص نمایید."}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              {isEditing ? `ویرایش عطر: ${editingPerfume?.name_fa}` : "محصولات / عطرها"}
+            </h2>
+            <p className="text-[var(--color-foreground-muted)]">
+              {isEditing
+                ? "اطلاعات عطر را ویرایش کنید و تغییرات را ذخیره نمایید."
+                : "اطلاعات کامل عطرهای فروشگاه را وارد کنید و ارتباط آن‌ها را با برند و کالکشن مشخص نمایید."}
+            </p>
+          </div>
+          {hasUnsavedChanges && isEditing && (
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+              <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="text-sm text-amber-800 font-medium">تغییرات ذخیره نشده</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <form
         className="space-y-6 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-background-soft)]/70 p-6 shadow-[var(--shadow-soft)]"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="nameFa">
-              نام فارسی <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="nameFa"
-              type="text"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              placeholder="مثلاً افسانه شرقی"
-              {...register("nameFa", { required: "نام فارسی الزامی است." })}
-            />
-            {errors.nameFa && (
-              <span className="text-xs text-red-500">{errors.nameFa.message}</span>
-            )}
+        {/* Form Tabs */}
+        <div className="flex gap-2 border-b border-[var(--color-border)]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("basic")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "basic"
+                ? "border-b-2 border-[var(--color-accent)] text-[var(--color-accent-strong)]"
+                : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+            }`}
+          >
+            اطلاعات پایه
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("details")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "details"
+                ? "border-b-2 border-[var(--color-accent)] text-[var(--color-accent-strong)]"
+                : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+            }`}
+          >
+            جزئیات و ویژگی‌ها
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("notes")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "notes"
+                ? "border-b-2 border-[var(--color-accent)] text-[var(--color-accent-strong)]"
+                : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+            }`}
+          >
+            نت‌های عطری
+          </button>
+        </div>
+
+        {/* Basic Info Tab */}
+        {activeTab === "basic" && (
+          <div className="space-y-6">
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="nameFa">
+                  نام فارسی <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="nameFa"
+                  type="text"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  placeholder="مثلاً افسانه شرقی"
+                  {...register("nameFa", { required: "نام فارسی الزامی است." })}
+                />
+                {errors.nameFa && (
+                  <span className="text-xs text-red-500">{errors.nameFa.message}</span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="nameEn">
+                  نام انگلیسی <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="nameEn"
+                  type="text"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  placeholder="مثلاً Oriental Tale"
+                  {...register("nameEn", { required: "نام انگلیسی الزامی است." })}
+                />
+                {errors.nameEn && (
+                  <span className="text-xs text-red-500">{errors.nameEn.message}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="description">
+                توضیحات محصول
+              </label>
+              <textarea
+                id="description"
+                rows={4}
+                className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none resize-y"
+                placeholder="توضیحات کامل محصول را اینجا وارد کنید..."
+                {...register("description")}
+              />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="brandId">
+                  برند مرتبط <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="brandId"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  {...register("brandId", { required: "انتخاب برند الزامی است." })}
+                >
+                  <option value="">یک برند را انتخاب کنید</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.brandId && (
+                  <span className="text-xs text-red-500">{errors.brandId.message}</span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="collectionId">
+                  کالکشن مرتبط
+                </label>
+                <select
+                  id="collectionId"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  {...register("collectionId")}
+                >
+                  <option value="">انتخاب نشده</option>
+                  {availableCollections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedBrandId && availableCollections.length === 0 && (
+                  <span className="text-xs text-[var(--color-foreground-muted)]">
+                    برای این برند کالکشنی ثبت نشده است.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Controller
+                control={control}
+                name="image"
+                render={({ field, fieldState }) => (
+                  <ImageUpload
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    label="تصویر محصول"
+                    accept="image/*"
+                    maxSize={5}
+                  />
+                )}
+              />
+            </div>
           </div>
+        )}
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="nameEn">
-              نام انگلیسی <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="nameEn"
-              type="text"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              placeholder="مثلاً Oriental Tale"
-              {...register("nameEn", { required: "نام انگلیسی الزامی است." })}
-            />
-            {errors.nameEn && (
-              <span className="text-xs text-red-500">{errors.nameEn.message}</span>
-            )}
+        {/* Details Tab */}
+        {activeTab === "details" && (
+          <div className="space-y-6">
+            <div className="grid gap-5 md:grid-cols-2">
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field, fieldState }) => (
+                  <MultiSelectField
+                    label="جنسیت هدف"
+                    options={genderOptions}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="seasons"
+                render={({ field, fieldState }) => (
+                  <MultiSelectField
+                    label="فصول پیشنهادی"
+                    options={seasonOptions}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <Controller
+                control={control}
+                name="family"
+                render={({ field, fieldState }) => (
+                  <MultiSelectField
+                    label="خانواده عطری"
+                    options={familyOptions}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="character"
+                render={({ field, fieldState }) => (
+                  <MultiSelectField
+                    label="کاراکتر / حس کلی"
+                    options={characterOptions}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="strength">
+                  شدت عطر
+                </label>
+                <select
+                  id="strength"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  {...register("strength")}
+                >
+                  <option value="">انتخاب نشده</option>
+                  {strengthOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="intensity">
+                  شدت بویایی
+                </label>
+                <input
+                  id="intensity"
+                  type="text"
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  placeholder="مثلاً قوی، متوسط، ملایم"
+                  {...register("intensity")}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="description">
-            توضیحات محصول
-          </label>
-          <textarea
-            id="description"
-            rows={4}
-            className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none resize-y"
-            placeholder="توضیحات کامل محصول را اینجا وارد کنید..."
-            {...register("description")}
-          />
-        </div>
+        {/* Notes Tab */}
+        {activeTab === "notes" && (
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-3">
+              <Controller
+                control={control}
+                name="notes.top"
+                rules={{ validate: (value) => value.length > 0 || "حداقل یک نت بالایی وارد کنید." }}
+                render={({ field, fieldState }) => (
+                  <NotesField
+                    label="نت‌های آغازین"
+                    helper="نام نت را تایپ کرده و از لیست انتخاب کنید."
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    availableNotes={availableNotes}
+                  />
+                )}
+              />
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="brandId">
-              برند مرتبط <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="brandId"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              {...register("brandId", { required: "انتخاب برند الزامی است." })}
-            >
-              <option value="">یک برند را انتخاب کنید</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-            {errors.brandId && (
-              <span className="text-xs text-red-500">{errors.brandId.message}</span>
-            )}
+              <Controller
+                control={control}
+                name="notes.middle"
+                rules={{ validate: (value) => value.length > 0 || "حداقل یک نت میانی وارد کنید." }}
+                render={({ field, fieldState }) => (
+                  <NotesField
+                    label="نت‌های میانی"
+                    helper="از لیست نت‌های پیشنهادی انتخاب کنید."
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    availableNotes={availableNotes}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="notes.base"
+                rules={{ validate: (value) => value.length > 0 || "حداقل یک نت پایانی وارد کنید." }}
+                render={({ field, fieldState }) => (
+                  <NotesField
+                    label="نت‌های پایانی"
+                    helper="از لیست نت‌های پیشنهادی انتخاب کنید."
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    availableNotes={availableNotes}
+                  />
+                )}
+              />
+            </div>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="collectionId">
-              کالکشن مرتبط
-            </label>
-            <select
-              id="collectionId"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              {...register("collectionId")}
-            >
-              <option value="">انتخاب نشده</option>
-              {availableCollections.map((collection) => (
-                <option key={collection.id} value={collection.id}>
-                  {collection.name}
-                </option>
-              ))}
-            </select>
-            {selectedBrandId && availableCollections.length === 0 && (
-              <span className="text-xs text-[var(--color-foreground-muted)]">
-                برای این برند کالکشنی ثبت نشده است.
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <Controller
-            control={control}
-            name="gender"
-            render={({ field, fieldState }) => (
-              <MultiSelectField
-                label="جنسیت هدف"
-                options={genderOptions}
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="seasons"
-            render={({ field, fieldState }) => (
-              <MultiSelectField
-                label="فصول پیشنهادی"
-                options={seasonOptions}
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <Controller
-            control={control}
-            name="family"
-            render={({ field, fieldState }) => (
-              <MultiSelectField
-                label="خانواده عطری"
-                options={familyOptions}
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="character"
-            render={({ field, fieldState }) => (
-              <MultiSelectField
-                label="کاراکتر / حس کلی"
-                options={characterOptions}
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="strength">
-              شدت عطر
-            </label>
-            <select
-              id="strength"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              {...register("strength")}
-            >
-              <option value="">انتخاب نشده</option>
-              {strengthOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--color-foreground)]" htmlFor="intensity">
-              شدت بویایی
-            </label>
-            <input
-              id="intensity"
-              type="text"
-              className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-              placeholder="مثلاً قوی، متوسط، ملایم"
-              {...register("intensity")}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Controller
-            control={control}
-            name="image"
-            render={({ field, fieldState }) => (
-              <ImageUpload
-                value={field.value}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-                label="تصویر محصول"
-                accept="image/*"
-                maxSize={5}
-              />
-            )}
-          />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <Controller
-            control={control}
-            name="notes.top"
-            rules={{ validate: (value) => value.length > 0 || "حداقل یک نت بالایی وارد کنید." }}
-            render={({ field, fieldState }) => (
-              <NotesField
-                label="نت‌های آغازین"
-                helper="نام نت را تایپ کرده و از لیست انتخاب کنید."
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-                availableNotes={availableNotes}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="notes.middle"
-            rules={{ validate: (value) => value.length > 0 || "حداقل یک نت میانی وارد کنید." }}
-            render={({ field, fieldState }) => (
-              <NotesField
-                label="نت‌های میانی"
-                helper="از لیست نت‌های پیشنهادی انتخاب کنید."
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-                availableNotes={availableNotes}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="notes.base"
-            rules={{ validate: (value) => value.length > 0 || "حداقل یک نت پایانی وارد کنید." }}
-            render={({ field, fieldState }) => (
-              <NotesField
-                label="نت‌های پایانی"
-                helper="از لیست نت‌های پیشنهادی انتخاب کنید."
-                value={field.value ?? []}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-                availableNotes={availableNotes}
-              />
-            )}
-          />
-        </div>
+        )}
 
         <AnimatePresence mode="wait">
           {status && (
@@ -876,22 +1069,63 @@ export default function AdminProductsPage() {
 
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-xl font-semibold">آخرین محصولات ثبت‌شده ({perfumes.length})</h3>
+          <h3 className="text-xl font-semibold">
+            محصولات ({filteredAndSortedPerfumes.length} از {perfumes.length})
+          </h3>
           {loading && <span className="text-sm text-[var(--color-foreground-muted)]">در حال بارگذاری...</span>}
         </div>
 
         {perfumes.length > 0 && (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="جستجوی محصول..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
-            />
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-foreground-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="space-y-3">
+            {/* Search and Filters */}
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="جستجوی محصول..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                />
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-foreground-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              <select
+                value={filterBrand}
+                onChange={(e) => setFilterBrand(e.target.value)}
+                className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+              >
+                <option value="">همه برندها</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id.toString()}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="flex-1 rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                >
+                  <option value="name">مرتب‌سازی: نام</option>
+                  <option value="brand">مرتب‌سازی: برند</option>
+                  <option value="created">مرتب‌سازی: تاریخ ایجاد</option>
+                  <option value="updated">مرتب‌سازی: آخرین بروزرسانی</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-background-soft)] transition-colors"
+                  title={sortOrder === "asc" ? "نزولی" : "صعودی"}
+                >
+                  {sortOrder === "asc" ? "↑" : "↓"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -900,7 +1134,7 @@ export default function AdminProductsPage() {
         ) : (
           <motion.ul className="grid gap-4 md:grid-cols-2" variants={stagger}>
             <AnimatePresence>
-              {filteredPerfumes.map((perfume) => (
+              {filteredAndSortedPerfumes.map((perfume) => (
                 <motion.li
                   key={perfume.id}
                   className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-[var(--color-background-soft)]/70 p-4 text-sm shadow-[var(--shadow-soft)]"
@@ -948,21 +1182,30 @@ export default function AdminProductsPage() {
                         {perfume.brand && <p>برند: {perfume.brand.name}</p>}
                         {perfume.collection && <p>کالکشن: {perfume.collection.name}</p>}
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(perfume)}
-                          className="rounded px-3 py-1 text-xs font-medium text-blue-600 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-blue-100 hover:scale-[1.02] active:scale-[0.98]"
-                          title="ویرایش"
-                        >
-                          ویرایش
-                        </button>
-                        <button
-                          onClick={() => handleDelete(perfume)}
-                          className="rounded px-3 py-1 text-xs font-medium text-red-600 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-red-100 hover:scale-[1.02] active:scale-[0.98]"
-                          title="حذف"
-                        >
-                          حذف
-                        </button>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(perfume)}
+                            className="rounded px-3 py-1 text-xs font-medium text-blue-600 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-blue-100 hover:scale-[1.02] active:scale-[0.98]"
+                            title="ویرایش"
+                          >
+                            ویرایش
+                          </button>
+                          <button
+                            onClick={() => handleDuplicate(perfume)}
+                            className="rounded px-3 py-1 text-xs font-medium text-green-600 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-green-100 hover:scale-[1.02] active:scale-[0.98]"
+                            title="کپی"
+                          >
+                            کپی
+                          </button>
+                          <button
+                            onClick={() => handleDelete(perfume)}
+                            className="rounded px-3 py-1 text-xs font-medium text-red-600 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-red-100 hover:scale-[1.02] active:scale-[0.98]"
+                            title="حذف"
+                          >
+                            حذف
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1037,7 +1280,7 @@ export default function AdminProductsPage() {
         )}
 
         <AnimatePresence mode="wait">
-          {hasSearchTerm && filteredPerfumes.length === 0 && (
+          {(hasSearchTerm || filterBrand) && filteredAndSortedPerfumes.length === 0 && (
             <motion.p
               className="py-8 text-center text-sm text-[var(--color-foreground-muted)]"
               initial="hidden"

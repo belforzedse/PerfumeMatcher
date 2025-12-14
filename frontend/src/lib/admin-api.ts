@@ -96,6 +96,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers["Content-Type"] = "application/json";
   }
 
+  // Debug logging (always log in browser console for debugging)
+  console.log("[Admin API] Request:", {
+    url: `${BACKEND_BASE_URL}${path}`,
+    hasAdminKey: !!ADMIN_KEY,
+    adminKeyLength: ADMIN_KEY?.length || 0,
+    adminKeyPrefix: ADMIN_KEY?.substring(0, 10) || "N/A",
+    adminKeyEnd: ADMIN_KEY?.substring(ADMIN_KEY.length - 10) || "N/A",
+  });
+
   const response = await fetch(`${BACKEND_BASE_URL}${path}`, {
     ...init,
     headers,
