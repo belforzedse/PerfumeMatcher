@@ -133,13 +133,18 @@ jobs:
 
             # Remove old frontend image to force rebuild
             docker rmi perfume-matcher-frontend 2>/dev/null || true
+            # Remove old backend image to force rebuild (ensures new API routes are deployed)
+            docker rmi perfume-matcher-backend 2>/dev/null || true
 
             # Use docker compose v2 (plugin)
             # Pull latest images or build if needed
             docker compose pull || true
 
-            # Build and start services with explicit build args (no cache for frontend to ensure fresh build)
+            # Build and start services with explicit build args
+            # - frontend: no-cache to ensure fresh build with latest env
+            # - backend: rebuild to pick up new code copied via rsync
             docker compose build --no-cache --build-arg NEXT_PUBLIC_BACKEND_BASE_URL=\$NEXT_PUBLIC_BACKEND_BASE_URL --build-arg NEXT_PUBLIC_ADMIN_KEY=\$NEXT_PUBLIC_ADMIN_KEY frontend
+            docker compose build backend
             docker compose up -d
 
             # Wait a bit for containers to start
@@ -179,4 +184,3 @@ jobs:
           echo "Frontend: https://${{ env.FRONTEND_DOMAIN }}"
           echo "Backend (internal): http://localhost:8000"
           echo "Frontend (internal): http://localhost:3000"
-
