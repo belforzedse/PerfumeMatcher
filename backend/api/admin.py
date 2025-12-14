@@ -1,7 +1,22 @@
 from django.contrib import admin
 from django import forms
 
-from .models import Perfume
+from .models import Brand, Collection, Perfume
+
+
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ("name", "created_at", "updated_at")
+    search_fields = ("name",)
+    ordering = ("name",)
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    list_display = ("name", "brand", "created_at", "updated_at")
+    search_fields = ("name", "brand__name")
+    list_filter = ("brand",)
+    ordering = ("brand__name", "name")
 
 
 class PerfumeAdminForm(forms.ModelForm):

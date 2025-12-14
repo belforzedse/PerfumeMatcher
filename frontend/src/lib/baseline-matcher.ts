@@ -1,6 +1,7 @@
 import { QuestionnaireAnswers } from "@/lib/questionnaire";
 import { Perfume, toPerfume, type BackendPerfumeData } from "@/lib/api";
 import { RankedPerfume } from "@/lib/perfume-matcher";
+import { debugLog } from "@/lib/debug";
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const RECOMMEND_ENDPOINT = `${BACKEND_BASE_URL}/api/recommend/`;
@@ -19,7 +20,7 @@ export async function getBaselineRankings(
   answers: QuestionnaireAnswers,
   _perfumes?: Perfume[] // No longer needed - backend returns full data
 ): Promise<RankedPerfume[]> {
-  console.log("[Baseline Matcher] Starting getBaselineRankings...");
+  debugLog("[Baseline Matcher] Starting getBaselineRankings...");
   const requestStartTime = Date.now();
 
   try {
@@ -36,7 +37,7 @@ export async function getBaselineRankings(
     }
 
     const data: BackendRecommendResult = await response.json();
-    console.log(`[Baseline Matcher] Received ${data.results?.length || 0} results from backend`);
+    debugLog(`[Baseline Matcher] Received ${data.results?.length || 0} results from backend`);
 
     const rankedPerfumes: RankedPerfume[] = [];
     for (const result of data.results || []) {
@@ -58,11 +59,11 @@ export async function getBaselineRankings(
         consideredCorePreferences: 0,
         confidence: matchPercentage,
       });
-      console.log(`[Baseline Matcher] Ranked perfume ${perfume.id}: image = ${perfume.image || 'NO IMAGE'}`);
+      debugLog(`[Baseline Matcher] Ranked perfume ${perfume.id}: image = ${perfume.image || "NO IMAGE"}`);
     }
 
     const totalElapsed = Date.now() - requestStartTime;
-    console.log(`[Baseline Matcher] Successfully ranked ${rankedPerfumes.length} perfumes in ${totalElapsed}ms`);
+    debugLog(`[Baseline Matcher] Successfully ranked ${rankedPerfumes.length} perfumes in ${totalElapsed}ms`);
     return rankedPerfumes;
   } catch (error) {
     const totalElapsed = Date.now() - requestStartTime;
@@ -70,4 +71,3 @@ export async function getBaselineRankings(
     throw error;
   }
 }
-

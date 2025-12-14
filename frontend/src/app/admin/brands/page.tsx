@@ -55,6 +55,7 @@ export default function AdminBrandsPage() {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      if (!event.key) return;
       const key = event.key.toLowerCase();
       if ((event.ctrlKey || event.metaKey) && key === "k") {
         event.preventDefault();
@@ -76,7 +77,7 @@ export default function AdminBrandsPage() {
       console.error("خطا در بارگذاری برندها", error);
       setStatus({
         type: "error",
-        message: "بارگذاری برندها با خطا مواجه شد. اتصال و توکن را بررسی کنید.",
+        message: "بارگذاری برندها با خطا مواجه شد. اتصال و کلید مدیریت را بررسی کنید.",
       });
       showToast("بارگذاری برندها با خطا مواجه شد.", { tone: "error" });
     } finally {
@@ -96,19 +97,40 @@ export default function AdminBrandsPage() {
 
       if (editingId) {
         // Update existing brand
-        await updateBrand(editingId, payload);
-        setStatus({ type: "success", message: "برند با موفقیت بروزرسانی شد." });
-        showToast("برند بروزرسانی شد.", { tone: "success" });
+        const updatedBrand = await updateBrand(editingId, payload);
+        
+        // Update local state
+        setBrands((prev) =>
+          prev.map((b) => (b.id.toString() === editingId ? updatedBrand : b))
+        );
+        
+        setStatus({ type: "success", message: "برند با موفقیت به‌روزرسانی شد." });
+        showToast("برند به‌روزرسانی شد.", { tone: "success" });
         setEditingId(null);
       } else {
         // Create new brand
-        await createBrand(payload);
-        setStatus({ type: "success", message: "برند جدید با موفقیت ثبت شد." });
+        const newBrand = await createBrand(payload);
+        
+        // Add the new brand to local state so it appears immediately
+        setBrands((prev) => {
+          // Check if it already exists to avoid duplicates
+          const exists = prev.some((b) => b.name.toLowerCase() === newBrand.name.toLowerCase());
+          if (exists) return prev;
+          return [...prev, newBrand].sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+        });
+        
+        setStatus({ 
+          type: "success", 
+          message: `برند "${newBrand.name}" با موفقیت ثبت شد. این برند اکنون در لیست برندها موجود است و می‌توانید از آن در ایجاد عطر جدید استفاده کنید.` 
+        });
         showToast("برند جدید ثبت شد.", { tone: "success" });
       }
 
       reset(defaultValues);
-      await loadBrands();
+      // Only reload if editing (to get updated data), otherwise we've already updated local state
+      if (editingId) {
+        await loadBrands();
+      }
     } catch (error) {
       console.error("خطا در ثبت برند", error);
       setStatus({ type: "error", message: "عملیات انجام نشد. لطفاً دوباره تلاش کنید." });
@@ -238,7 +260,7 @@ export default function AdminBrandsPage() {
             disabled={isSubmitting}
             className="inline-flex items-center justify-center rounded-[var(--radius-base)] bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--color-accent-strong)] hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
           >
-            {isSubmitting ? "در حال ارسال..." : editingId ? "بروزرسانی برند" : "ثبت برند"}
+            {isSubmitting ? "در حال ارسال..." : editingId ? "به‌روزرسانی برند" : "ثبت برند"}
           </button>
         </div>
       </form>

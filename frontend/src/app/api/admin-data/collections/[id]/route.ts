@@ -42,7 +42,7 @@ export async function PUT(
       return data;
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "خطا در بروزرسانی کالکشن";
+    const message = error instanceof Error ? error.message : "خطا در به‌روزرسانی کالکشن";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 

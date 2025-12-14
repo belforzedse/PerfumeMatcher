@@ -621,14 +621,14 @@ export default function AdminProductsPage() {
       return;
     }
 
-    if (!perfume.id) {
-      setStatus({
-        type: "error",
-        message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
-      });
-      showToast("شناسه محصول یافت نشد.", { tone: "error" });
-      return;
-    }
+      if (!perfume.id) {
+        setStatus({
+          type: "error",
+          message: "شناسه محصول یافت نشد. لطفاً صفحه را تازه‌سازی کنید.",
+        });
+        showToast("شناسه محصول یافت نشد.", { tone: "error" });
+        return;
+      }
 
     try {
       await deletePerfume(perfume.id.toString());
@@ -713,7 +713,7 @@ export default function AdminProductsPage() {
         if (!editingPerfume.id) {
           setStatus({
             type: "error",
-            message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
+            message: "شناسه محصول یافت نشد. لطفاً صفحه را تازه‌سازی کنید.",
           });
           showToast("شناسه محصول یافت نشد.", { tone: "error" });
           return;
@@ -1182,7 +1182,7 @@ export default function AdminProductsPage() {
                   <option value="name">مرتب‌سازی: نام</option>
                   <option value="brand">مرتب‌سازی: برند</option>
                   <option value="created">مرتب‌سازی: تاریخ ایجاد</option>
-                  <option value="updated">مرتب‌سازی: آخرین بروزرسانی</option>
+                  <option value="updated">مرتب‌سازی: آخرین به‌روزرسانی</option>
                 </select>
                 <button
                   type="button"
@@ -1356,7 +1356,7 @@ export default function AdminProductsPage() {
                     {(perfume.created_at || perfume.updated_at) && (
                       <div className="text-[10px] text-[var(--color-foreground-subtle)] pt-1 border-t border-[var(--color-border)]">
                         {perfume.created_at && <p>ایجاد شده: {new Date(perfume.created_at).toLocaleDateString('fa-IR')}</p>}
-                        {perfume.updated_at && <p>آخرین بروزرسانی: {new Date(perfume.updated_at).toLocaleDateString('fa-IR')}</p>}
+                        {perfume.updated_at && <p>آخرین به‌روزرسانی: {new Date(perfume.updated_at).toLocaleDateString('fa-IR')}</p>}
                       </div>
                     )}
                   </div>

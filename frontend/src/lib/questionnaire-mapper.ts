@@ -124,12 +124,12 @@ const VIBE_PAIR_MAPPINGS: Record<string, VibePair> = {
   "classic-edgy": {
     id: "classic-edgy",
     left: { label: "کلاسیک", icon: "👔" },
-    right: { label: "ادجی", icon: "⚡" },
+    right: { label: "جسور", icon: "⚡" },
     styles: ["masculine", "unisex"],
   },
   "light-heavy": {
     id: "light-heavy",
-    left: { label: "سبک و هواکی", icon: "💨" },
+    left: { label: "سبک و هوایی", icon: "💨" },
     right: { label: "سنگین و عمیق", icon: "🪨" },
     styles: ["unisex"],
   },
@@ -138,7 +138,7 @@ const VIBE_PAIR_MAPPINGS: Record<string, VibePair> = {
 const INTENSITY_MAPPINGS: Record<string, IntensityChoice> = {
   whisper: {
     id: "whisper",
-    label: "زیر لب",
+    label: "خیلی ملایم",
     description: "ملایم و نزدیک",
     icon: "🫧",
     value: "light",
@@ -168,7 +168,7 @@ const SAFETY_MAPPINGS: Record<string, SafetyChoice> = {
   },
   "too-smoky-leathery": {
     id: "too-smoky-leathery",
-    label: "خیلی دودی/چرمی",
+    label: "خیلی دودی یا چرمی",
     noteDislikes: ["woody", "leather", "tobacco"],
     weight: 2,
   },
@@ -192,7 +192,7 @@ const SAFETY_MAPPINGS: Record<string, SafetyChoice> = {
   },
   none: {
     id: "none",
-    label: "هیچکدام",
+    label: "هیچ‌کدام",
     noteDislikes: [],
     weight: 0,
   },

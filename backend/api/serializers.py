@@ -1,7 +1,23 @@
 from rest_framework import serializers
 
-from .models import Perfume
+from .models import Brand, Collection, Perfume
 from .notes_master import is_valid_note, validate_notes
+
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ["id", "name", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    brand_name = serializers.CharField(source="brand.name", read_only=True)
+
+    class Meta:
+        model = Collection
+        fields = ["id", "name", "brand", "brand_name", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 # New kiosk-questionnaire fields (frontend alignment)
 MOOD_CHOICES = ["fresh", "sweet", "warm", "floral", "woody"]

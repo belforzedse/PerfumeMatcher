@@ -14,8 +14,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from openai import OpenAI, APIError, BadRequestError, APITimeoutError
 
-from .models import Perfume
-from .serializers import QuestionnaireSerializer, PerfumeSerializer
+from .models import Brand, Collection, Perfume
+from .serializers import BrandSerializer, CollectionSerializer, QuestionnaireSerializer, PerfumeSerializer
 from .notes_master import get_all_notes, get_notes_by_category
 from matcher.vectorizer import get_engine
 from matcher.bridge_config import NOTE_CATEGORY_TO_TAGS
@@ -470,6 +470,96 @@ def available_notes(request: HttpRequest):
     if request.GET.get("category") == "true":
         return Response(get_notes_by_category())
     return Response({"notes": get_all_notes()})
+
+
+@api_view(["GET", "POST"])
+def admin_brands(request: HttpRequest):
+    """GET/POST /api/admin/brands/ - List all brands or create a new brand."""
+    if not _is_admin(request):
+        return _unauthorized()
+
+    if request.method == "GET":
+        queryset = Brand.objects.all().order_by("name")
+        serializer = BrandSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    # POST - Create new brand
+    serializer = BrandSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+def admin_brand_detail(request: HttpRequest, pk: int):
+    """GET/PUT/PATCH/DELETE /api/admin/brands/<id>/ - Brand detail operations."""
+    if not _is_admin(request):
+        return _unauthorized()
+
+    brand = get_object_or_404(Brand, pk=pk)
+
+    if request.method == "GET":
+        serializer = BrandSerializer(brand)
+        return Response(serializer.data)
+
+    if request.method in ["PUT", "PATCH"]:
+        serializer = BrandSerializer(
+            brand, data=request.data, partial=request.method == "PATCH"
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # DELETE
+    brand.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET", "POST"])
+def admin_collections(request: HttpRequest):
+    """GET/POST /api/admin/collections/ - List all collections or create a new collection."""
+    if not _is_admin(request):
+        return _unauthorized()
+
+    if request.method == "GET":
+        queryset = Collection.objects.select_related("brand").all().order_by("brand__name", "name")
+        serializer = CollectionSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    # POST - Create new collection
+    serializer = CollectionSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+def admin_collection_detail(request: HttpRequest, pk: int):
+    """GET/PUT/PATCH/DELETE /api/admin/collections/<id>/ - Collection detail operations."""
+    if not _is_admin(request):
+        return _unauthorized()
+
+    collection = get_object_or_404(Collection, pk=pk)
+
+    if request.method == "GET":
+        serializer = CollectionSerializer(collection)
+        return Response(serializer.data)
+
+    if request.method in ["PUT", "PATCH"]:
+        serializer = CollectionSerializer(
+            collection, data=request.data, partial=request.method == "PATCH"
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # DELETE
+    collection.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])

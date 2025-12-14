@@ -1,4 +1,5 @@
-﻿
+﻿import { debugLog, debugWarn } from "@/lib/debug";
+
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const PERFUMES_ENDPOINT = `${BACKEND_BASE_URL}/api/perfumes/`;
 
@@ -68,13 +69,18 @@ const fetchWithRetry = async (url: string, options: RequestInit & { retries?: nu
     } catch (error) {
       const isAbortError = error instanceof Error && error.name === "AbortError";
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (isAbortError) {
-        console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} timed out after ${timeout}ms`);
+        debugWarn(
+          `[API] Fetch attempt ${attempt + 1}/${retries + 1} timed out after ${timeout}ms`,
+        );
       } else {
-        console.warn(`[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`, lastError.message);
+        debugWarn(
+          `[API] Fetch attempt ${attempt + 1}/${retries + 1} failed:`,
+          lastError.message,
+        );
       }
-      
+
       if (attempt < retries) {
         // Exponential backoff: 500ms, 1000ms
         await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
@@ -119,7 +125,7 @@ export const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
   const brand = typeof perfumeData.brand === "string" ? perfumeData.brand : undefined;
   const collection = typeof perfumeData.collection === "string" ? perfumeData.collection : undefined;
   const notes: PerfumeNotes = {
-    top: Array.isArray(perfumeData.notes_top) ? [...perfumeData.notes_top] : 
+    top: Array.isArray(perfumeData.notes_top) ? [...perfumeData.notes_top] :
          Array.isArray(perfumeData.notes?.top) ? [...perfumeData.notes.top] : [],
     middle: Array.isArray(perfumeData.notes_middle) ? [...perfumeData.notes_middle] :
              Array.isArray(perfumeData.notes?.middle) ? [...perfumeData.notes.middle] : [],
@@ -139,7 +145,7 @@ export const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
     } else {
       imageUrl = `${BACKEND_BASE_URL}/${url}`;
     }
-    console.log(`[API] Converted image URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
+    debugLog(`[API] Converted image URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
   } else if (perfumeData.cover?.url) {
     const url = perfumeData.cover.url.trim();
     if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -150,9 +156,14 @@ export const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
     } else {
       imageUrl = `${BACKEND_BASE_URL}/${url}`;
     }
-    console.log(`[API] Converted cover URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
+    debugLog(`[API] Converted cover URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
   } else {
-    console.log(`[API] No image found for perfume ${perfumeData.id}, images:`, perfumeData.images, "cover:", perfumeData.cover);
+    debugLog(
+      `[API] No image found for perfume ${perfumeData.id}, images:`,
+      perfumeData.images,
+      "cover:",
+      perfumeData.cover,
+    );
   }
 
   return {
@@ -180,37 +191,37 @@ let perfumeListPromise: Promise<Perfume[]> | null = null;
 const PERFUME_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function getPerfumes(): Promise<Perfume[]> {
-  console.log("[API] getPerfumes() called");
+  debugLog("[API] getPerfumes() called");
   const now = Date.now();
 
   if (perfumeListCache && now - perfumeListCacheTime < PERFUME_CACHE_TTL_MS) {
-    console.log("[API] Returning cached perfume list:", perfumeListCache.length);
+    debugLog("[API] Returning cached perfume list:", perfumeListCache.length);
     return perfumeListCache;
   }
 
   if (perfumeListPromise) {
-    console.log("[API] Waiting for existing perfume list promise...");
+    debugLog("[API] Waiting for existing perfume list promise...");
     return perfumeListPromise;
   }
 
-  console.log("[API] Loading perfumes from backend...");
+  debugLog("[API] Loading perfumes from backend...");
   perfumeListPromise = (async () => {
     try {
       // Try backend first
-      console.log("[API] Loading perfumes from backend:", PERFUMES_ENDPOINT);
+      debugLog("[API] Loading perfumes from backend:", PERFUMES_ENDPOINT);
       const res = await fetchWithRetry(PERFUMES_ENDPOINT, {
-        cache: "no-store",
+        cache: "force-cache",
         retries: 2,
         timeout: 10000,
       });
-      
+
       const backendData = await res.json() as BackendPerfumeData[];
-      console.log("[API] Backend data received:", backendData.length, "items");
-      
+      debugLog("[API] Backend data received:", backendData.length, "items");
+
       const perfumes = backendData.map((p) => toPerfume(p));
       perfumeListCache = perfumes;
       perfumeListCacheTime = Date.now();
-      console.log("[API] Perfumes loaded from backend:", perfumes.length);
+      debugLog("[API] Perfumes loaded from backend:", perfumes.length);
       return perfumes;
     } catch (error) {
       console.error("[API] ERROR loading perfumes from backend:", error);
@@ -324,7 +335,5 @@ export async function getNoteOptions(): Promise<string[]> {
   }
 }
 
-export const toPersianNumbers = (value: string): string => {
-  const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
-  return value.replace(/[0-9]/g, (digit) => persianDigits[parseInt(digit, 10)]);
-};
+// NOTE: formatting helpers moved to `src/lib/locale.ts` to keep client bundles smaller.
+export { toPersianNumbers } from "@/lib/locale";

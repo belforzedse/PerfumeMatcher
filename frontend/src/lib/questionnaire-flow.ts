@@ -33,19 +33,19 @@ const QUICK_STEPS: QuestionStep[] = [
     type: "path-selection",
     id: "path",
     title: "راه خود را انتخاب کنید",
-    description: "می‌خواهید سریع پیش بروید یا عمیق‌تر کاوش کنیم؟",
+    description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
   },
   {
     type: "scene-cards",
     id: "scenes-1",
     title: "کدام صحنه بیشتر با شما هماهنگ است؟",
-    description: "حداکثر ۳ مورد را انتخاب کنید",
+    description: "حداکثر ۳ مورد را انتخاب کنید.",
   },
   {
     type: "safety-step",
     id: "safety",
-    title: "چیزی هست که اصلاً نمی‌خواهید؟",
-    description: "اختیاری - برای جلوگیری از پیشنهادهای نامناسب",
+    title: "چیزی هست که اصلاً نمی‌پسندید؟",
+    description: "اختیاری — برای اینکه پیشنهادها از موارد نامطلوب دور بمانند.",
   },
   {
     type: "pairwise",
@@ -55,13 +55,13 @@ const QUICK_STEPS: QuestionStep[] = [
   {
     type: "intensity",
     id: "intensity",
-    title: "چقدر می‌خواهید عطر قابل توجه باشد؟",
+    title: "چقدر دوست دارید عطرتان جلب توجه کند؟",
   },
   {
     type: "review",
     id: "review",
     title: "بازبینی پاسخ‌ها",
-    description: "آیا این درست است؟",
+    description: "آیا این موارد درست است؟",
   },
 ];
 
@@ -70,19 +70,19 @@ const DEEP_STEPS: QuestionStep[] = [
     type: "path-selection",
     id: "path",
     title: "راه خود را انتخاب کنید",
-    description: "می‌خواهید سریع پیش بروید یا عمیق‌تر کاوش کنیم؟",
+    description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
   },
   {
     type: "scene-cards",
     id: "scenes-1",
     title: "کدام صحنه بیشتر با شما هماهنگ است؟",
-    description: "حداکثر ۳ مورد را انتخاب کنید",
+    description: "حداکثر ۳ مورد را انتخاب کنید.",
   },
   {
     type: "safety-step",
     id: "safety",
-    title: "چیزی هست که اصلاً نمی‌خواهید؟",
-    description: "اختیاری - برای جلوگیری از پیشنهادهای نامناسب",
+    title: "چیزی هست که اصلاً نمی‌پسندید؟",
+    description: "اختیاری — برای اینکه پیشنهادها از موارد نامطلوب دور بمانند.",
   },
   {
     type: "pairwise",
@@ -97,7 +97,7 @@ const DEEP_STEPS: QuestionStep[] = [
   {
     type: "intensity",
     id: "intensity",
-    title: "چقدر می‌خواهید عطر قابل توجه باشد؟",
+    title: "چقدر دوست دارید عطرتان جلب توجه کند؟",
   },
   {
     type: "quick-fire-notes",
@@ -109,7 +109,7 @@ const DEEP_STEPS: QuestionStep[] = [
     type: "review",
     id: "review",
     title: "بازبینی پاسخ‌ها",
-    description: "آیا این درست است؟",
+    description: "آیا این موارد درست است؟",
   },
 ];
 
@@ -122,7 +122,7 @@ export function createInitialFlowState(): FlowState {
         type: "path-selection",
         id: "path",
         title: "راه خود را انتخاب کنید",
-        description: "می‌خواهید سریع پیش بروید یا عمیق‌تر کاوش کنیم؟",
+        description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
       },
     ],
     responses: {

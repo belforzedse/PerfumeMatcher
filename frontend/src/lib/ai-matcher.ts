@@ -1,6 +1,7 @@
 import { QuestionnaireAnswers } from "@/lib/questionnaire";
 import { Perfume } from "@/lib/api";
 import { RankedPerfume } from "@/lib/perfume-matcher";
+import { debugLog, debugWarn } from "@/lib/debug";
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const RECOMMEND_ENDPOINT = `${BACKEND_BASE_URL}/api/recommend/rerank/`;
@@ -60,7 +61,7 @@ export async function getAIRankings(
   answers: QuestionnaireAnswers,
   perfumes: Perfume[]
 ): Promise<RankedPerfume[]> {
-  console.log("[AI Matcher Client] Starting getAIRankings (backend)...");
+  debugLog("[AI Matcher Client] Starting getAIRankings (backend)...");
   const requestStartTime = Date.now();
 
   if (!RECOMMEND_ENDPOINT) {
@@ -79,21 +80,23 @@ export async function getAIRankings(
     });
 
     const fetchElapsed = Date.now() - requestStartTime;
-    console.log(`[AI Matcher Client] Request completed in ${fetchElapsed}ms`);
+    debugLog(`[AI Matcher Client] Request completed in ${fetchElapsed}ms`);
 
     const data: BackendRecommendResponse = await response.json();
-    console.log(`[AI Matcher] Received ${data.rankings?.length || 0} rankings from backend`);
-    console.log(`[AI Matcher] Backend returned IDs:`, data.rankings?.map(r => r.id).slice(0, 5));
+    debugLog(`[AI Matcher] Received ${data.rankings?.length || 0} rankings from backend`);
+    debugLog(`[AI Matcher] Backend returned IDs:`, data.rankings?.map(r => r.id).slice(0, 5));
     
     const perfumeMap = new Map(perfumes.map((p) => [String(p.id), p]));
-    console.log(`[AI Matcher] Catalog has ${perfumes.length} perfumes`);
-    console.log(`[AI Matcher] Sample catalog IDs:`, perfumes.slice(0, 5).map(p => p.id));
+    debugLog(`[AI Matcher] Catalog has ${perfumes.length} perfumes`);
+    debugLog(`[AI Matcher] Sample catalog IDs:`, perfumes.slice(0, 5).map(p => p.id));
 
     const rankedPerfumes: RankedPerfume[] = [];
     for (const ranking of data.rankings || []) {
       const perfume = perfumeMap.get(String(ranking.id));
       if (!perfume) {
-        console.warn(`[AI Matcher] Perfume ID ${ranking.id} (type: ${typeof ranking.id}) not found in catalog`);
+        debugWarn(
+          `[AI Matcher] Perfume ID ${ranking.id} (type: ${typeof ranking.id}) not found in catalog`,
+        );
         continue;
       }
       const matchPercentage = typeof ranking.matchPercentage === "number" 
@@ -114,7 +117,7 @@ export async function getAIRankings(
     }
 
     const totalElapsed = Date.now() - requestStartTime;
-    console.log(`[AI Matcher] Successfully ranked ${rankedPerfumes.length} perfumes in ${totalElapsed}ms`);
+    debugLog(`[AI Matcher] Successfully ranked ${rankedPerfumes.length} perfumes in ${totalElapsed}ms`);
     return rankedPerfumes;
   } catch (error) {
     const totalElapsed = Date.now() - requestStartTime;
@@ -122,4 +125,3 @@ export async function getAIRankings(
     throw error;
   }
 }
-

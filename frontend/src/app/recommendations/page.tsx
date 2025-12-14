@@ -13,16 +13,16 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import KioskFrame from "@/components/KioskFrame";
-import BrainThinkingAnimation from "@/components/BrainThinkingAnimation";
-import { getPerfumes, toPersianNumbers } from "@/lib/api";
+import { toPersianNumbers } from "@/lib/locale";
 import { useKioskMode } from "@/lib/hooks";
 
 import { parseAnswers, type QuestionnaireAnswers } from "@/lib/questionnaire";
 import { type RankedPerfume } from "@/lib/perfume-matcher";
-import { getAIRankings } from "@/lib/ai-matcher";
-import { getBaselineRankings } from "@/lib/baseline-matcher";
-import PerfumeDetailsModal from "@/components/PerfumeDetailsModal";
+
+const BrainThinkingAnimation = dynamic(() => import("@/components/BrainThinkingAnimation"), { ssr: false });
+const PerfumeDetailsModal = dynamic(() => import("@/components/PerfumeDetailsModal"), { ssr: false });
 
 const formatNumber = (value: number) => toPersianNumbers(String(value));
 
@@ -78,14 +78,14 @@ const MatchCard = ({
 
   // Use scene-card style in kiosk mode, regular style otherwise
   const useImageCardStyle = isKiosk;
-  
+
   // Use placeholder image for testing if no image available (perfume-related)
   const imageUrl = perfume.image || `https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&h=800&fit=crop&q=80&seed=${perfume.id}`;
-  
+
   // Calculate grayscale intensity based on order (1 = most colorful, 6 = most grayscale)
   // For 6 cards: order 1 = 0%, order 6 = 80% grayscale
-  const grayscaleIntensity = useImageCardStyle 
-    ? Math.min(((order - 1) / 5) * 80, 80) 
+  const grayscaleIntensity = useImageCardStyle
+    ? Math.min(((order - 1) / 5) * 80, 80)
     : 0;
 
   return (
@@ -459,51 +459,40 @@ function RecommendationsContent() {
     }
 
     setAnswers(parsedAnswers);
-    setLoading(true);
-    setError(null);
+	    setLoading(true);
+	    setError(null);
 
-    const fetchRecommendations = async () => {
-      try {
-        console.log("[Recommendations Page] Fetching perfume catalog...");
-        const allPerfumes = await getPerfumes();
-        console.log(
-          `[Recommendations Page] Fetched ${allPerfumes.length} perfumes from catalog`
-        );
+	    const fetchRecommendations = async () => {
+	      try {
+	        const response = await fetch("/api/recommendations", {
+	          method: "POST",
+	          headers: { "Content-Type": "application/json" },
+	          body: JSON.stringify(parsedAnswers),
+	        });
 
-        let ranked: RankedPerfume[];
-        try {
-          console.log(
-            "[Recommendations Page] Getting AI rankings via /api/recommend/rerank/..."
-          );
-          ranked = await getAIRankings(parsedAnswers, allPerfumes);
-          console.log(
-            `[Recommendations Page] ✅ Got ${ranked.length} AI-ranked perfumes`
-          );
-        } catch (aiError) {
-          console.warn(
-            "[Recommendations Page] AI ranking failed, falling back to baseline:",
-            aiError
-          );
-          ranked = await getBaselineRankings(parsedAnswers);
-          console.log(
-            `[Recommendations Page] ✅ Got ${ranked.length} baseline-ranked perfumes (fallback)`
-          );
-        }
+	        if (!response.ok) {
+	          const data = await response.json().catch(() => null);
+	          const message =
+	            (data && typeof data.error === "string" && data.error) ||
+	            "در دریافت پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید.";
+	          throw new Error(message);
+	        }
 
-        const topMatches = ranked.slice(0, 6);
-        console.log(
-          `[Recommendations Page] Setting ${topMatches.length} recommendations (top 6)`
-        );
-        setRecommendations(topMatches);
-      } catch (err) {
-        if (cancelled) return;
-        console.error("Error generating recommendations:", err);
-        setRecommendations([]);
-        setError("در تهیه پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+	        const data = (await response.json()) as { ranked: RankedPerfume[] };
+	        setRecommendations(Array.isArray(data.ranked) ? data.ranked : []);
+	      } catch (err) {
+	        if (cancelled) return;
+	        console.error("Error generating recommendations:", err);
+	        setRecommendations([]);
+	        setError(
+	          err instanceof Error
+	            ? err.message
+	            : "در دریافت پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+	        );
+	      } finally {
+	        if (!cancelled) setLoading(false);
+	      }
+	    };
 
     fetchRecommendations();
 
@@ -624,7 +613,7 @@ function RecommendationsContent() {
                 isKiosk && "text-base"
               )}
             >
-              بازنگری پرسشنامه
+              بازبینی پرسشنامه
             </Link>
           </div>
         </div>
@@ -754,8 +743,8 @@ function RecommendationsContent() {
                     recommendations.length
                   )} رایحه بر اساس ${formatNumber(
                     answeredCount
-                  )} پاسخ شما انتخاب شد.`
-                : "نتیجه‌ای یافت نشد. می‌توانید پرسشنامه را بازنگری کنید."}
+                  )} پاسخ شما پیشنهاد شد.`
+                : "نتیجه‌ای پیدا نشد. می‌توانید پرسشنامه را بازبینی کنید."}
             </p>
           </div>
 
@@ -767,7 +756,7 @@ function RecommendationsContent() {
                 isKiosk && "text-base"
               )}
             >
-              بازنگری پرسشنامه
+              بازبینی پرسشنامه
             </Link>
             <Link
               href="/"
@@ -968,7 +957,7 @@ function RecommendationsContent() {
                     href="/questionnaire"
                     className="btn-ghost tap-highlight touch-target touch-feedback text-sm transition-all duration-200 hover:bg-white/10"
                   >
-                    بازنگری پرسشنامه
+                    بازبینی پرسشنامه
                   </Link>
                 </div>
               )}

@@ -90,7 +90,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     "X-Admin-Key": ADMIN_KEY,
     ...(init?.headers as Record<string, string> || {}),
   };
-  
+
   // Only set Content-Type for non-FormData requests
   if (!isFormData) {
     headers["Content-Type"] = "application/json";
@@ -115,8 +115,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let errorMessage = response.statusText;
     try {
       const errorData = await response.json();
-      errorMessage = (errorData as { detail?: string; error?: string }).detail || 
-                     (errorData as { error?: string }).error || 
+      errorMessage = (errorData as { detail?: string; error?: string }).detail ||
+                     (errorData as { error?: string }).error ||
                      errorMessage;
     } catch {
       // If JSON parsing fails, try to get text
@@ -242,7 +242,7 @@ const mapPerfume = (
   const brandObj = perfume.brand
     ? brands.find((b) => b.name === perfume.brand) ?? null
     : null;
-  
+
   // Find collection by name
   const collectionObj = perfume.collection
     ? collections.find((c) => c.name === perfume.collection) ?? null
@@ -259,7 +259,7 @@ const mapPerfume = (
   }
 
   // Handle legacy season for backward compatibility
-  const legacySeason = seasons && seasons.length > 0 ? seasons[0] : 
+  const legacySeason = seasons && seasons.length > 0 ? seasons[0] :
                        (perfume.season ? convertToPersian("season", perfume.season).join(", ") : undefined);
 
   return {
@@ -282,7 +282,7 @@ const mapPerfume = (
     brand: brandObj,
     collection: collectionObj,
     // Convert relative image URLs to absolute URLs
-    image: perfume.images && perfume.images.length > 0 
+    image: perfume.images && perfume.images.length > 0
       ? (() => {
           const url = perfume.images[0].trim();
           if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -314,49 +314,29 @@ const mapPerfume = (
   };
 };
 
-// Extract unique brands and collections from perfumes since backend stores them as strings
+// Fetch brands from the dedicated brands API endpoint
 export const fetchBrandsAdmin = async (): Promise<AdminBrand[]> => {
-  const perfumes = await request<BackendPerfume[]>("/api/admin/perfumes/");
-  const uniqueBrands = new Set<string>();
-  
-  perfumes.forEach((p) => {
-    if (p.brand && p.brand.trim()) {
-      uniqueBrands.add(p.brand.trim());
-    }
-  });
-  
-  return Array.from(uniqueBrands)
-    .sort()
-    .map((name, index) => ({
-      id: index + 1, // Generate IDs since backend doesn't have brand IDs
-      name,
-    }));
+  return await request<AdminBrand[]>("/api/admin/brands/");
 };
 
+// Fetch collections from the dedicated collections API endpoint
 export const fetchCollectionsAdmin = async (): Promise<AdminCollection[]> => {
-  const [brands, perfumes] = await Promise.all([
-    fetchBrandsAdmin(),
-    request<BackendPerfume[]>("/api/admin/perfumes/"),
-  ]);
+  const collections = await request<Array<{
+    id: number;
+    name: string;
+    brand: number | null;
+    brand_name?: string;
+    created_at?: string;
+    updated_at?: string;
+  }>>("/api/admin/collections/");
   
-  const uniqueCollections = new Map<string, string>(); // name -> brand name
+  const brands = await fetchBrandsAdmin();
   
-  perfumes.forEach((p) => {
-    if (p.collection && p.collection.trim()) {
-      uniqueCollections.set(p.collection.trim(), p.brand || "");
-    }
-  });
-  
-  return Array.from(uniqueCollections.entries())
-    .map(([name, brandName], index) => {
-      const brand = brandName ? brands.find((b) => b.name === brandName) ?? null : null;
-      return {
-        id: index + 1, // Generate IDs
-        name,
-        brand,
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return collections.map((c) => ({
+    id: c.id,
+    name: c.name,
+    brand: c.brand ? brands.find((b) => b.id === c.brand) ?? null : null,
+  }));
 };
 
 export const fetchPerfumesAdmin = async (): Promise<AdminPerfume[]> => {
@@ -368,51 +348,52 @@ export const fetchPerfumesAdmin = async (): Promise<AdminPerfume[]> => {
   return perfumes.map((p) => mapPerfume(p, brands, collections));
 };
 
-// Brands and collections are stored as strings in perfumes, so these are no-ops
-// In the future, you might want to create Brand/Collection models in Django
+// Brands are now stored as separate entities in the backend
 export const createBrand = async (payload: CreateBrandPayload): Promise<AdminBrand> => {
-  // Brand will be created when a perfume with that brand is created
-  const brands = await fetchBrandsAdmin();
-  const existing = brands.find((b) => b.name === payload.name);
-  if (existing) return existing;
-  
-  return {
-    id: brands.length + 1,
-    name: payload.name,
-  };
+  return await request<AdminBrand>("/api/admin/brands/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 };
 
-export const updateBrand = async (_id: string, payload: CreateBrandPayload): Promise<AdminBrand> => {
-  // Would need to update all perfumes with this brand name
-  // For now, just return the updated brand object
-  return {
-    id: Number(_id),
-    name: payload.name,
-  };
+export const updateBrand = async (id: string, payload: CreateBrandPayload): Promise<AdminBrand> => {
+  return await request<AdminBrand>(`/api/admin/brands/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 };
 
-export const deleteBrand = async (_id: string): Promise<void> => {
-  // Would need to remove brand from all perfumes
-  // For now, this is a no-op
+export const deleteBrand = async (id: string): Promise<void> => {
+  await request(`/api/admin/brands/${id}/`, { method: "DELETE" });
 };
 
+// Collections are now stored as separate entities in the backend
 export const createCollection = async (
   payload: CreateCollectionPayload
 ): Promise<AdminCollection> => {
-  // Collection will be created when a perfume with that collection is created
-  const [brands, collections] = await Promise.all([
-    fetchBrandsAdmin(),
-    fetchCollectionsAdmin(),
-  ]);
-  
-  const brand = payload.brand || payload.brandId
-    ? brands.find((b) => b.id === (payload.brand || payload.brandId)) ?? null
-    : null;
-  
-  return {
-    id: collections.length + 1,
+  const backendPayload: Record<string, unknown> = {
     name: payload.name,
-    brand,
+  };
+  
+  if (payload.brand || payload.brandId) {
+    backendPayload.brand = payload.brand || payload.brandId;
+  }
+
+  const result = await request<{
+    id: number;
+    name: string;
+    brand: number | null;
+    brand_name?: string;
+  }>("/api/admin/collections/", {
+    method: "POST",
+    body: JSON.stringify(backendPayload),
+  });
+
+  const brands = await fetchBrandsAdmin();
+  return {
+    id: result.id,
+    name: result.name,
+    brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
   };
 };
 
@@ -423,7 +404,7 @@ export const createPerfume = async (
   const [brands, collections] = await Promise.all([fetchBrandsAdmin(), fetchCollectionsAdmin()]);
   const brandName = payload.brand ? brands.find((b) => b.id === payload.brand)?.name : undefined;
   const collectionName = payload.collection ? collections.find((c) => c.id === payload.collection)?.name : undefined;
-  
+
   const backendPayload: Record<string, unknown> = {
     name_fa: payload.name_fa,
     name_en: payload.name_en,
@@ -438,12 +419,12 @@ export const createPerfume = async (
     brand: brandName || "",
     collection: collectionName || "",
   };
-  
+
   // Handle images if provided (cover is a URL string)
   if (payload.cover && typeof payload.cover === "string") {
     backendPayload.images = [payload.cover];
   }
-  
+
   const result = await request<BackendPerfume>("/api/admin/perfumes/", {
     method: "POST",
     body: JSON.stringify(backendPayload),
@@ -462,14 +443,14 @@ export const updatePerfume = async (
   const [brands, collections] = await Promise.all([fetchBrandsAdmin(), fetchCollectionsAdmin()]);
   const brandName = payload.brand ? brands.find((b) => b.id === payload.brand)?.name : undefined;
   const collectionName = payload.collection ? collections.find((c) => c.id === payload.collection)?.name : undefined;
-  
+
   // Build payload, only including defined values
   const backendPayload: Record<string, unknown> = {};
-  
+
   if (payload.name_fa !== undefined) backendPayload.name_fa = payload.name_fa;
   if (payload.name_en !== undefined) backendPayload.name_en = payload.name_en;
   if (payload.description !== undefined) backendPayload.description = payload.description;
-  
+
   // Convert gender: if it's a string, split and convert; if array, convert first value
   if (payload.gender !== undefined) {
     if (typeof payload.gender === "string") {
@@ -485,25 +466,25 @@ export const updatePerfume = async (
       backendPayload.gender = englishGender.split(", ")[0].toLowerCase();
     }
   }
-  
+
   if (payload.season !== undefined) backendPayload.season = payload.season; // legacy single season
   if (payload.seasons !== undefined) backendPayload.seasons = payload.seasons; // multiple seasons array
   if (payload.family !== undefined) backendPayload.family = payload.family;
   if (payload.character !== undefined) backendPayload.character = payload.character;
   if (payload.strength !== undefined) backendPayload.strength = payload.strength;
   if (payload.intensity !== undefined) backendPayload.intensity = payload.intensity;
-  
+
   // Notes - ensure they're arrays and skip validation for now (backend will handle)
   if (payload.notes) {
     backendPayload.notes_top = payload.notes.top || [];
     backendPayload.notes_middle = payload.notes.middle || [];
     backendPayload.notes_base = payload.notes.base || [];
   }
-  
+
   if (payload.tags !== undefined) backendPayload.tags = payload.tags || [];
   if (brandName !== undefined) backendPayload.brand = brandName || "";
   if (collectionName !== undefined) backendPayload.collection = collectionName || "";
-  
+
   // Handle images: prefer images array, fallback to cover for backward compatibility
   // Always include images field if provided (even if empty array) to ensure it's saved to database
   if (payload.images !== undefined) {
@@ -515,7 +496,7 @@ export const updatePerfume = async (
       backendPayload.images = [];
     }
   }
-  
+
   // Use PATCH instead of PUT to allow partial updates
   const result = await request<BackendPerfume>(`/api/admin/perfumes/${id}/`, {
     method: "PATCH",
@@ -533,36 +514,47 @@ export const updateCollection = async (
   id: string,
   payload: CreateCollectionPayload
 ): Promise<AdminCollection> => {
-  // Collections are stored as strings in perfumes, so this would need to update all perfumes
-  // For now, just return the updated collection object
-  const brands = await fetchBrandsAdmin();
-  const brand = payload.brand || payload.brandId
-    ? brands.find((b) => b.id === (payload.brand || payload.brandId)) ?? null
-    : null;
-  
-  return {
-    id: Number(id),
+  const backendPayload: Record<string, unknown> = {
     name: payload.name,
-    brand,
+  };
+  
+  if (payload.brand || payload.brandId) {
+    backendPayload.brand = payload.brand || payload.brandId;
+  }
+
+  const result = await request<{
+    id: number;
+    name: string;
+    brand: number | null;
+    brand_name?: string;
+  }>(`/api/admin/collections/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(backendPayload),
+  });
+
+  const brands = await fetchBrandsAdmin();
+  return {
+    id: result.id,
+    name: result.name,
+    brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
   };
 };
 
 export const deleteCollection = async (id: string): Promise<void> => {
-  // Would need to remove collection from all perfumes
-  // For now, this is a no-op
+  await request(`/api/admin/collections/${id}/`, { method: "DELETE" });
 };
 
 export const uploadFile = async (file: File): Promise<{ id: number; url: string }> => {
   const formData = new FormData();
   formData.append("file", file);
-  
+
   // Upload to backend Django endpoint
   const result = await request<{ id: number; url: string }>("/api/admin/upload/", {
     method: "POST",
     body: formData,
     // Don't set Content-Type - browser will set it with boundary for FormData
   });
-  
+
   return result;
 };
 
@@ -572,10 +564,10 @@ export interface AvailableNotesResponse {
 }
 
 export const fetchAvailableNotes = async (byCategory = false): Promise<string[] | Record<string, string[]>> => {
-  const url = byCategory 
+  const url = byCategory
     ? `${BACKEND_BASE_URL}/api/available-notes/?category=true`
     : `${BACKEND_BASE_URL}/api/available-notes/`;
-  
+
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -587,10 +579,10 @@ export const fetchAvailableNotes = async (byCategory = false): Promise<string[] 
   }
 
   const data = await response.json() as AvailableNotesResponse;
-  
+
   if (byCategory) {
     return data as Record<string, string[]>;
   }
-  
+
   return (data.notes || []) as string[];
 };

@@ -83,7 +83,7 @@ export async function PUT(
       return data;
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "خطا در بروزرسانی عطر";
+    const message = error instanceof Error ? error.message : "خطا در به‌روزرسانی عطر";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 

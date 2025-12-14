@@ -65,7 +65,7 @@ export function BrainThinkingAnimation({ className }: BrainThinkingAnimationProp
   useEffect(() => {
     const loadFacts = async () => {
       try {
-        const res = await fetch("/api/fun-facts", { cache: "no-store" });
+        const res = await fetch("/api/fun-facts", { cache: "force-cache" });
         if (!res.ok) return;
         const data = await res.json();
         if (Array.isArray(data?.facts) && data.facts.length > 0) {
@@ -79,7 +79,7 @@ export function BrainThinkingAnimation({ className }: BrainThinkingAnimationProp
 
     const loadAnimation = async () => {
       try {
-        const res = await fetch(BRAIN_LOTTIE_URL);
+        const res = await fetch(BRAIN_LOTTIE_URL, { cache: "force-cache" });
         if (!res.ok) return;
         const data = await res.json();
         setAnimationData(data);
@@ -91,7 +91,7 @@ export function BrainThinkingAnimation({ className }: BrainThinkingAnimationProp
 
     const checkDotLottie = async () => {
       try {
-        const res = await fetch(BRAIN_DOT_LOTTIE_URL, { method: "HEAD", cache: "no-store" });
+        const res = await fetch(BRAIN_DOT_LOTTIE_URL, { method: "HEAD", cache: "force-cache" });
         setDotLottieAvailable(res.ok);
       } catch {
         setDotLottieAvailable(false);
@@ -143,4 +143,3 @@ export function BrainThinkingAnimation({ className }: BrainThinkingAnimationProp
 }
 
 export default BrainThinkingAnimation;
-

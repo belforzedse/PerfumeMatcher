@@ -2,6 +2,46 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+class Brand(models.Model):
+    """Brand entity for perfume brands."""
+    name = models.CharField(max_length=200, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = _("Brand")
+        verbose_name_plural = _("Brands")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Collection(models.Model):
+    """Collection entity for perfume collections."""
+    name = models.CharField(max_length=200)
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="collections",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["brand__name", "name"]
+        verbose_name = _("Collection")
+        verbose_name_plural = _("Collections")
+        unique_together = [["name", "brand"]]
+
+    def __str__(self) -> str:
+        if self.brand:
+            return f"{self.brand.name} - {self.name}"
+        return self.name
+
+
 class Perfume(models.Model):
     """Perfume entity stored for admin CRUD and matcher catalog management."""
 

@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--color-accent)] mt-0.5">•</span>
-                <span>تصاویر به صورت خودکار به فرمت WebP تبدیل می‌شوند برای بهینه‌سازی فضا.</span>
+                <span>تصاویر برای صرفه‌جویی در فضا به‌صورت خودکار به فرمت WebP تبدیل می‌شوند.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--color-accent)] mt-0.5">•</span>
@@ -191,7 +191,7 @@ export default function AdminDashboardPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--color-accent)] mt-0.5">•</span>
-                <span>در صورت بروز خطا، اتصال به اینترنت و توکن دسترسی را بررسی کنید.</span>
+                <span>در صورت بروز خطا، اتصال به اینترنت و کلید مدیریت را بررسی کنید.</span>
               </li>
             </ul>
           </div>

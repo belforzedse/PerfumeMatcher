@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 
 import { type RankedPerfume } from "@/lib/perfume-matcher";
-import { toPersianNumbers } from "@/lib/api";
+import { toPersianNumbers } from "@/lib/locale";
 import { useSharePerfume } from "@/lib/useSharePerfume";
 import { useKioskMode } from "@/lib/hooks";
 import { cn } from "@/lib/utils";

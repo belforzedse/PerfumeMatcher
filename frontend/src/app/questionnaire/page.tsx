@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toPersianNumbers } from "@/lib/api";
+import { toPersianNumbers } from "@/lib/locale";
 import { useRouter } from "next/navigation";
 import KioskFrame from "@/components/KioskFrame";
 import { AnimatePresence, motion } from "framer-motion";
@@ -186,10 +186,10 @@ export default function Questionnaire() {
       setFlowState((prev) => {
         // Don't auto-advance on review page, safety step (optional), or if can't proceed
         const currentStep = getCurrentStep(prev);
-        if (currentStep?.type === "review" || 
-            currentStep?.type === "safety-step" || 
+        if (currentStep?.type === "review" ||
+            currentStep?.type === "safety-step" ||
             !canProceed(prev)) return prev;
-        
+
         const nextStepIndex = getNextStep(prev);
         if (nextStepIndex === null) {
           // Get latest answers from state
@@ -225,7 +225,7 @@ export default function Questionnaire() {
         showMicroReward();
 
         const newState = { ...prev, responses: newResponses };
-        
+
         // Auto-advance if max selections reached (delay handled in autoAdvance)
         if (scenes.length >= 3 && !prev.responses.scenes.includes(sceneId)) {
           setTimeout(() => {
@@ -279,7 +279,7 @@ export default function Questionnaire() {
         showMicroReward();
 
         const newState = { ...prev, responses: newResponses };
-        
+
         // Auto-advance after selection (unless "none") (delay handled in autoAdvance)
         if (choice !== "none") {
           setTimeout(() => {

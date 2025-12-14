@@ -9,7 +9,6 @@ import {
 } from "@/lib/kiosk-options";
 
 export type QuestionType = "multiple" | "single";
-//hello
 export interface QuestionnaireAnswers {
   moods: string[];
   moments: string[];
@@ -19,7 +18,6 @@ export interface QuestionnaireAnswers {
   noteLikes: string[];
   noteDislikes: string[];
 }
-//camel by camel
 
 export type AnswerKey = keyof QuestionnaireAnswers;
 
@@ -61,13 +59,13 @@ export const QUESTION_FLOW: QuestionDefinition[] = [
     maxSelections: 3,
   },
   {
-    title: "بیشتر برای چه زمانی از روز؟",
+    title: "بیشتر در چه زمانی از روز؟",
     type: "single",
     options: TIME_CHOICES,
     key: "times",
   },
   {
-    title: "شدت پخش بو را ترجیح می‌دهید؟",
+    title: "شدت پخش بو را چقدر می‌پسندید؟",
     description: "از ملایم تا قوی.",
     type: "single",
     options: INTENSITY_CHOICES,
