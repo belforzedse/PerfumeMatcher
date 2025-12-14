@@ -110,29 +110,38 @@ jobs:
 
       - name: Deploy with Docker Compose
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -c "
             set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
 
             # Export environment variables for docker-compose
             export NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
-            export NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}
+            export NEXT_PUBLIC_ADMIN_KEY='${{ secrets.ADMIN_ACCESS_KEY }}'
+
+            # Verify the admin key is set (first 10 chars only for security)
+            echo \"Admin key length: \${#NEXT_PUBLIC_ADMIN_KEY}\"
+            echo \"Admin key prefix: \${NEXT_PUBLIC_ADMIN_KEY:0:10}...\"
 
             # Stop and remove old containers with correct names
             docker compose down || true
 
             # Remove any orphaned containers (those with random names)
-            docker ps -a --filter "name=perfume-" --format "{{.Names}}" | xargs -r docker rm -f || true
+            docker ps -a --filter \"name=perfume-\" --format \"{{.Names}}\" | xargs -r docker rm -f || true
 
             # Clean up any containers that might conflict
             docker rm -f perfume-backend perfume-frontend 2>/dev/null || true
+
+            # Remove old frontend image to force rebuild
+            docker rmi perfume-matcher-frontend 2>/dev/null || true
 
             # Use docker compose v2 (plugin)
             # Pull latest images or build if needed
             docker compose pull || true
 
-            # Build and start services (this will fail if build fails)
-            docker compose up -d --build
+            # Build and start services with explicit build args (no cache for frontend to ensure fresh build)
+            docker compose build --no-cache --build-arg NEXT_PUBLIC_BACKEND_BASE_URL=\$NEXT_PUBLIC_BACKEND_BASE_URL --build-arg NEXT_PUBLIC_ADMIN_KEY=\$NEXT_PUBLIC_ADMIN_KEY frontend
+            docker compose up -d
+          "
 
             # Wait a bit for containers to start
             sleep 5

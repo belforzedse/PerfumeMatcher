@@ -15,6 +15,20 @@ function isSameOriginUrl(href: string) {
   }
 }
 
+function isSamePageUrl(href: string) {
+  try {
+    const url = new URL(href, window.location.href);
+    return (
+      url.origin === window.location.origin &&
+      url.pathname === window.location.pathname &&
+      url.search === window.location.search &&
+      url.hash === window.location.hash
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function useUnsavedChangesGuard(enabled: boolean, message: string) {
   useEffect(() => {
     if (!enabled) {
@@ -59,6 +73,10 @@ export function useUnsavedChangesGuard(enabled: boolean, message: string) {
         return;
       }
 
+      if (isSamePageUrl(href)) {
+        return;
+      }
+
       const shouldLeave = window.confirm(message);
       if (shouldLeave) {
         return;
@@ -77,4 +95,3 @@ export function useUnsavedChangesGuard(enabled: boolean, message: string) {
     };
   }, [enabled, message]);
 }
-
