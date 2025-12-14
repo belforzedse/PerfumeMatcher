@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: perfume-backend
     env_file:
-      - ./backend/.env
+      - ${PWD:-.}/backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=matcher_backend.settings
     volumes:
@@ -30,7 +30,7 @@ services:
         NEXT_PUBLIC_ADMIN_KEY: ${NEXT_PUBLIC_ADMIN_KEY:-admin-key}
     container_name: perfume-frontend
     env_file:
-      - ./frontend/.env.local
+      - ${PWD:-.}/frontend/.env.local
     environment:
       - NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL:-https://kioskapi.gandom-perfume.ir}
       - NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY:-admin-key}
