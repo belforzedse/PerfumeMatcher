@@ -303,7 +303,9 @@ export default function AdminBrandsPage() {
           <motion.ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" variants={stagger}>
             <AnimatePresence>
               {brands
-                .filter((brand) => brand.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .filter((brand) =>
+                  (brand?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+                )
                 .map((brand) => (
                   <motion.li
                     key={brand.id}

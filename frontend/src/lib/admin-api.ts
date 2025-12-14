@@ -1,3 +1,5 @@
+import { debugLog } from "@/lib/debug";
+
 // Translation mappings for form fields
 const PersianToEnglishMappings = {
   gender: {
@@ -83,6 +85,16 @@ export const convertToPersian = (
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "admin-key"; // Should be set in .env
 
+class AdminApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "AdminApiError";
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Don't set Content-Type if it's FormData (browser will set it with boundary)
   const isFormData = init?.body instanceof FormData;
@@ -96,13 +108,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers["Content-Type"] = "application/json";
   }
 
-  // Debug logging (always log in browser console for debugging)
-  console.log("[Admin API] Request:", {
+  debugLog("[Admin API] Request:", {
     url: `${BACKEND_BASE_URL}${path}`,
-    hasAdminKey: !!ADMIN_KEY,
-    adminKeyLength: ADMIN_KEY?.length || 0,
-    adminKeyPrefix: ADMIN_KEY?.substring(0, 10) || "N/A",
-    adminKeyEnd: ADMIN_KEY?.substring(ADMIN_KEY.length - 10) || "N/A",
+    method: init?.method ?? "GET",
+    hasAdminKey: Boolean(ADMIN_KEY),
   });
 
   const response = await fetch(`${BACKEND_BASE_URL}${path}`, {
@@ -127,7 +136,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         // Keep default errorMessage
       }
     }
-    throw new Error(errorMessage);
+    throw new AdminApiError(errorMessage, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -314,29 +323,85 @@ const mapPerfume = (
   };
 };
 
-// Fetch brands from the dedicated brands API endpoint
+async function fetchBrandsFromPerfumes(): Promise<AdminBrand[]> {
+  const perfumes = await request<BackendPerfume[]>("/api/admin/perfumes/");
+  const uniqueBrands = new Set<string>();
+
+  perfumes.forEach((p) => {
+    if (p.brand && p.brand.trim()) {
+      uniqueBrands.add(p.brand.trim());
+    }
+  });
+
+  return Array.from(uniqueBrands)
+    .sort((a, b) => a.localeCompare(b, "fa"))
+    .map((name, index) => ({
+      id: index + 1,
+      name,
+    }));
+}
+
+async function fetchCollectionsFromPerfumes(): Promise<AdminCollection[]> {
+  const perfumes = await request<BackendPerfume[]>("/api/admin/perfumes/");
+  const brands = await fetchBrandsFromPerfumes();
+
+  const uniqueCollections = new Map<string, string>(); // name -> brand name
+
+  perfumes.forEach((p) => {
+    if (p.collection && p.collection.trim()) {
+      uniqueCollections.set(p.collection.trim(), p.brand || "");
+    }
+  });
+
+  return Array.from(uniqueCollections.entries())
+    .map(([name, brandName], index) => {
+      const brand = brandName ? brands.find((b) => b.name === brandName) ?? null : null;
+      return {
+        id: index + 1,
+        name,
+        brand,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "fa"));
+}
+
+// Fetch brands from the dedicated brands API endpoint (fallback to perfume-derived list for older backends)
 export const fetchBrandsAdmin = async (): Promise<AdminBrand[]> => {
-  return await request<AdminBrand[]>("/api/admin/brands/");
+  try {
+    return await request<AdminBrand[]>("/api/admin/brands/");
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      return await fetchBrandsFromPerfumes();
+    }
+    throw error;
+  }
 };
 
-// Fetch collections from the dedicated collections API endpoint
+// Fetch collections from the dedicated collections API endpoint (fallback to perfume-derived list for older backends)
 export const fetchCollectionsAdmin = async (): Promise<AdminCollection[]> => {
-  const collections = await request<Array<{
-    id: number;
-    name: string;
-    brand: number | null;
-    brand_name?: string;
-    created_at?: string;
-    updated_at?: string;
-  }>>("/api/admin/collections/");
+  try {
+    const collections = await request<Array<{
+      id: number;
+      name: string;
+      brand: number | null;
+      brand_name?: string;
+      created_at?: string;
+      updated_at?: string;
+    }>>("/api/admin/collections/");
 
-  const brands = await fetchBrandsAdmin();
+    const brands = await fetchBrandsAdmin();
 
-  return collections.map((c) => ({
-    id: c.id,
-    name: c.name,
-    brand: c.brand ? brands.find((b) => b.id === c.brand) ?? null : null,
-  }));
+    return collections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      brand: c.brand ? brands.find((b) => b.id === c.brand) ?? null : null,
+    }));
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      return await fetchCollectionsFromPerfumes();
+    }
+    throw error;
+  }
 };
 
 export const fetchPerfumesAdmin = async (): Promise<AdminPerfume[]> => {
@@ -350,51 +415,93 @@ export const fetchPerfumesAdmin = async (): Promise<AdminPerfume[]> => {
 
 // Brands are now stored as separate entities in the backend
 export const createBrand = async (payload: CreateBrandPayload): Promise<AdminBrand> => {
-  return await request<AdminBrand>("/api/admin/brands/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  try {
+    return await request<AdminBrand>("/api/admin/brands/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      const existing = await fetchBrandsFromPerfumes();
+      const nextId = (existing.reduce((max, b) => Math.max(max, b.id), 0) || 0) + 1;
+      return { id: nextId, name: payload.name };
+    }
+    throw error;
+  }
 };
 
 export const updateBrand = async (id: string, payload: CreateBrandPayload): Promise<AdminBrand> => {
-  return await request<AdminBrand>(`/api/admin/brands/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  try {
+    return await request<AdminBrand>(`/api/admin/brands/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      return { id: Number(id), name: payload.name };
+    }
+    throw error;
+  }
 };
 
 export const deleteBrand = async (id: string): Promise<void> => {
-  await request(`/api/admin/brands/${id}/`, { method: "DELETE" });
+  try {
+    await request(`/api/admin/brands/${id}/`, { method: "DELETE" });
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      return;
+    }
+    throw error;
+  }
 };
 
 // Collections are now stored as separate entities in the backend
 export const createCollection = async (
   payload: CreateCollectionPayload
 ): Promise<AdminCollection> => {
-  const backendPayload: Record<string, unknown> = {
-    name: payload.name,
-  };
+  try {
+    const backendPayload: Record<string, unknown> = {
+      name: payload.name,
+    };
 
-  if (payload.brand || payload.brandId) {
-    backendPayload.brand = payload.brand || payload.brandId;
+    if (payload.brand || payload.brandId) {
+      backendPayload.brand = payload.brand || payload.brandId;
+    }
+
+    const result = await request<{
+      id: number;
+      name: string;
+      brand: number | null;
+      brand_name?: string;
+    }>("/api/admin/collections/", {
+      method: "POST",
+      body: JSON.stringify(backendPayload),
+    });
+
+    const brands = await fetchBrandsAdmin();
+    return {
+      id: result.id,
+      name: result.name,
+      brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
+    };
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      const existing = await fetchCollectionsFromPerfumes();
+      const brands = await fetchBrandsFromPerfumes();
+      const nextId = (existing.reduce((max, c) => Math.max(max, c.id), 0) || 0) + 1;
+      const brand =
+        payload.brand || payload.brandId
+          ? brands.find((b) => b.id === (payload.brand || payload.brandId)) ?? null
+          : null;
+
+      return {
+        id: nextId,
+        name: payload.name,
+        brand,
+      };
+    }
+    throw error;
   }
-
-  const result = await request<{
-    id: number;
-    name: string;
-    brand: number | null;
-    brand_name?: string;
-  }>("/api/admin/collections/", {
-    method: "POST",
-    body: JSON.stringify(backendPayload),
-  });
-
-  const brands = await fetchBrandsAdmin();
-  return {
-    id: result.id,
-    name: result.name,
-    brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
-  };
 };
 
 export const createPerfume = async (
@@ -514,34 +621,53 @@ export const updateCollection = async (
   id: string,
   payload: CreateCollectionPayload
 ): Promise<AdminCollection> => {
-  const backendPayload: Record<string, unknown> = {
-    name: payload.name,
-  };
+  try {
+    const backendPayload: Record<string, unknown> = {
+      name: payload.name,
+    };
 
-  if (payload.brand || payload.brandId) {
-    backendPayload.brand = payload.brand || payload.brandId;
+    if (payload.brand || payload.brandId) {
+      backendPayload.brand = payload.brand || payload.brandId;
+    }
+
+    const result = await request<{
+      id: number;
+      name: string;
+      brand: number | null;
+      brand_name?: string;
+    }>(`/api/admin/collections/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(backendPayload),
+    });
+
+    const brands = await fetchBrandsAdmin();
+    return {
+      id: result.id,
+      name: result.name,
+      brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
+    };
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      const brands = await fetchBrandsFromPerfumes();
+      const brand =
+        payload.brand || payload.brandId
+          ? brands.find((b) => b.id === (payload.brand || payload.brandId)) ?? null
+          : null;
+      return { id: Number(id), name: payload.name, brand };
+    }
+    throw error;
   }
-
-  const result = await request<{
-    id: number;
-    name: string;
-    brand: number | null;
-    brand_name?: string;
-  }>(`/api/admin/collections/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(backendPayload),
-  });
-
-  const brands = await fetchBrandsAdmin();
-  return {
-    id: result.id,
-    name: result.name,
-    brand: result.brand ? brands.find((b) => b.id === result.brand) ?? null : null,
-  };
 };
 
 export const deleteCollection = async (id: string): Promise<void> => {
-  await request(`/api/admin/collections/${id}/`, { method: "DELETE" });
+  try {
+    await request(`/api/admin/collections/${id}/`, { method: "DELETE" });
+  } catch (error) {
+    if (error instanceof AdminApiError && error.status === 404) {
+      return;
+    }
+    throw error;
+  }
 };
 
 export const uploadFile = async (file: File): Promise<{ id: number; url: string }> => {

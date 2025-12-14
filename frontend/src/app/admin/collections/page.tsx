@@ -232,7 +232,9 @@ export default function AdminCollectionsPage() {
           <motion.ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" variants={stagger}>
             <AnimatePresence>
               {collections
-                .filter((collection) => collection.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .filter((collection) =>
+                  (collection?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+                )
                 .map((collection) => (
                   <motion.li
                     key={collection.id}

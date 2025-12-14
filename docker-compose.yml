@@ -13,7 +13,7 @@ services:
       # The .env file is created during deployment and copied into the container
     volumes:
       - ./backend/media:/app/media
-      - ./backend/db:/app/db
+      - backend_db:/app/db
       - ./backend/.env:/app/.env:ro
     ports:
       - "127.0.0.1:8000:8000"
@@ -52,3 +52,6 @@ services:
       retries: 3
       start_period: 40s
 
+volumes:
+  backend_db:
+    name: perfume_backend_db
