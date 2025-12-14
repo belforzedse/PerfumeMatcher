@@ -6,8 +6,8 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-# Install dependencies with fallback (node:22-alpine includes npm 10+ which doesn't have the bug)
-RUN (npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit)
+# Use npm install directly (more stable than npm ci in CI environments)
+RUN npm install --no-audit
 
 # Copy project
 COPY . .
