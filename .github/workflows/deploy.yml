@@ -114,16 +114,6 @@ jobs:
             set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
 
-            # Verify .env files exist (they should be created in previous steps)
-            if [ ! -f backend/.env ]; then
-              echo 'ERROR: backend/.env file not found!' >&2
-              exit 1
-            fi
-            if [ ! -f frontend/.env.local ]; then
-              echo 'ERROR: frontend/.env.local file not found!' >&2
-              exit 1
-            fi
-
             # Export environment variables for docker-compose
             export NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
             export NEXT_PUBLIC_ADMIN_KEY='${{ secrets.ADMIN_ACCESS_KEY }}'

@@ -4,13 +4,17 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: perfume-backend
-    env_file:
-      - ${PWD:-.}/backend/.env
+    # env_file is optional - file is created on VPS during deployment
+    # env_file:
+    #   - ./backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=matcher_backend.settings
+      # Backend env vars are loaded from .env file by Django's load_dotenv()
+      # The .env file is created during deployment and copied into the container
     volumes:
       - ./backend/media:/app/media
       - ./backend/db:/app/db
+      - ./backend/.env:/app/.env:ro
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
@@ -29,8 +33,9 @@ services:
         NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-https://kioskapi.gandom-perfume.ir}
         NEXT_PUBLIC_ADMIN_KEY: ${NEXT_PUBLIC_ADMIN_KEY:-admin-key}
     container_name: perfume-frontend
-    env_file:
-      - ${PWD:-.}/frontend/.env.local
+    # env_file is optional - file is created on VPS during deployment
+    # env_file:
+    #   - ./frontend/.env.local
     environment:
       - NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL:-https://kioskapi.gandom-perfume.ir}
       - NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY:-admin-key}
