@@ -24,6 +24,8 @@ import {
 
 import ImageUpload from "@/components/ImageUpload";
 import { useAdminMotionVariants } from "@/components/admin/AdminMotion";
+import { useGlassToast } from "@/components/GlassToastProvider";
+import { useUnsavedChangesGuard } from "@/components/admin/useUnsavedChangesGuard";
 
 type FeedbackState = {
   type: "success" | "error" | "warning";
@@ -274,6 +276,7 @@ function MultiSelectField({ label, options, value, onChange, error }: MultiSelec
 }
 
 export default function AdminProductsPage() {
+  const { showToast } = useGlassToast();
   const {
     register,
     handleSubmit,
@@ -298,6 +301,7 @@ export default function AdminProductsPage() {
   const [filterBrand, setFilterBrand] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"basic" | "details" | "notes">("basic");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const { section, listItem, status: statusVariants, stagger, transition, ease, shouldReduce } =
     useAdminMotionVariants();
 
@@ -399,18 +403,40 @@ export default function AdminProductsPage() {
     }
   }, [formValues, isEditing, editingPerfume]);
 
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges && isEditing) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
+  useUnsavedChangesGuard(
+    hasUnsavedChanges && isEditing,
+    "تغییرات ذخیره نشده‌ای دارید. آیا مطمئن هستید که می‌خواهید از این صفحه خارج شوید؟",
+  );
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges, isEditing]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("admin.products.filters");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<{
+        searchTerm: string;
+        filterBrand: string;
+        sortBy: "name" | "brand" | "created" | "updated";
+        sortOrder: "asc" | "desc";
+      }>;
+      if (typeof parsed.searchTerm === "string") setSearchTerm(parsed.searchTerm);
+      if (typeof parsed.filterBrand === "string") setFilterBrand(parsed.filterBrand);
+      if (parsed.sortBy) setSortBy(parsed.sortBy);
+      if (parsed.sortOrder) setSortOrder(parsed.sortOrder);
+    } catch {
+      // Ignore corrupted persisted state.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "admin.products.filters",
+        JSON.stringify({ searchTerm, filterBrand, sortBy, sortOrder }),
+      );
+    } catch {
+      // Ignore storage failures (private mode, quota, etc.).
+    }
+  }, [filterBrand, searchTerm, sortBy, sortOrder]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -448,6 +474,7 @@ export default function AdminProductsPage() {
           type: "warning",
           message: warnings.join(" "),
         });
+        showToast(warnings.join(" "), { tone: "info", duration: 4800 });
       } else {
         setStatus((current) => (current?.type === "warning" ? null : current));
       }
@@ -457,10 +484,11 @@ export default function AdminProductsPage() {
         type: "error",
         message: "بارگذاری عطرها با خطا مواجه شد. دوباره تلاش کنید.",
       });
+      showToast("بارگذاری عطرها با خطا مواجه شد.", { tone: "error" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     void loadData();
@@ -544,6 +572,27 @@ export default function AdminProductsPage() {
     exitEditMode({ preserveStatus: true });
   }, [exitEditMode, hasUnsavedChanges]);
 
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (event.key === "Escape" && isEditing) {
+        event.preventDefault();
+        handleCancelEdit();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleCancelEdit, isEditing]);
+
   const handleDuplicate = useCallback((perfume: AdminPerfume) => {
     // Create a new perfume based on existing one
     reset({
@@ -577,12 +626,14 @@ export default function AdminProductsPage() {
         type: "error",
         message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
       });
+      showToast("شناسه محصول یافت نشد.", { tone: "error" });
       return;
     }
 
     try {
       await deletePerfume(perfume.id.toString());
       setStatus({ type: "success", message: "محصول با موفقیت حذف شد." });
+      showToast("محصول حذف شد.", { tone: "success" });
       await loadData();
     } catch (error) {
       console.error("خطا در حذف محصول", error);
@@ -590,8 +641,9 @@ export default function AdminProductsPage() {
         type: "error",
         message: "حذف محصول با خطا مواجه شد. دوباره تلاش کنید.",
       });
+      showToast("حذف محصول با خطا مواجه شد.", { tone: "error" });
     }
-  }, [loadData]);
+  }, [loadData, showToast]);
 
   const onSubmit = async (values: PerfumeFormValues) => {
     setStatus(null);
@@ -610,6 +662,7 @@ export default function AdminProductsPage() {
             type: "error",
             message: "آپلود تصویر با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
           });
+          showToast("آپلود تصویر با خطا مواجه شد.", { tone: "error" });
           return;
         }
       } else if (values.image && typeof values.image === "string") {
@@ -662,15 +715,18 @@ export default function AdminProductsPage() {
             type: "error",
             message: "شناسه محصول یافت نشد. لطفاً صفحه را رفرش کنید.",
           });
+          showToast("شناسه محصول یافت نشد.", { tone: "error" });
           return;
         }
         await updatePerfume(editingPerfume.id.toString(), payload);
         setStatus({ type: "success", message: "محصول با موفقیت به‌روزرسانی شد." });
+        showToast("تغییرات ذخیره شد.", { tone: "success" });
         setHasUnsavedChanges(false);
         exitEditMode({ preserveStatus: true });
       } else {
         await createPerfume(payload);
         setStatus({ type: "success", message: "محصول جدید با موفقیت ثبت شد." });
+        showToast("محصول جدید ثبت شد.", { tone: "success" });
         setHasUnsavedChanges(false);
         reset(createDefaultValues());
       }
@@ -684,6 +740,7 @@ export default function AdminProductsPage() {
           ? "ویرایش محصول با خطا مواجه شد. مقادیر فرم را بررسی و مجدداً تلاش کنید."
           : "ثبت محصول با خطا مواجه شد. مقادیر فرم را بررسی و مجدداً تلاش کنید.",
       });
+      showToast(isEditing ? "ویرایش محصول انجام نشد." : "ثبت محصول انجام نشد.", { tone: "error" });
     }
   };
 
@@ -1085,11 +1142,22 @@ export default function AdminProductsPage() {
                   placeholder="جستجوی محصول..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+                  ref={searchInputRef}
+                  className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pl-10 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
                 />
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-foreground-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-sm text-[var(--color-foreground-muted)] transition hover:bg-[var(--color-background-soft)] hover:text-[var(--color-foreground)]"
+                    title="پاک کردن جستجو"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
 
               <select
@@ -1125,6 +1193,25 @@ export default function AdminProductsPage() {
                   {sortOrder === "asc" ? "↑" : "↓"}
                 </button>
               </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-[var(--color-foreground-muted)]">
+              <span>میانبرها: Ctrl+K برای جستجو، Esc برای انصراف از ویرایش</span>
+              {(hasSearchTerm || filterBrand || sortBy !== "name" || sortOrder !== "asc") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterBrand("");
+                    setSortBy("name");
+                    setSortOrder("asc");
+                    showToast("فیلترها پاک شد.", { tone: "info" });
+                  }}
+                  className="rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-foreground)] transition hover:bg-[var(--color-background-soft)]"
+                >
+                  پاک‌کردن فیلترها
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -13,6 +13,7 @@ import {
   type CreateBrandPayload,
 } from "@/lib/admin-api";
 import { useAdminMotionVariants } from "@/components/admin/AdminMotion";
+import { useGlassToast } from "@/components/GlassToastProvider";
 
 type FeedbackState = {
   type: "success" | "error";
@@ -34,6 +35,7 @@ const buildPayload = (values: BrandFormValues): CreateBrandPayload => ({
 });
 
 export default function AdminBrandsPage() {
+  const { showToast } = useGlassToast();
   const {
     register,
     handleSubmit,
@@ -47,8 +49,23 @@ export default function AdminBrandsPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [editingId, setEditingId] = useState<EditingBrandId>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const { section, listItem, status: statusVariants, stagger, transition, ease, shouldReduce } =
     useAdminMotionVariants();
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const loadBrands = useCallback(async () => {
     setLoading(true);
@@ -61,10 +78,11 @@ export default function AdminBrandsPage() {
         type: "error",
         message: "بارگذاری برندها با خطا مواجه شد. اتصال و توکن را بررسی کنید.",
       });
+      showToast("بارگذاری برندها با خطا مواجه شد.", { tone: "error" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     void loadBrands();
@@ -80,11 +98,13 @@ export default function AdminBrandsPage() {
         // Update existing brand
         await updateBrand(editingId, payload);
         setStatus({ type: "success", message: "برند با موفقیت بروزرسانی شد." });
+        showToast("برند بروزرسانی شد.", { tone: "success" });
         setEditingId(null);
       } else {
         // Create new brand
         await createBrand(payload);
         setStatus({ type: "success", message: "برند جدید با موفقیت ثبت شد." });
+        showToast("برند جدید ثبت شد.", { tone: "success" });
       }
 
       reset(defaultValues);
@@ -92,6 +112,7 @@ export default function AdminBrandsPage() {
     } catch (error) {
       console.error("خطا در ثبت برند", error);
       setStatus({ type: "error", message: "عملیات انجام نشد. لطفاً دوباره تلاش کنید." });
+      showToast("ثبت/ویرایش برند انجام نشد.", { tone: "error" });
     }
   };
 
@@ -118,10 +139,12 @@ export default function AdminBrandsPage() {
     try {
       await deleteBrand(documentId);
       setStatus({ type: "success", message: "برند با موفقیت حذف شد." });
+      showToast("برند حذف شد.", { tone: "success" });
       await loadBrands();
     } catch (error) {
       console.error("خطا در حذف برند", error);
       setStatus({ type: "error", message: "حذف برند انجام نشد. لطفاً دوباره تلاش کنید." });
+      showToast("حذف برند انجام نشد.", { tone: "error" });
     } finally {
       setDeletingId(null);
     }
@@ -233,11 +256,22 @@ export default function AdminBrandsPage() {
               placeholder="جستجوی برند..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+              ref={searchInputRef}
+              className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pl-10 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
             />
             <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-foreground-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-sm text-[var(--color-foreground-muted)] transition hover:bg-[var(--color-background-soft)] hover:text-[var(--color-foreground)]"
+                title="پاک کردن جستجو"
+              >
+                ×
+              </button>
+            )}
           </div>
         )}
 

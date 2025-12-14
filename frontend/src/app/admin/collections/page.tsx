@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -13,6 +13,7 @@ import {
   type CreateCollectionPayload,
 } from "@/lib/admin-api";
 import { useAdminMotionVariants } from "@/components/admin/AdminMotion";
+import { useGlassToast } from "@/components/GlassToastProvider";
 
 type FeedbackState = {
   type: "success" | "error";
@@ -35,6 +36,7 @@ const buildPayload = (values: CollectionFormValues): CreateCollectionPayload => 
 });
 
 export default function AdminCollectionsPage() {
+  const { showToast } = useGlassToast();
   const {
     register,
     handleSubmit,
@@ -46,8 +48,23 @@ export default function AdminCollectionsPage() {
   const [status, setStatus] = useState<FeedbackState | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const { section, listItem, status: statusVariants, stagger, transition, ease, shouldReduce } =
     useAdminMotionVariants();
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -64,10 +81,11 @@ export default function AdminCollectionsPage() {
         type: "error",
         message: "بارگذاری داده‌ها با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
       });
+      showToast("بارگذاری کالکشن‌ها با خطا مواجه شد.", { tone: "error" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     void loadData();
@@ -80,11 +98,13 @@ export default function AdminCollectionsPage() {
       const payload = buildPayload(values);
       await createCollection(payload);
       setStatus({ type: "success", message: "کالکشن جدید با موفقیت ثبت شد." });
+      showToast("کالکشن جدید ثبت شد.", { tone: "success" });
       reset(defaultValues);
       await loadData();
     } catch (error) {
       console.error("خطا در ثبت کالکشن", error);
       setStatus({ type: "error", message: "ثبت کالکشن انجام نشد. مجدداً تلاش کنید." });
+      showToast("ثبت کالکشن انجام نشد.", { tone: "error" });
     }
   };
 
@@ -187,11 +207,22 @@ export default function AdminCollectionsPage() {
               placeholder="جستجوی کالکشن..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
+              ref={searchInputRef}
+              className="w-full rounded-[var(--radius-base)] border border-[var(--color-border)] bg-white px-4 py-3 pl-10 pr-10 text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
             />
             <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-foreground-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-sm text-[var(--color-foreground-muted)] transition hover:bg-[var(--color-background-soft)] hover:text-[var(--color-foreground)]"
+                title="پاک کردن جستجو"
+              >
+                ×
+              </button>
+            )}
           </div>
         )}
 

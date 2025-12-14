@@ -141,6 +141,11 @@ def _resolve_sqlite_path(base_dir: Path) -> Path:
         candidate = Path(sqlite_path_env)
         return candidate if candidate.is_absolute() else (base_dir / candidate)
 
+    # In production (DEBUG=False), prefer the Docker volume-backed path.
+    # This avoids writing the DB into the container filesystem.
+    if not DEBUG:
+        return base_dir / "db" / "db.sqlite3"
+
     # Prefer the legacy location if it exists (common for local dev).
     legacy = base_dir / "db.sqlite3"
     if legacy.exists():

@@ -57,6 +57,7 @@ ufw --force enable
 echo "==> Creating directories..."
 mkdir -p /opt/perfume-matcher/{backend,frontend,nginx,scripts}
 mkdir -p /opt/perfume-matcher/backend/media/uploads
+mkdir -p /opt/perfume-matcher/backend/db
 chown -R deploy:deploy /opt/perfume-matcher
 
 echo "==> Writing nginx reverse proxy config..."
@@ -210,4 +211,3 @@ echo ""
 echo "🐳 Portainer agent is running on port 9001"
 echo "   Add this agent to your Portainer instance:"
 echo "   tcp://$(hostname -I | awk '{print $1}'):9001"
-

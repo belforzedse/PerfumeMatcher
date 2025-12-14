@@ -44,6 +44,10 @@ jobs:
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend/media/uploads
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/backend/db
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend/.next
+
+            # Ensure db directory has proper permissions and ownership
+            chmod 755 ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
+            chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
           EOF
 
       - name: Copy backend files
