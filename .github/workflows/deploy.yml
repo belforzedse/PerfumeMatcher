@@ -71,6 +71,18 @@ jobs:
             --exclude '.env.local' \
             frontend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/frontend/
 
+      - name: Copy deployment files (compose/nginx/scripts)
+        run: |
+          rsync -avz \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/
+          rsync -avz \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/nginx/
+          rsync -avz \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            scripts/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/scripts/
+
 
       - name: Create backend .env file if not exists
         run: |
