@@ -24,7 +24,7 @@ const SCENE_IMAGES: Record<string, string> = {
   "romantic-dinner": "/dinner.webp",
   "beach-day": "/beach.webp",
   "winter-night": "/winter.webp",
-  "gift-occasion": "gift.webp",
+  "gift-occasion": "/gift.webp",
 };
 
 // Color mapping for scene icons (applied to the *badge* tint, not the emoji itself)

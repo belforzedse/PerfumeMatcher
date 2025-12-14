@@ -329,9 +329,9 @@ export const fetchCollectionsAdmin = async (): Promise<AdminCollection[]> => {
     created_at?: string;
     updated_at?: string;
   }>>("/api/admin/collections/");
-  
+
   const brands = await fetchBrandsAdmin();
-  
+
   return collections.map((c) => ({
     id: c.id,
     name: c.name,
@@ -374,7 +374,7 @@ export const createCollection = async (
   const backendPayload: Record<string, unknown> = {
     name: payload.name,
   };
-  
+
   if (payload.brand || payload.brandId) {
     backendPayload.brand = payload.brand || payload.brandId;
   }
@@ -517,7 +517,7 @@ export const updateCollection = async (
   const backendPayload: Record<string, unknown> = {
     name: payload.name,
   };
-  
+
   if (payload.brand || payload.brandId) {
     backendPayload.brand = payload.brand || payload.brandId;
   }

@@ -176,6 +176,16 @@
   --max-content-width: 1200px;
 }
 
+/* Mobile/coarse-pointer devices struggle with strong backdrop blur; keep the identity, lower the cost. */
+@media (pointer: coarse) {
+  :root {
+    --blur-background: 18px;
+    --glass-blur-panel: 28px;
+    --glass-blur-card: 20px;
+    --glass-blur-chip: 16px;
+  }
+}
+
 
 
 @theme inline {

@@ -76,13 +76,15 @@ export async function POST(request: Request) {
 
   try {
     // First: ask backend for rerank results (fast payload).
+    const rerankController = new AbortController();
+    const rerankTimeoutId = setTimeout(() => rerankController.abort(), 120_000);
     const rerankRes = await fetch(RERANK_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(answers),
       // backend can take a while; keep the browser request short by doing this server-side
-      signal: AbortSignal.timeout(120_000),
-    });
+      signal: rerankController.signal,
+    }).finally(() => clearTimeout(rerankTimeoutId));
 
     if (!rerankRes.ok) {
       throw new Error(`Rerank HTTP ${rerankRes.status}`);
@@ -106,12 +108,14 @@ export async function POST(request: Request) {
   } catch (rerankError) {
     // Fallback: baseline endpoint returns full perfume objects.
     try {
+      const baselineController = new AbortController();
+      const baselineTimeoutId = setTimeout(() => baselineController.abort(), 120_000);
       const baselineRes = await fetch(BASELINE_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(answers),
-        signal: AbortSignal.timeout(120_000),
-      });
+        signal: baselineController.signal,
+      }).finally(() => clearTimeout(baselineTimeoutId));
       if (!baselineRes.ok) {
         throw new Error(`Baseline HTTP ${baselineRes.status}`);
       }
@@ -134,4 +138,3 @@ export async function POST(request: Request) {
     }
   }
 }
-
