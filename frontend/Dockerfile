@@ -1,15 +1,13 @@
 # ---------- Stage 1: Build ----------
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 ARG NEXT_PUBLIC_BACKEND_BASE_URL
 ARG NEXT_PUBLIC_ADMIN_KEY
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-# Update npm to a specific stable version to avoid "Exit handler never called" bug
-# Then install dependencies with fallback
-RUN npm install -g npm@10 && \
-    (npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit)
+# Install dependencies with fallback (node:22-alpine includes npm 10+ which doesn't have the bug)
+RUN (npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit)
 
 # Copy project
 COPY . .
@@ -24,7 +22,7 @@ ENV NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY}
 RUN npm run build
 
 # ---------- Stage 2: Runtime ----------
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 ARG NEXT_PUBLIC_BACKEND_BASE_URL
 ARG NEXT_PUBLIC_ADMIN_KEY
 WORKDIR /app
