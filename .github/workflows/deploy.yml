@@ -141,7 +141,6 @@ jobs:
             # Build and start services with explicit build args (no cache for frontend to ensure fresh build)
             docker compose build --no-cache --build-arg NEXT_PUBLIC_BACKEND_BASE_URL=\$NEXT_PUBLIC_BACKEND_BASE_URL --build-arg NEXT_PUBLIC_ADMIN_KEY=\$NEXT_PUBLIC_ADMIN_KEY frontend
             docker compose up -d
-          "
 
             # Wait a bit for containers to start
             sleep 5
@@ -160,7 +159,7 @@ jobs:
 
             # Verify containers are still running
             docker compose ps
-          EOF
+          "
 
       - name: Health check
         run: |
