@@ -76,12 +76,19 @@ jobs:
           rsync -avz \
             -e "ssh -i ~/.ssh/deploy_key" \
             docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/
-          rsync -avz \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/nginx/
-          rsync -avz \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            scripts/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/scripts/
+
+          # Optional folders (may not exist in repo checkout if empty/untracked)
+          if [ -d nginx ]; then
+            rsync -avz \
+              -e "ssh -i ~/.ssh/deploy_key" \
+              nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/nginx/
+          fi
+
+          if [ -d scripts ]; then
+            rsync -avz \
+              -e "ssh -i ~/.ssh/deploy_key" \
+              scripts/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/scripts/
+          fi
 
 
       - name: Create backend .env file if not exists
