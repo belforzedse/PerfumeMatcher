@@ -110,8 +110,9 @@ jobs:
             set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
 
-            # Export environment variable for docker-compose
+            # Export environment variables for docker-compose
             export NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
+            export NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}
 
             # Stop and remove old containers with correct names
             docker compose down || true

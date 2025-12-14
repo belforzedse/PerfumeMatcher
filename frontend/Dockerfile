@@ -1,6 +1,7 @@
 # ---------- Stage 1: Build ----------
 FROM node:20-alpine AS builder
 ARG NEXT_PUBLIC_BACKEND_BASE_URL
+ARG NEXT_PUBLIC_ADMIN_KEY
 WORKDIR /app
 
 # Install dependencies
@@ -14,6 +15,7 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL}
+ENV NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY}
 
 # Build the app
 RUN npm run build
@@ -21,11 +23,13 @@ RUN npm run build
 # ---------- Stage 2: Runtime ----------
 FROM node:20-alpine AS runner
 ARG NEXT_PUBLIC_BACKEND_BASE_URL
+ARG NEXT_PUBLIC_ADMIN_KEY
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL}
+ENV NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY}
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl
