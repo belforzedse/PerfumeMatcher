@@ -6,13 +6,10 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-# Clear npm cache and install dependencies
-# Use npm install as fallback if npm ci fails (known npm bug: "Exit handler never called")
-RUN npm cache clean --force; \
-    if ! npm ci --prefer-offline --no-audit; then \
-      echo "npm ci failed, falling back to npm install"; \
-      npm install --prefer-offline --no-audit; \
-    fi
+# Update npm to a specific stable version to avoid "Exit handler never called" bug
+# Then install dependencies with fallback
+RUN npm install -g npm@10 && \
+    (npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit)
 
 # Copy project
 COPY . .
