@@ -21,16 +21,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-
       - name: Create deployment directory structure
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
             set -e
             if [ ! -d "${{ env.VPS_DEPLOY_PATH }}" ]; then
               sudo mkdir -p ${{ env.VPS_DEPLOY_PATH }}
@@ -43,54 +40,87 @@ jobs:
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend/.next
             chmod 755 ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
             chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
-          EOF
 
       - name: Copy backend files
-        run: |
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            --rsync-path="sudo rsync" \
-            --exclude '__pycache__' \
-            --exclude '*.pyc' \
-            --exclude '.venv' \
-            --exclude 'db.sqlite3' \
-            --exclude 'db/' \
-            --exclude 'media/uploads/*' \
-            --exclude 'media/*.sqlite3' \
-            backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/backend/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "backend"
+          target: ${{ env.VPS_DEPLOY_PATH }}
+          strip_components: 1
+          rm: true
+
+      - name: Clean backend excludes
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ${{ env.VPS_DEPLOY_PATH }}/backend
+            find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+            find . -name "*.pyc" -delete 2>/dev/null || true
+            rm -rf .venv db.sqlite3 db media/uploads 2>/dev/null || true
 
       - name: Copy frontend files
-        run: |
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            --rsync-path="sudo rsync" \
-            --exclude 'node_modules' \
-            --exclude '.next' \
-            --exclude '.env.local' \
-            frontend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/frontend/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "frontend"
+          target: ${{ env.VPS_DEPLOY_PATH }}
+          strip_components: 1
+          rm: true
 
-      - name: Copy deployment files (compose/nginx/scripts)
-        run: |
-          rsync -avz \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            --rsync-path="sudo rsync" \
-            docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/
-          if [ -d nginx ]; then
-            rsync -avz \
-              -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-              --rsync-path="sudo rsync" \
-              nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/nginx/
-          fi
-          if [ -d scripts ]; then
-            rsync -avz \
-              -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-              --rsync-path="sudo rsync" \
-              scripts/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/scripts/
-          fi
+      - name: Clean frontend excludes
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ${{ env.VPS_DEPLOY_PATH }}/frontend
+            rm -rf node_modules .next .env.local 2>/dev/null || true
+
+      - name: Copy deployment files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: ${{ env.VPS_DEPLOY_PATH }}
+
+      - name: Copy nginx files
+        if: hashFiles('nginx/**') != ''
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "nginx"
+          target: ${{ env.VPS_DEPLOY_PATH }}
+
+      - name: Copy scripts files
+        if: hashFiles('scripts/**') != ''
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "scripts"
+          target: ${{ env.VPS_DEPLOY_PATH }}
 
       - name: Create backend .env file if not exists
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -c "
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
             if [ ! -f ${{ env.VPS_DEPLOY_PATH }}/backend/.env ]; then
               echo 'SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > ${{ env.VPS_DEPLOY_PATH }}/backend/.env
               echo 'DEBUG=False' >> ${{ env.VPS_DEPLOY_PATH }}/backend/.env
@@ -100,42 +130,48 @@ jobs:
               echo 'AI_MODEL=gpt-5-nano' >> ${{ env.VPS_DEPLOY_PATH }}/backend/.env
               echo 'ADMIN_ACCESS_KEY=${{ secrets.ADMIN_ACCESS_KEY }}' >> ${{ env.VPS_DEPLOY_PATH }}/backend/.env
             fi
-          "
 
       - name: Ensure frontend env (backend URL + admin key)
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -c "
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
             ENV_FILE=${{ env.VPS_DEPLOY_PATH }}/frontend/.env.local
             mkdir -p ${{ env.VPS_DEPLOY_PATH }}/frontend
-            touch \$ENV_FILE
-            if grep -q '^NEXT_PUBLIC_BACKEND_BASE_URL=' \$ENV_FILE; then
-              sed -i 's|^NEXT_PUBLIC_BACKEND_BASE_URL=.*|NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}|' \$ENV_FILE
+            touch $ENV_FILE
+            if grep -q '^NEXT_PUBLIC_BACKEND_BASE_URL=' $ENV_FILE; then
+              sed -i 's|^NEXT_PUBLIC_BACKEND_BASE_URL=.*|NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}|' $ENV_FILE
             else
-              echo 'NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}' >> \$ENV_FILE
+              echo 'NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}' >> $ENV_FILE
             fi
-            if grep -q '^NEXT_PUBLIC_ADMIN_KEY=' \$ENV_FILE; then
-              sed -i 's|^NEXT_PUBLIC_ADMIN_KEY=.*|NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}|' \$ENV_FILE
+            if grep -q '^NEXT_PUBLIC_ADMIN_KEY=' $ENV_FILE; then
+              sed -i 's|^NEXT_PUBLIC_ADMIN_KEY=.*|NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}|' $ENV_FILE
             else
-              echo 'NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}' >> \$ENV_FILE
+              echo 'NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}' >> $ENV_FILE
             fi
-          "
 
       - name: Deploy with Docker Compose
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -c "
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
             set -e
             cd ${{ env.VPS_DEPLOY_PATH }}
             export NEXT_PUBLIC_BACKEND_BASE_URL=https://${{ env.BACKEND_DOMAIN }}
             export NEXT_PUBLIC_ADMIN_KEY='${{ secrets.ADMIN_ACCESS_KEY }}'
-            echo \"Admin key length: \${#NEXT_PUBLIC_ADMIN_KEY}\"
-            echo \"Admin key prefix: \${NEXT_PUBLIC_ADMIN_KEY:0:10}...\"
+            echo "Admin key length: ${#NEXT_PUBLIC_ADMIN_KEY}"
+            echo "Admin key prefix: ${NEXT_PUBLIC_ADMIN_KEY:0:10}..."
             docker compose down || true
-            docker ps -a --filter \"name=perfume-\" --format \"{{.Names}}\" | xargs -r docker rm -f || true
+            docker ps -a --filter "name=perfume-" --format "{{.Names}}" | xargs -r docker rm -f || true
             docker rm -f perfume-backend perfume-frontend 2>/dev/null || true
             docker rmi perfume-matcher-frontend 2>/dev/null || true
             docker rmi perfume-matcher-backend 2>/dev/null || true
             docker compose pull || true
-            docker compose build --no-cache --build-arg NEXT_PUBLIC_BACKEND_BASE_URL=\$NEXT_PUBLIC_BACKEND_BASE_URL --build-arg NEXT_PUBLIC_ADMIN_KEY=\$NEXT_PUBLIC_ADMIN_KEY frontend
+            docker compose build --no-cache --build-arg NEXT_PUBLIC_BACKEND_BASE_URL=$NEXT_PUBLIC_BACKEND_BASE_URL --build-arg NEXT_PUBLIC_ADMIN_KEY=$NEXT_PUBLIC_ADMIN_KEY frontend
             docker compose build backend
             docker compose up -d
             sleep 5
@@ -144,17 +180,19 @@ jobs:
             docker compose exec -T backend python manage.py collectstatic --noinput || true
             sudo nginx -t && sudo systemctl reload nginx || true
             docker compose ps
-          "
 
       - name: Health check
-        run: |
-          sleep 10
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            sleep 10
             echo "Checking backend health..."
             curl -f http://localhost:8000/api/perfumes/ || echo "Backend health check failed"
             echo "Checking frontend health..."
             curl -f http://localhost:3000 || echo "Frontend health check failed"
-          EOF
 
       - name: Deployment summary
         run: |
