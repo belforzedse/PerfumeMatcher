@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useCallback, useMemo, useState } from "react";
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 
@@ -201,13 +200,20 @@ export default function PerfumeDetailsModal({
                               isKiosk && "h-[320px] w-full lg:h-[360px] rounded-[1.75rem]"
                             )}
                           >
-                            <Image
+                            <img
                               src={perfume.image}
                               alt={title}
-                              fill
-                              className="object-contain"
-                              sizes={isKiosk ? "420px" : "256px"}
-                              priority
+                              loading="lazy"
+                              decoding="async"
+                              className="absolute inset-0 h-full w-full object-contain"
+                              onError={(e) => {
+                                console.error(
+                                  "[PerfumeDetailsModal] Image load failed:",
+                                  perfume.id,
+                                  perfume.image
+                                );
+                                e.currentTarget.style.display = "none";
+                              }}
                             />
                           </div>
                         )}

@@ -3,6 +3,50 @@
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8000";
 const PERFUMES_ENDPOINT = `${BACKEND_BASE_URL}/api/perfumes/`;
 
+const stripTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const BACKEND_BASE = (() => {
+  try {
+    return new URL(BACKEND_BASE_URL);
+  } catch {
+    return new URL("http://localhost:8000");
+  }
+})();
+
+const isPrivateHostname = (hostname: string) => {
+  const target = hostname.toLowerCase();
+  if (["localhost", "127.0.0.1", "::1"].includes(target)) {
+    return true;
+  }
+  if (target.startsWith("10.")) return true;
+  if (target.startsWith("192.168.")) return true;
+  if (target.startsWith("172.")) {
+    const second = Number(target.split(".")[1]);
+    return second >= 16 && second <= 31;
+  }
+  return false;
+};
+
+const resolveImageUrl = (raw?: string | null): string | undefined => {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  try {
+    const url = trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? new URL(trimmed)
+      : new URL(trimmed, BACKEND_BASE);
+
+    if (isPrivateHostname(url.hostname)) {
+      url.protocol = BACKEND_BASE.protocol;
+      url.host = BACKEND_BASE.host;
+    }
+    return url.toString();
+  } catch (error) {
+    debugWarn("[API] Failed to resolve image URL, falling back:", trimmed, error);
+    return `${stripTrailingSlash(BACKEND_BASE.origin)}/${trimmed.replace(/^\/+/, "")}`;
+  }
+};
+
 export interface PerfumeNotes {
   top: string[];
   middle: string[];
@@ -135,28 +179,17 @@ export const toPerfume = (perfumeData: BackendPerfumeData): Perfume => {
 
   let imageUrl: string | undefined;
   if (Array.isArray(perfumeData.images) && perfumeData.images.length > 0) {
-    const url = perfumeData.images[0].trim();
-    // Convert relative paths to absolute URLs using backend base URL
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      imageUrl = url;
-    } else if (url.startsWith("/")) {
-      // Relative path - prepend backend base URL
-      imageUrl = `${BACKEND_BASE_URL}${url}`;
-    } else {
-      imageUrl = `${BACKEND_BASE_URL}/${url}`;
+    const converted = resolveImageUrl(perfumeData.images[0]);
+    if (converted) {
+      imageUrl = converted;
+      debugLog(`[API] Converted image URL for perfume ${perfumeData.id}: ${perfumeData.images[0]} -> ${imageUrl}`);
     }
-    debugLog(`[API] Converted image URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
   } else if (perfumeData.cover?.url) {
-    const url = perfumeData.cover.url.trim();
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      imageUrl = url;
-    } else if (url.startsWith("/")) {
-      // Relative path - prepend backend base URL
-      imageUrl = `${BACKEND_BASE_URL}${url}`;
-    } else {
-      imageUrl = `${BACKEND_BASE_URL}/${url}`;
+    const converted = resolveImageUrl(perfumeData.cover.url);
+    if (converted) {
+      imageUrl = converted;
+      debugLog(`[API] Converted cover URL for perfume ${perfumeData.id}: ${perfumeData.cover.url} -> ${imageUrl}`);
     }
-    debugLog(`[API] Converted cover URL for perfume ${perfumeData.id}: ${url} -> ${imageUrl}`);
   } else {
     debugLog(
       `[API] No image found for perfume ${perfumeData.id}, images:`,
