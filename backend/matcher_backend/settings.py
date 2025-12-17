@@ -223,11 +223,11 @@ def get_media_url(path: str = '') -> str:
             if h and not h.startswith('*') and '.' in h:
                 host = h
                 break
-        
+
         if not host:
             # Fallback: try to get from request if available
             return f"{MEDIA_URL}{path.lstrip('/')}"
-        
+
         # Use HTTPS in production
         protocol = 'https' if not DEBUG else 'http'
         return f"{protocol}://{host}{MEDIA_URL}{path.lstrip('/')}"
