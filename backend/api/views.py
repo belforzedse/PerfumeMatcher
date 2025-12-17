@@ -32,6 +32,23 @@ except NameError:
     logger.warning("OpenAI library not available")
 
 
+def _safe_score_to_percentage(score: float) -> int:
+    """
+    Safely convert a similarity score to a match percentage (0-100).
+    Handles infinity values gracefully:
+    - float('-inf') -> 0
+    - float('inf') -> 100
+    - None -> 0
+    - Normal values -> clamped to 0-100
+    """
+    import math
+    if score is None:
+        return 0
+    if math.isinf(score):
+        return 0 if score < 0 else 100
+    return max(0, min(100, round(score * 100)))
+
+
 def _is_admin(request: HttpRequest) -> bool:
     expected = getattr(settings, "ADMIN_ACCESS_KEY", None)
     if not expected:
@@ -208,7 +225,7 @@ def recommend_rerank(request):
         rankings = [
             {
                 "id": item.get("id"),
-                "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
+                "matchPercentage": _safe_score_to_percentage(item.get("score")),
                 "reasons": [],
             }
             for item in candidates
@@ -226,7 +243,7 @@ def recommend_rerank(request):
         rankings = [
             {
                 "id": item.get("id"),
-                "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
+                "matchPercentage": _safe_score_to_percentage(item.get("score")),
                 "reasons": [],
             }
             for item in candidates
@@ -360,7 +377,7 @@ def recommend_rerank(request):
             if item.get("id") not in seen_ids:
                 rankings.append({
                     "id": item.get("id"),
-                    "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
+                    "matchPercentage": _safe_score_to_percentage(item.get("score")),
                     "reasons": [],
                 })
 
@@ -382,7 +399,7 @@ def recommend_rerank(request):
         rankings = [
             {
                 "id": item.get("id"),
-                "matchPercentage": max(0, min(100, round((item.get("score") or 0) * 100))),
+                "matchPercentage": _safe_score_to_percentage(item.get("score")),
                 "reasons": [],
             }
             for item in candidates

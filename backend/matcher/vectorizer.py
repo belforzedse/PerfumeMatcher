@@ -26,6 +26,19 @@ from .bridge_config import (
 from .note_normalization import normalize_note_label
 
 
+def _score_to_match_percentage(score: float) -> int:
+    """
+    Safely convert a similarity score to a match percentage (0-100).
+    Handles infinity values gracefully:
+    - float('-inf') -> 0
+    - float('inf') -> 100
+    - Normal values -> clamped to 0-100
+    """
+    if math.isinf(score):
+        return 0 if score < 0 else 100
+    return max(0, min(100, round(score * 100)))
+
+
 def _normalize_token(s: str) -> str:
     """
     Unicode-friendly normalizer:
@@ -60,7 +73,7 @@ def perfume_to_text(p: Perfume) -> str:
     notes_top = p.notes_top if isinstance(p.notes_top, list) else (p.notes_top or [])
     notes_middle = p.notes_middle if isinstance(p.notes_middle, list) else (p.notes_middle or [])
     notes_base = p.notes_base if isinstance(p.notes_base, list) else (p.notes_base or [])
-    
+
     for note in notes_top:
         n = _normalize_note(str(note))
         parts.append(f"topnote_{n}")
@@ -388,7 +401,8 @@ class PerfumeEngine:
             p = self.perfumes[idx]
             score = adjusted_scores[idx]
             # Convert score (0-1) to matchPercentage (0-100)
-            match_percentage = max(0, min(100, round(score * 100)))
+            # Handle infinity values safely
+            match_percentage = _score_to_match_percentage(score)
             results.append(
                 {
                     "id": p.id,
