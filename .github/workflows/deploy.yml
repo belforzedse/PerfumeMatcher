@@ -179,6 +179,18 @@ jobs:
               echo 'NEXT_PUBLIC_ADMIN_KEY=${{ secrets.ADMIN_ACCESS_KEY }}' >> $ENV_FILE
             fi
 
+      - name: Verify Dockerfiles exist
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "Checking for Dockerfiles..."
+            ls -la ${{ env.VPS_DEPLOY_PATH }}/backend/Dockerfile || echo "ERROR: Backend Dockerfile missing!"
+            ls -la ${{ env.VPS_DEPLOY_PATH }}/frontend/Dockerfile || echo "ERROR: Frontend Dockerfile missing!"
+            echo "Dockerfiles verified"
+
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@v1.0.3
         with:
