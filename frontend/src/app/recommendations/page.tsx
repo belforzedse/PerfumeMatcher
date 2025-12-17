@@ -11,7 +11,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import KioskFrame from "@/components/KioskFrame";
@@ -256,22 +255,20 @@ const MatchCard = ({
                 )}
                 style={{ height: imageHeight }}
               >
-                <Image
+                <img
                   src={perfume.image}
                   alt={title}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                  priority={order <= 2}
                   loading={order <= 2 ? "eager" : "lazy"}
-                  quality={85}
-                  unoptimized={true}
+                  decoding="async"
+                  className="h-full w-full object-contain"
                   onError={(e) => {
                     console.error(
                       `[Recommendations] Image load error for perfume ${perfume.id}:`,
                       perfume.image,
                       e
                     );
+                    const target = e.currentTarget;
+                    target.style.display = "none";
                   }}
                 />
               </div>
