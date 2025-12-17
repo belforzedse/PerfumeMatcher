@@ -48,19 +48,22 @@ jobs:
       - name: Copy backend files
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --rsync-path="sudo rsync" \
             --exclude '__pycache__' \
             --exclude '*.pyc' \
             --exclude '.venv' \
             --exclude 'db.sqlite3' \
             --exclude 'db/' \
             --exclude 'media/uploads/*' \
+            --exclude 'media/*.sqlite3' \
             backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/backend/
 
       - name: Copy frontend files
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --rsync-path="sudo rsync" \
             --exclude 'node_modules' \
             --exclude '.next' \
             --exclude '.env.local' \
@@ -69,16 +72,19 @@ jobs:
       - name: Copy deployment files (compose/nginx/scripts)
         run: |
           rsync -avz \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --rsync-path="sudo rsync" \
             docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/
           if [ -d nginx ]; then
             rsync -avz \
-              -e "ssh -i ~/.ssh/deploy_key" \
+              -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+              --rsync-path="sudo rsync" \
               nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/nginx/
           fi
           if [ -d scripts ]; then
             rsync -avz \
-              -e "ssh -i ~/.ssh/deploy_key" \
+              -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+              --rsync-path="sudo rsync" \
               scripts/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ env.VPS_DEPLOY_PATH }}/scripts/
           fi
 
