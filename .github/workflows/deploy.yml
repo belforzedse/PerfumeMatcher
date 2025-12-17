@@ -49,7 +49,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "backend"
           target: ${{ env.VPS_DEPLOY_PATH }}
-          strip_components: 1
           overwrite: true
 
       - name: Clean backend excludes after copy
@@ -73,7 +72,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "frontend"
           target: ${{ env.VPS_DEPLOY_PATH }}
-          strip_components: 1
           overwrite: true
 
       - name: Clean frontend excludes after copy
