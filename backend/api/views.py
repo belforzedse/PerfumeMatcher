@@ -654,8 +654,9 @@ def admin_upload(request: HttpRequest):
         file_size = os.path.getsize(file_path)
         logger.info(f"File saved successfully: {file_path} ({file_size} bytes)")
 
-        # Return URL (relative to MEDIA_URL)
-        file_url = f"{settings.MEDIA_URL}uploads/{unique_name}"
+        # Return URL (absolute in production, relative in development)
+        from matcher_backend.settings import get_media_url
+        file_url = get_media_url(f"uploads/{unique_name}")
         logger.info(f"File uploaded successfully: {file_url} -> {file_path}")
         return Response(
             {"id": 0, "url": file_url},

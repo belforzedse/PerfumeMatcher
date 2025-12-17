@@ -207,6 +207,31 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
 
+# Build absolute media URL for production
+def get_media_url(path: str = '') -> str:
+    """
+    Returns absolute URL for media files in production, relative URL in development.
+    """
+    if DEBUG:
+        # In development, return relative URL
+        return f"{MEDIA_URL}{path.lstrip('/')}"
+    else:
+        # In production, build absolute URL from ALLOWED_HOSTS
+        # Use the first HTTPS-capable host, or default to first host
+        host = None
+        for h in ALLOWED_HOSTS:
+            if h and not h.startswith('*') and '.' in h:
+                host = h
+                break
+        
+        if not host:
+            # Fallback: try to get from request if available
+            return f"{MEDIA_URL}{path.lstrip('/')}"
+        
+        # Use HTTPS in production
+        protocol = 'https' if not DEBUG else 'http'
+        return f"{protocol}://{host}{MEDIA_URL}{path.lstrip('/')}"
+
 # Admin access key for custom admin API
 ADMIN_ACCESS_KEY = os.getenv("ADMIN_ACCESS_KEY", "admin-key")
 
