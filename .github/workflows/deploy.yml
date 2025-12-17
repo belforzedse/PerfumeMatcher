@@ -41,21 +41,6 @@ jobs:
             chmod 755 ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
             chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
 
-      - name: Clean backend before copy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd ${{ env.VPS_DEPLOY_PATH }}/backend
-            # Remove only code files, keep db/, media/, and Dockerfile
-            find . -maxdepth 1 -type f ! -name 'Dockerfile' ! -name '.env' -delete 2>/dev/null || true
-            find . -maxdepth 1 -type d ! -name '.' ! -name 'db' ! -name 'media' -exec rm -rf {} + 2>/dev/null || true
-            # Clean up cache files
-            find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-            find . -name "*.pyc" -delete 2>/dev/null || true
-
       - name: Copy backend files
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -75,21 +60,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ${{ env.VPS_DEPLOY_PATH }}/backend
+            # Remove build artifacts but keep Dockerfile, .env, db/, and media/
             find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
             find . -name "*.pyc" -delete 2>/dev/null || true
             rm -rf .venv db.sqlite3 2>/dev/null || true
-
-      - name: Clean frontend before copy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd ${{ env.VPS_DEPLOY_PATH }}/frontend
-            # Remove only code files, keep .next, node_modules, and Dockerfile
-            find . -maxdepth 1 -type f ! -name 'Dockerfile' ! -name '.env.local' -delete 2>/dev/null || true
-            find . -maxdepth 1 -type d ! -name '.' ! -name '.next' ! -name 'node_modules' ! -name '.env.local' -exec rm -rf {} + 2>/dev/null || true
 
       - name: Copy frontend files
         uses: appleboy/scp-action@v0.1.7
