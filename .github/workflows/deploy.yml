@@ -49,8 +49,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ${{ env.VPS_DEPLOY_PATH }}/backend
-            # Remove only code files, keep db/ and media/uploads
-            find . -maxdepth 1 -type f -delete 2>/dev/null || true
+            # Remove only code files, keep db/, media/, and Dockerfile
+            find . -maxdepth 1 -type f ! -name 'Dockerfile' ! -name '.env' -delete 2>/dev/null || true
             find . -maxdepth 1 -type d ! -name '.' ! -name 'db' ! -name 'media' -exec rm -rf {} + 2>/dev/null || true
             # Clean up cache files
             find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
@@ -87,8 +87,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ${{ env.VPS_DEPLOY_PATH }}/frontend
-            # Remove only code files, keep .next and node_modules if they exist
-            find . -maxdepth 1 -type f -delete 2>/dev/null || true
+            # Remove only code files, keep .next, node_modules, and Dockerfile
+            find . -maxdepth 1 -type f ! -name 'Dockerfile' ! -name '.env.local' -delete 2>/dev/null || true
             find . -maxdepth 1 -type d ! -name '.' ! -name '.next' ! -name 'node_modules' ! -name '.env.local' -exec rm -rf {} + 2>/dev/null || true
 
       - name: Copy frontend files
