@@ -42,7 +42,7 @@ jobs:
             chown -R ${{ secrets.VPS_USER }}:${{ secrets.VPS_USER }} ${{ env.VPS_DEPLOY_PATH }}/backend/db || true
 
       - name: Copy backend files
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -65,7 +65,7 @@ jobs:
             rm -rf .venv db.sqlite3 2>/dev/null || true
 
       - name: Copy frontend files
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -85,7 +85,7 @@ jobs:
             rm -rf node_modules .next 2>/dev/null || true
 
       - name: Copy deployment files
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -95,7 +95,7 @@ jobs:
 
       - name: Copy nginx files
         if: hashFiles('nginx/**') != ''
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -105,7 +105,7 @@ jobs:
 
       - name: Copy scripts files
         if: hashFiles('scripts/**') != ''
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
