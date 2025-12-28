@@ -18,13 +18,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL}
 ENV NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY}
 
-# Increase Node.js memory limit for build (4GB)
+# Set Node.js memory limit for 2GB RAM system (1.2GB for build, leaving ~800MB for OS/Docker)
 # This prevents SIGKILL during memory-intensive builds
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# If build still fails, reduce to 1024 (1GB) or add swap space
+ENV NODE_OPTIONS="--max-old-space-size=1228"
 
-# Build the app
-# Using webpack instead of Turbopack for more stable Docker builds
-RUN npm run build:webpack
+# Build the app with Turbopack (default in Next.js 16)
+# Using single-threaded build to reduce memory usage
+RUN npm run build
 
 # ---------- Stage 2: Runtime ----------
 FROM node:22-alpine AS runner

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Turbopack is now the default bundler in Next.js 16
-  // Empty config silences the webpack compatibility warning
+  // Memory optimization is handled via NODE_OPTIONS in Dockerfile
   turbopack: {},
 
   // Keep webpack config for fallback support (use with --webpack flag)

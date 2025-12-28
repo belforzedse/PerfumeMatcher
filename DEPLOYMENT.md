@@ -315,23 +315,38 @@ npm error command failed
 npm error signal SIGKILL
 ```
 
-**Solutions:**
+**Solutions for 2GB RAM Systems:**
 
-1. **Ensure sufficient system memory:**
-   - Next.js builds require at least 4GB of available RAM
-   - Check available memory: `free -h`
-   - If low on memory, consider upgrading your VPS or stopping other services
+1. **Add swap space (CRITICAL for 2GB systems):**
+   ```bash
+   # Create 2GB swap file
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   
+   # Make it permanent
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   
+   # Verify swap is active
+   free -h
+   # You should see swap in the output
+   ```
+   **This is the most important step for 2GB systems!**
 
-2. **Increase Docker memory limit:**
-   - The Dockerfile already sets `NODE_OPTIONS="--max-old-space-size=4096"` (4GB)
-   - If your system has less than 4GB, reduce this in `frontend/Dockerfile`:
+2. **Check available memory:**
+   ```bash
+   free -h
+   # Ensure you have at least 1.5GB available + swap
+   ```
+
+3. **The Dockerfile is already optimized:**
+   - Uses `NODE_OPTIONS="--max-old-space-size=1228"` (1.2GB)
+   - Uses Turbopack (default Next.js 16 bundler)
+   - If build still fails, you can reduce further:
      ```dockerfile
-     ENV NODE_OPTIONS="--max-old-space-size=2048"  # For 2GB systems
+     ENV NODE_OPTIONS="--max-old-space-size=1024"  # 1GB
      ```
-
-3. **Use webpack instead of Turbopack (already configured):**
-   - The Dockerfile uses `npm run build:webpack` which is more memory-efficient
-   - This is already configured in the Dockerfile
 
 4. **Build with BuildKit cache (recommended):**
    ```bash
@@ -340,18 +355,20 @@ npm error signal SIGKILL
    docker compose build frontend
    ```
 
-5. **Build on a system with more memory:**
-   - Consider building the image on a CI/CD system or a more powerful machine
-   - Then push to a registry and pull on the VPS
-
-6. **Check Docker memory limits:**
+5. **Stop other services during build:**
    ```bash
-   # Check Docker daemon memory limits
-   docker info | grep -i memory
-   
-   # If using Docker Desktop, increase memory in settings
-   # For Linux, ensure swap is configured if needed
+   # Stop other containers to free memory
+   docker stop $(docker ps -q)
+   # Build frontend
+   docker compose build frontend
+   # Restart services
+   docker compose up -d
    ```
+
+6. **Alternative: Build on a more powerful machine:**
+   - Build the image on a CI/CD system or local machine with more RAM
+   - Push to Docker Hub or registry
+   - Pull and run on the VPS
 
 ### Connection issues
 
