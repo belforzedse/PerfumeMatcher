@@ -304,6 +304,55 @@ docker compose logs frontend
 # - Port conflicts
 ```
 
+### Frontend build fails with SIGKILL (Out of Memory)
+
+If you see `npm error signal SIGKILL` during the build process, the build is running out of memory:
+
+**Symptoms:**
+```
+npm error path /app
+npm error command failed
+npm error signal SIGKILL
+```
+
+**Solutions:**
+
+1. **Ensure sufficient system memory:**
+   - Next.js builds require at least 4GB of available RAM
+   - Check available memory: `free -h`
+   - If low on memory, consider upgrading your VPS or stopping other services
+
+2. **Increase Docker memory limit:**
+   - The Dockerfile already sets `NODE_OPTIONS="--max-old-space-size=4096"` (4GB)
+   - If your system has less than 4GB, reduce this in `frontend/Dockerfile`:
+     ```dockerfile
+     ENV NODE_OPTIONS="--max-old-space-size=2048"  # For 2GB systems
+     ```
+
+3. **Use webpack instead of Turbopack (already configured):**
+   - The Dockerfile uses `npm run build:webpack` which is more memory-efficient
+   - This is already configured in the Dockerfile
+
+4. **Build with BuildKit cache (recommended):**
+   ```bash
+   # Enable BuildKit for better caching
+   export DOCKER_BUILDKIT=1
+   docker compose build frontend
+   ```
+
+5. **Build on a system with more memory:**
+   - Consider building the image on a CI/CD system or a more powerful machine
+   - Then push to a registry and pull on the VPS
+
+6. **Check Docker memory limits:**
+   ```bash
+   # Check Docker daemon memory limits
+   docker info | grep -i memory
+   
+   # If using Docker Desktop, increase memory in settings
+   # For Linux, ensure swap is configured if needed
+   ```
+
 ### Connection issues
 
 ```bash

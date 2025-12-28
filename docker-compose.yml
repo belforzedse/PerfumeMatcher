@@ -33,6 +33,13 @@ services:
         NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-https://kioskapi.gandom-perfume.ir}
         NEXT_PUBLIC_ADMIN_KEY: ${NEXT_PUBLIC_ADMIN_KEY:-admin-key}
     container_name: perfume-frontend
+    # Increase memory limit for build process (6GB recommended for Next.js builds)
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
     # env_file is optional - file is created on VPS during deployment
     # env_file:
     #   - ./frontend/.env.local

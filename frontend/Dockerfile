@@ -18,8 +18,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL}
 ENV NEXT_PUBLIC_ADMIN_KEY=${NEXT_PUBLIC_ADMIN_KEY}
 
+# Increase Node.js memory limit for build (4GB)
+# This prevents SIGKILL during memory-intensive builds
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Build the app
-RUN npm run build
+# Using webpack instead of Turbopack for more stable Docker builds
+RUN npm run build:webpack
 
 # ---------- Stage 2: Runtime ----------
 FROM node:22-alpine AS runner
