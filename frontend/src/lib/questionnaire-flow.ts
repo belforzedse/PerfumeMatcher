@@ -5,6 +5,7 @@ import { calculateConfidence, getConfidenceLevel, HIGH_CONFIDENCE_THRESHOLD, LOW
 export type QuestionPath = "quick" | "deep";
 export type QuestionStepType =
   | "path-selection"
+  | "gender"
   | "scene-cards"
   | "safety-step"
   | "pairwise"
@@ -34,6 +35,12 @@ const QUICK_STEPS: QuestionStep[] = [
     id: "path",
     title: "راه خود را انتخاب کنید",
     description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
+  },
+  {
+    type: "gender",
+    id: "gender",
+    title: "جنسیت شما چیست؟",
+    description: "این انتخاب نتایج را به‌صورت قطعی فیلتر می‌کند.",
   },
   {
     type: "scene-cards",
@@ -71,6 +78,12 @@ const DEEP_STEPS: QuestionStep[] = [
     id: "path",
     title: "راه خود را انتخاب کنید",
     description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
+  },
+  {
+    type: "gender",
+    id: "gender",
+    title: "جنسیت شما چیست؟",
+    description: "این انتخاب نتایج را به‌صورت قطعی فیلتر می‌کند.",
   },
   {
     type: "scene-cards",
@@ -131,6 +144,7 @@ export function createInitialFlowState(): FlowState {
       safetyChecks: [],
       quickFireLikes: [],
       quickFireDislikes: [],
+      gender: undefined,
     },
     confidence: 0,
     helpMode: false,
@@ -150,6 +164,7 @@ export function initializeFlow(path: QuestionPath): FlowState {
       safetyChecks: [],
       quickFireLikes: [],
       quickFireDislikes: [],
+      gender: undefined,
     },
     confidence: 0,
     helpMode: false,
@@ -170,6 +185,8 @@ export function canProceed(state: FlowState): boolean {
   switch (step.type) {
     case "path-selection":
       return state.path !== null;
+    case "gender":
+      return Boolean(state.responses.gender);
     case "scene-cards":
       return state.responses.scenes.length > 0;
     case "safety-step":

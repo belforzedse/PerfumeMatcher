@@ -67,13 +67,14 @@ class QuestionnaireSerializer(serializers.Serializer):
     - times: ["day", "night", "anytime"]
     - intensity: ["light", "medium", "strong"]
     - styles: ["feminine", "masculine", "unisex", "any"]
+    - gender: ["male", "female", "unisex"] (hard filter)
     - noteLikes/noteDislikes: [note categories - 17 total]
 
     LEGACY FIELDS (backward compatibility):
     - contexts → moments (partial semantic mapping)
     - sweetness/freshness → moods (1-5 scale)
     - strength → intensity
-    - gender → styles
+    - gender (supported; hard filter)
     - avoid_very_sweet/avoid_oud → special penalties
 
     CONFLICT HANDLING:

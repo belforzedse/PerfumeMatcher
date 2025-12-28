@@ -29,6 +29,12 @@ export const TIME_CHOICES: Choice[] = [
   { value: "anytime", label: "هر زمان", icon: "🕒" },
 ];
 
+export const GENDER_CHOICES: Choice[] = [
+  { value: "male", label: "مرد", icon: "👨" },
+  { value: "female", label: "زن", icon: "👩" },
+  { value: "unisex", label: "یونیسکس", icon: "⚧️" },
+];
+
 export const INTENSITY_CHOICES: Choice[] = [
   { value: "light", label: "ملایم", icon: "🫧" },
   { value: "medium", label: "متوسط", icon: "✨" },
@@ -182,9 +188,9 @@ export const LABEL_LOOKUP = Object.fromEntries(
     ...MOOD_CHOICES,
     ...MOMENT_CHOICES,
     ...TIME_CHOICES,
+    ...GENDER_CHOICES,
     ...INTENSITY_CHOICES,
     ...STYLE_CHOICES,
     ...NOTE_CHOICES,
   ].map((choice) => [choice.value, choice.label])
 );
-

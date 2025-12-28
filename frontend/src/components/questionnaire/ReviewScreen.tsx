@@ -7,7 +7,7 @@ import { BiPencil } from "react-icons/bi";
 import { useFadeScaleVariants, useStaggeredListVariants } from "@/lib/motion";
 import type { QuestionnaireAnswers } from "@/lib/questionnaire";
 import type { UserResponses } from "@/lib/questionnaire-mapper";
-import { NOTE_CHOICES } from "@/lib/kiosk-options";
+import { GENDER_CHOICES, NOTE_CHOICES } from "@/lib/kiosk-options";
 import { Icon } from "@/lib/icons";
 import {
   getSceneChoices,
@@ -229,6 +229,10 @@ export default function ReviewScreen({
     () => new Map(NOTE_CHOICES.map((n) => [n.value, n])),
     []
   );
+  const genderMap = useMemo(
+    () => new Map(GENDER_CHOICES.map((g) => [g.value, g])),
+    []
+  );
 
   const sceneChips: ReviewChip[] = useMemo(() => {
     return (responses.scenes ?? [])
@@ -311,6 +315,20 @@ export default function ReviewScreen({
       })
       .filter(Boolean) as ReviewChip[];
   }, [answers.noteDislikes, noteMap]);
+
+  const genderChip: ReviewChip | null = useMemo(() => {
+    const genderValue = responses.gender ?? answers.gender;
+    if (!genderValue) return null;
+    const choice = genderMap.get(genderValue);
+    if (!choice) return null;
+    return {
+      id: `gender-${genderValue}`,
+      label: choice.label,
+      icon: choice.icon,
+      editSection: "gender",
+      kind: "accent",
+    };
+  }, [responses.gender, answers.gender, genderMap]);
 
   // ✅ KIOSK LAYOUT (only)
   if (isKiosk) {
@@ -438,6 +456,28 @@ export default function ReviewScreen({
         </div>
 
         <div className="col-span-5 min-h-0 flex flex-col gap-5">
+          {/* Gender */}
+          {genderChip ? (
+            <KioskCard className="min-h-0">
+              <SectionHeader
+                title="جنسیت"
+                subtitle="فیلتر قطعی نتایج"
+                count={1}
+                onEdit={() => onEdit("gender")}
+                isKiosk
+              />
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Chip
+                  chip={genderChip}
+                  isRtl={isRtl}
+                  variants={itemVariants}
+                  onClick={() => onEdit(genderChip.editSection)}
+                  isKiosk
+                />
+              </div>
+            </KioskCard>
+          ) : null}
+
           {/* Scenes */}
           {sceneChips.length > 0 ? (
             <KioskCard className="min-h-0 flex-1 flex flex-col">
@@ -516,6 +556,28 @@ export default function ReviewScreen({
       initial="hidden"
       animate="show"
     >
+      {/* Gender */}
+      {genderChip ? (
+        <div className="grid grid-cols-1 gap-2">
+          <SectionHeader
+            title="جنسیت"
+            subtitle="فیلتر قطعی نتایج"
+            count={1}
+            onEdit={() => onEdit("gender")}
+            isKiosk={false}
+          />
+          <div className="col-span-full flex flex-wrap gap-2">
+            <Chip
+              chip={genderChip}
+              isRtl={isRtl}
+              variants={itemVariants}
+              onClick={() => onEdit(genderChip.editSection)}
+              isKiosk={false}
+            />
+          </div>
+        </div>
+      ) : null}
+
       {/* Scenes */}
       {sceneChips.length > 0 ? (
         <div className="grid grid-cols-1 gap-2">

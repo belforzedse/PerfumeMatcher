@@ -9,6 +9,7 @@ import {
   serializeAnswers,
   type QuestionnaireAnswers,
 } from "@/lib/questionnaire";
+import { GENDER_CHOICES } from "@/lib/kiosk-options";
 import {
   signatureTransitions,
   useFadeScaleVariants,
@@ -36,6 +37,7 @@ import {
 import { useKioskMode } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import PathSelector from "@/components/questionnaire/PathSelector";
+import GenderStep from "@/components/questionnaire/GenderStep";
 import SceneCard from "@/components/questionnaire/SceneCard";
 import PairwiseChoice from "@/components/questionnaire/PairwiseChoice";
 import IntensityControl from "@/components/questionnaire/IntensityControl";
@@ -124,6 +126,7 @@ export default function Questionnaire() {
   const vibePairs = useMemo(() => getVibePairs(), []);
   const intensityChoices = useMemo(() => getIntensityChoices(), []);
   const safetyChoices = useMemo(() => getSafetyChoices(), []);
+  const genderChoices = useMemo(() => GENDER_CHOICES, []);
 
   useEffect(() => {
     if (answers) {
@@ -234,6 +237,26 @@ export default function Questionnaire() {
         }
 
         return newState;
+      });
+    },
+    [showMicroReward, autoAdvance]
+  );
+
+  const handleGenderSelect = useCallback(
+    (gender: string) => {
+      setFlowState((prev) => {
+        const newResponses = { ...prev.responses, gender };
+        const newAnswers = mapResponsesToAnswers(newResponses);
+        setAnswers(newAnswers);
+        showMicroReward();
+
+        if (prev.responses.gender !== gender) {
+          setTimeout(() => {
+            autoAdvance();
+          }, 100);
+        }
+
+        return { ...prev, responses: newResponses };
       });
     },
     [showMicroReward, autoAdvance]
@@ -371,6 +394,9 @@ export default function Questionnaire() {
           break;
         case "vibes":
           targetStep = prev.steps.findIndex((s) => s.type === "pairwise");
+          break;
+        case "gender":
+          targetStep = prev.steps.findIndex((s) => s.type === "gender");
           break;
         case "intensity":
           targetStep = prev.steps.findIndex((s) => s.type === "intensity");
@@ -544,6 +570,14 @@ export default function Questionnaire() {
               >
                 {currentStep.type === "path-selection" && (
                   <PathSelector onSelect={handlePathSelect} />
+                )}
+
+                {currentStep.type === "gender" && (
+                  <GenderStep
+                    options={genderChoices}
+                    selected={flowState.responses.gender ?? null}
+                    onSelect={handleGenderSelect}
+                  />
                 )}
 
                 {currentStep.type === "scene-cards" && (

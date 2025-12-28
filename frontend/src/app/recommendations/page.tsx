@@ -700,9 +700,17 @@ function RecommendationsContent() {
   }
 
   const topMatch = recommendations.length > 0 ? recommendations[0] : null;
-  const answeredCount = Object.values(answers).filter(
-    (values) => values.length > 0
-  ).length;
+  const answeredCount =
+    (answers.gender ? 1 : 0) +
+    [
+      answers.moods,
+      answers.moments,
+      answers.times,
+      answers.intensity,
+      answers.styles,
+      answers.noteLikes,
+      answers.noteDislikes,
+    ].filter((values) => values.length > 0).length;
 
   // ✅ kiosk grid: force 2x3 to fully occupy height (normal stays identical)
   const resultsGridClass = isKiosk

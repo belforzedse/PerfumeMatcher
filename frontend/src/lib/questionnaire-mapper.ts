@@ -39,6 +39,7 @@ export interface UserResponses {
   quickFireLikes: string[];
   quickFireDislikes: string[];
   times?: string;
+  gender?: string;
 }
 
 const SCENE_MAPPINGS: Record<string, SceneChoice> = {
@@ -200,6 +201,7 @@ const SAFETY_MAPPINGS: Record<string, SafetyChoice> = {
 
 export function mapResponsesToAnswers(responses: UserResponses): QuestionnaireAnswers {
   const answers: QuestionnaireAnswers = {
+    gender: responses.gender ?? null,
     moods: [],
     moments: [],
     times: [],

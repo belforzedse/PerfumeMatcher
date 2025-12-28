@@ -22,13 +22,18 @@ function isGenderCompatible(
   answers: QuestionnaireAnswers,
   perfume: Perfume
 ): boolean {
+  const selectedGender = (answers.gender || "").toLowerCase();
+  const g = (perfume.gender || "unisex").toLowerCase();
+
+  if (selectedGender) {
+    return g === selectedGender;
+  }
+
   const stylesLower = (answers.styles ?? []).map((s) => s.toLowerCase());
   const wantsMasculine = stylesLower.includes("masculine");
   const wantsFeminine = stylesLower.includes("feminine");
   const wantsUnisexOnly =
     stylesLower.includes("unisex") && !wantsMasculine && !wantsFeminine;
-
-  const g = (perfume.gender || "").toLowerCase();
 
   if (!g || (!wantsMasculine && !wantsFeminine && !wantsUnisexOnly)) {
     return true;
@@ -105,9 +110,7 @@ export async function getPerfumeRecommendations(
 
   const genderFiltered = perfumes.filter((p) => isGenderCompatible(answers, p));
 
-  const basePool = genderFiltered.length > 0 ? genderFiltered : perfumes;
-
-  const scored = basePool
+  const scored = genderFiltered
     .map((p) => ({ perfume: p, score: scorePerfume(answers, p) }))
     .sort((a, b) => b.score - a.score);
 
@@ -205,6 +208,7 @@ function buildRecommendationPrompt(
     arr.length > max ? arr.slice(0, max) : arr;
 
   const userPrefs = {
+    gender: answers.gender ?? "",
     moods: limit(answers.moods),
     moments: limit(answers.moments),
     times: limit(answers.times),

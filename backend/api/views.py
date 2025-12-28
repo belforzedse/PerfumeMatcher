@@ -144,6 +144,7 @@ def _build_compact_perfume_json(perfume: Perfume) -> Dict[str, Any]:
 def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]]) -> str:
     """Build prompt for OpenAI rerank."""
     user_prefs = {
+        "gender": answers.get("gender"),
         "moods": answers.get("moods", [])[:6],
         "moments": answers.get("moments", [])[:6],
         "times": answers.get("times", [])[:3],

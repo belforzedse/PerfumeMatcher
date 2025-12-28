@@ -1,5 +1,6 @@
 import {
   Choice,
+  GENDER_CHOICES,
   INTENSITY_CHOICES,
   MOMENT_CHOICES,
   MOOD_CHOICES,
@@ -10,6 +11,7 @@ import {
 
 export type QuestionType = "multiple" | "single";
 export interface QuestionnaireAnswers {
+  gender: string | null;
   moods: string[];
   moments: string[];
   times: string[];
@@ -20,6 +22,16 @@ export interface QuestionnaireAnswers {
 }
 
 export type AnswerKey = keyof QuestionnaireAnswers;
+type ArrayAnswerKey = Exclude<AnswerKey, "gender">;
+const ARRAY_KEYS: ArrayAnswerKey[] = [
+  "moods",
+  "moments",
+  "times",
+  "intensity",
+  "styles",
+  "noteLikes",
+  "noteDislikes",
+];
 
 export interface QuestionDefinition {
   title: string;
@@ -32,6 +44,7 @@ export interface QuestionDefinition {
 }
 
 export const createInitialAnswers = (): QuestionnaireAnswers => ({
+  gender: null,
   moods: [],
   moments: [],
   times: [],
@@ -42,6 +55,13 @@ export const createInitialAnswers = (): QuestionnaireAnswers => ({
 });
 
 export const QUESTION_FLOW: QuestionDefinition[] = [
+  {
+    title: "جنسیت شما چیست؟",
+    description: "این انتخاب نتایج را به‌صورت قطعی فیلتر می‌کند.",
+    type: "single",
+    options: GENDER_CHOICES,
+    key: "gender",
+  },
   {
     title: "حال‌وهواهای مورد علاقه شما چیست؟",
     description: "حداکثر دو مورد را انتخاب کنید.",
@@ -126,9 +146,15 @@ export const parseAnswers = (
       return null;
     }
     const base = createInitialAnswers();
-    (Object.keys(base) as AnswerKey[]).forEach((key) => {
+    ARRAY_KEYS.forEach((key) => {
       base[key] = ensureStringArray(parsed[key]);
     });
+    if (typeof parsed.gender === "string") {
+      const trimmed = parsed.gender.trim();
+      base.gender = trimmed.length > 0 ? trimmed : null;
+    } else {
+      base.gender = null;
+    }
     return base;
   } catch (error) {
     console.error("Failed to parse questionnaire answers:", error);

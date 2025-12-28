@@ -202,8 +202,12 @@ def questionnaire_to_profile_text(q: Dict[str, Any]) -> str:
         parts.append(f"intensity_{_normalize_token(strength)}")
 
     gender = q.get("gender")
-    if gender and gender != "unisex":
-        parts.append(f"gender_{gender}")
+    if isinstance(gender, list):
+        gender = gender[0] if gender else None
+    if gender:
+        gender = str(gender).strip().lower()
+        if gender != "unisex":
+            parts.append(f"gender_{gender}")
 
     return " ".join(parts)
 
@@ -315,6 +319,7 @@ class PerfumeEngine:
         sims = cosine_similarity(q_vec, self.matrix)[0]  # (N,)
 
         adjusted_scores: List[float] = []
+        eligible_indices: List[int] = []
         avoid_very_sweet = qdata.get("avoid_very_sweet", False)
         avoid_oud = qdata.get("avoid_oud", False)
         contexts = qdata.get("contexts", [])
@@ -336,14 +341,12 @@ class PerfumeEngine:
                 allowed_genders.add("unisex")
 
         legacy_gender = qdata.get("gender")
+        if isinstance(legacy_gender, list):
+            legacy_gender = legacy_gender[0] if legacy_gender else None
         if legacy_gender:
+            gender_value = str(legacy_gender).strip().lower()
             filter_by_gender = True
-            if legacy_gender == "male":
-                allowed_genders.update({"male", "unisex"})
-            elif legacy_gender == "female":
-                allowed_genders.update({"female", "unisex"})
-            elif legacy_gender == "unisex":
-                allowed_genders.add("unisex")
+            allowed_genders = {gender_value}
 
         # Precompute disliked note tokens
         disliked_tokens: Set[str] = set()
@@ -356,9 +359,8 @@ class PerfumeEngine:
             perfume = self.perfumes[idx]
 
             if filter_by_gender:
-                perfume_gender = perfume.gender or "unisex"
+                perfume_gender = (perfume.gender or "unisex").lower()
                 if allowed_genders and perfume_gender not in allowed_genders:
-                    adjusted_scores.append(float("-inf"))
                     continue
 
             if avoid_very_sweet and self.perfume_is_very_sweet[idx]:
@@ -388,18 +390,20 @@ class PerfumeEngine:
                     score -= 0.2
 
             adjusted_scores.append(score)
+            eligible_indices.append(idx)
 
         top_k = qdata.get("limit", 10)
         idx_sorted = sorted(
-            range(len(self.perfumes)),
+            range(len(eligible_indices)),
             key=lambda i: adjusted_scores[i],
             reverse=True,
         )[:top_k]
 
         results = []
-        for idx in idx_sorted:
+        for ranked_idx in idx_sorted:
+            idx = eligible_indices[ranked_idx]
             p = self.perfumes[idx]
-            score = adjusted_scores[idx]
+            score = adjusted_scores[ranked_idx]
             # Convert score (0-1) to matchPercentage (0-100)
             # Handle infinity values safely
             match_percentage = _score_to_match_percentage(score)
