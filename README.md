@@ -1,6 +1,6 @@
 <p align="center">
 
-[راهنمای شروع فارسی](docs/development.fa.md) · [English quick start](docs/development.md) · [روش کار تیم](https://git.alpagency.net/alp/team/-/blob/main/docs/workflow.fa.md)
+[راهنمای شروع فارسی](docs/development.fa.md) · [English quick start](docs/development.md)
   <img src="docs/branding/logo.png" alt="Gandom Perfume" width="220">
 </p>
 
@@ -10,25 +10,57 @@ Persian touchscreen perfume discovery and recommendation kiosk. This repository
 contains the Next.js frontend, Django API, questionnaire/matching logic, and
 catalog administration originally published as `belforzedse/PerfumeMatcher`.
 
-## Start here
+## First local run
 
-- [Linux and Windows development guide](docs/development.md)
-- [GitLab workflow and team templates](docs/gitlab-workflow.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
+Use Git, Node.js 22 with npm and Python 3.12+ for Django 6. Local storage is
+SQLite; Docker, Redis, PostgreSQL and OpenAI credentials are not needed.
 
-Use Node.js 22 and npm for the frontend, Python 3.12 or later for Django 6, and
-the committed frontend npm lockfile. The local setup does not require Docker.
+From your projects directory, in Bash or PowerShell:
 
 ```bash
-glab repo clone alp/gandom-kiosk
+git clone https://git.alpagency.net/alp/gandom-kiosk.git
 cd gandom-kiosk
 node scripts/setup-dev-env.mjs
 npm --prefix frontend ci
 ```
 
-Follow the development guide to install the Python environment, initialize
-SQLite, and run the backend and frontend in separate terminals.
+The helper creates missing backend/frontend local environment files and preserves
+existing ones. Keep the backend on `localhost:8000`, local SQLite, matching local
+admin keys and empty AI keys. The full [English guide](docs/development.md) and
+[راهنمای فارسی](docs/development.fa.md) include Windows commands, first-account
+setup and concrete troubleshooting.
+
+In terminal 1, Linux Bash:
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py import_perfumes_from_json --source frontend/public/data/data.json
+python manage.py runserver 127.0.0.1:8000
+```
+
+On Windows, use `Set-Location backend`, `py -3.12 -m venv .venv` and
+`.\.venv\Scripts\Activate.ps1`, then the same install/migrate/import/run commands.
+If activation is blocked, use `.\.venv\Scripts\python.exe` instead of `python`.
+The import path is relative to the repository root. This numeric-ID source has
+258 perfumes and repeat imports update their existing records; migrations alone
+do not load the catalog.
+
+In terminal 2, from the repository root:
+
+```bash
+npm --prefix frontend run dev
+```
+
+Open http://localhost:3000, complete the questionnaire and expect recommendations.
+http://localhost:8000/api/perfumes/ should return HTTP 200 and a nonempty catalog.
+The custom admin is at http://localhost:3000/admin/products and uses the example's
+matching local admin keys, with no seeded login. Django's separate admin account
+can be created with `python manage.py createsuperuser` from `backend`.
+Stop both servers with Ctrl+C; local SQLite/media remain.
 
 ## Layout
 
@@ -45,15 +77,26 @@ separate application review.
 
 ## Checks
 
+From `frontend` after installing dependencies:
+
 ```bash
-npm --prefix frontend run lint
-npm --prefix frontend exec -- tsc --project frontend/tsconfig.json --noEmit
-npm --prefix frontend run test -- --run
-npm --prefix frontend run build
+npm run lint
+npm exec --no -- tsc --noEmit
+npm run test -- --run
+npm run build
 ```
 
-Backend checks are `python manage.py check` and `python manage.py test` from
-`backend` with the Python environment activated. GitLab CI runs validation only.
+From `backend`, with its virtual environment active:
+
+```bash
+python manage.py check
+python manage.py test
+```
+
+The [development guide](docs/development.md) maps changes to checks and explains
+baseline matching, catalog caching, admin 401s and missing-table errors. For
+contribution conventions, see the [repository workflow](docs/gitlab-workflow.md),
+[contributing guide](CONTRIBUTING.md) and [security policy](SECURITY.md).
 
 ## Import and releases
 
