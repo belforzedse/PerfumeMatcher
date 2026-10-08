@@ -13,8 +13,10 @@ interface MultiImageUploadProps {
   maxCount?: number;
 }
 
+const EMPTY_IMAGES: (File | string)[] = [];
+
 export default function MultiImageUpload({
-  value = [],
+  value = EMPTY_IMAGES,
   onChange,
   error,
   label = "آپلود تصاویر",
@@ -24,24 +26,38 @@ export default function MultiImageUpload({
 }: MultiImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [previews, setPreviews] = useState<Map<number, string>>(new Map());
+  const [previews, setPreviews] = useState<Map<File, string>>(new Map());
 
   // Update previews when value changes
   useEffect(() => {
-    const newPreviews = new Map<number, string>();
-    value.forEach((item, index) => {
-      if (typeof item === 'string') {
-        newPreviews.set(index, item);
-      } else if (item instanceof File) {
+    let cancelled = false;
+    const readers: FileReader[] = [];
+    value.forEach((item) => {
+      if (item instanceof File) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          newPreviews.set(index, e.target?.result as string);
-          setPreviews(new Map(newPreviews));
+        readers.push(reader);
+        reader.onload = () => {
+          if (cancelled || typeof reader.result !== "string") return;
+          const preview = reader.result;
+          setPreviews((previous) => {
+            const next = new Map(previous);
+            next.set(item, preview);
+            return new Map(value.flatMap((image) =>
+              image instanceof File && next.has(image) ? [[image, next.get(image)!] as const] : [],
+            ));
+          });
         };
         reader.readAsDataURL(item);
       }
     });
-    setPreviews(newPreviews);
+
+    return () => {
+      cancelled = true;
+      readers.forEach((reader) => {
+        reader.onload = null;
+        if (reader.readyState === FileReader.LOADING) reader.abort();
+      });
+    };
   }, [value]);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -134,22 +150,6 @@ export default function MultiImageUpload({
   const handleRemove = (index: number) => {
     const newValue = value.filter((_, i) => i !== index);
     onChange(newValue);
-    
-    // Remove preview
-    const newPreviews = new Map(previews);
-    newPreviews.delete(index);
-    // Reindex previews
-    const reindexedPreviews = new Map<number, string>();
-    newValue.forEach((item, newIndex) => {
-      const oldIndex = value.findIndex((_, i) => i === index ? false : true);
-      if (newIndex < oldIndex || oldIndex === -1) {
-        const previewKey = newIndex < index ? newIndex : newIndex + 1;
-        if (previews.has(previewKey)) {
-          reindexedPreviews.set(newIndex, previews.get(previewKey)!);
-        }
-      }
-    });
-    setPreviews(reindexedPreviews);
   };
 
   const canAddMore = value.length < maxCount;
@@ -163,7 +163,7 @@ export default function MultiImageUpload({
       {value.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {value.map((item, index) => {
-            const preview = previews.get(index);
+            const preview = typeof item === "string" ? item : previews.get(item);
             return (
               <div key={index} className="relative group">
                 <div className="aspect-square rounded-[var(--radius-base)] overflow-hidden border border-[var(--color-border)]">
@@ -251,7 +251,6 @@ export default function MultiImageUpload({
     </div>
   );
 }
-
 
 
 

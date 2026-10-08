@@ -1,13 +1,11 @@
-## Change
+## چه چیزی عوض شد؟
 
-Describe the problem and resulting behavior. Link the issue if applicable.
+مشکل و نتیجهٔ تغییر را کوتاه توضیح دهید. اگر کار تمام شده، `Closes #شماره` را با شمارهٔ واقعی issue بنویسید.
 
-## Verification
+## چطور بررسی شد؟
 
-List the commands or manual checks you ran and their result. Add a screenshot
-when the visible behavior changes; use synthetic data.
+دستورها و نتیجهٔ آن‌ها را بنویسید. برای تغییر ظاهری، تصویر یا ویدئوی کوتاه با دادهٔ آزمایشی بگذارید. اگر بخشی بررسی نشده، همان‌جا مشخص کنید.
 
-## Release notes
+## برای انتشار چه چیزی لازم است؟
 
-State any environment, migration, or deployment requirement; otherwise write
-“None”. Include rollback notes when a change has an operational consequence.
+تغییر تنظیمات، migration یا مرحلهٔ انتشار را بنویسید؛ اگر چیزی لازم نیست، «نیازی ندارد» کافی است. برای تغییر عملیاتی، روش برگشت به نسخهٔ قبلی را هم توضیح دهید.

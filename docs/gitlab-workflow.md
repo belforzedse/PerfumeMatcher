@@ -1,62 +1,52 @@
 # Working together in GitLab
 
-## Get access and clone
+[فارسی](gitlab-workflow.fa.md)
 
-Install Git and the GitLab CLI (`glab`), then authenticate to the team instance:
+Give each task an issue, one assignee, an expected result and acceptance checks. Start with one active task per person. Split work larger than a day or two into reviewable changes.
 
-```bash
-glab auth login --hostname git.alpagency.net
-glab auth status
-glab repo clone bel4/gandom-kiosk
-```
+## Issue to merge
 
-The same commands work in Bash and PowerShell. Keep tokens in the CLI credential
-store; Git remotes should contain ordinary HTTPS URLs.
-
-## Work through a branch and merge request
+Move the issue to **در حال انجام** (Doing). Start from current main; replace the example issue number 123 with the real number:
 
 ```bash
+git status
 git switch main
 git pull --ff-only
-git switch -c feature/short-description
+git switch -c feature/123-short-description
 ```
 
-Run the checks listed in [development.md](development.md), review `git diff`, and
-stage the files you intend to share. Then commit and push the branch:
+Resolve ownership of uncommitted work before pulling or switching branches. Implement the change, run affected checks, then stage only intended files. Replace the example file path below:
 
 ```bash
+git diff
+git add path/to/changed-file
+git diff --cached
 git commit -m "Describe the change"
 git push -u origin HEAD
-glab mr create --draft --template Default
-glab mr list
-glab mr view --web
-glab ci status
+glab mr create --draft --template Default.en
 ```
 
-`Default.md` supplies the merge-request description. Link an issue with
-`Closes #123` when the change completes it, include the verification result, and
-request a review before merging. A successful pipeline does not itself establish
-that a release was deployed.
+These commands work in Bash and PowerShell. Default is the Persian MR template; Default.en is English. Explain the resulting behavior and actual verification. Use `Closes #123` only when the task is complete. Include synthetic screenshots for visible changes.
 
-## Report and plan work
+Remove Draft when ready, choose a reviewer, and move the issue to **منتظر بررسی** (Review). A teammate can give an initial review; a Maintainer performs the final review and merge. Resolve discussions after implementing the request or reaching agreement. Temporary source branches are removed after merge; close completed issues.
 
-```bash
-glab issue create --template Bug
-glab issue create --template Feature
-glab issue list
-```
+## Board labels
 
-Bug and feature templates are committed in `.gitlab/issue_templates`. Avoid
-putting secrets or personal customer/patient data in reports or screenshots.
+| Label | Meaning |
+| --- | --- |
+| آماده | Ready: scope and acceptance are clear. |
+| در حال انجام | Doing: one person owns current work. |
+| منتظر بررسی | Review: an MR is ready for review. |
+| نیاز به پیگیری | Blocked: record the missing answer, access or decision. |
 
-## Useful next features
+Use one of the three main states at a time. The blocked label can accompany the current state. Types are **باگ** (Bug), **قابلیت جدید** (Feature), **نگهداری** (Maintenance) and **مستندات** (Documentation). Closed issues are the Done column.
 
-- Use milestones to group releases and labels to make issue boards useful.
-- Assign reviewers in merge requests; maintainers can add approval rules and
-  CODEOWNERS after agreeing on real ownership.
-- Protect the default branch and require its checks once the team has agreed on
-  the merge policy. Repository templates do not change these project settings.
-- Use GitLab releases and immutable tags for delivery records. Review apps and
-  artifact expiry can be added per project's runner and deployment constraints.
-- [Issues](https://git.alpagency.net/bel4/gandom-kiosk/-/issues), [merge requests](https://git.alpagency.net/bel4/gandom-kiosk/-/merge_requests), and
-  [pipelines](https://git.alpagency.net/bel4/gandom-kiosk/-/pipelines) are the team's shared history.
+## Get help and release
+
+After a concrete attempt, record what you tried, the result and the specific help needed in the issue. Include tool versions, the command and a short sanitized error.
+
+main is shared. All changes enter through MRs; direct and force pushes are disabled. Maintainers review and merge. CI success proves validation, not a production release. A project maintainer explicitly executes and verifies deployment.
+
+Obtain secrets through the maintainer's designated channel. Keep them out of Git, issues, MRs and captures. Use synthetic accounts and local data for tests.
+
+[This project’s startup guide](development.md) · [Issues](https://git.alpagency.net/alp/gandom-kiosk/-/issues) · [Board](https://git.alpagency.net/alp/gandom-kiosk/-/boards)

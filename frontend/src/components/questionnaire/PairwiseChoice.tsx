@@ -14,6 +14,187 @@ interface PairwiseChoiceProps {
   showNotSure?: boolean;
 }
 
+interface CardProps {
+  selected: PairwiseChoiceProps["selected"];
+  onSelect: PairwiseChoiceProps["onSelect"];
+  isKiosk: boolean;
+  itemVariants: Variants;
+}
+
+const baseCard = cn(
+  "glass-card backdrop-blur-xl glass-button-gradient-border group relative",
+  "flex flex-col items-center justify-center text-center",
+  "rounded-3xl transition-all duration-500",
+  "tap-highlight touch-target touch-feedback",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]"
+);
+
+const selectedTone =
+  "border-2 border-[var(--color-accent)] bg-gradient-to-br from-white/95 via-[var(--color-accent-soft)]/26 to-white/95 shadow-strong";
+
+const idleTone =
+  "border border-[var(--color-border)] hover:border-[var(--color-accent)]/40 hover:shadow-soft";
+
+const kioskCardSize =
+  "h-full min-h-[420px] lg:min-h-[480px] 2xl:min-h-[520px] gap-8 p-12";
+const normalCardSize = "min-h-[180px] sm:min-h-[200px] gap-4 p-8";
+
+function ChoiceCard({
+  side, pair, selected, onSelect, isKiosk, itemVariants,
+}: CardProps & { side: "left" | "right"; pair: VibePair }) {
+  const iconSize = isKiosk ? 112 : 64;
+  const isSelected = selected === side;
+  const data = side === "left" ? pair.left : pair.right;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={() => onSelect(side)}
+      variants={itemVariants}
+      whileHover={{ y: -4, scale: isSelected ? 1.02 : 1.015 }}
+      whileTap={{ scale: 0.99, y: -1 }}
+      className={cn(
+        baseCard,
+        isKiosk ? kioskCardSize : normalCardSize,
+        isSelected
+          ? cn(selectedTone, "z-10 scale-[1.02]")
+          : cn(idleTone, "hover:scale-[1.01]")
+      )}
+    >
+      {/* Selected overlay */}
+      {isSelected && (
+        <motion.div
+          layoutId="pairwise-selection"
+          className="pointer-events-none absolute inset-0 rounded-3xl bg-[var(--color-accent)]/10"
+          initial={false}
+          transition={{ type: "spring", stiffness: 280, damping: 28 }}
+        />
+      )}
+
+      {/* kiosk-only premium glow */}
+      {isKiosk && isSelected && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_0%,rgba(212,175,55,0.24),transparent_55%)]"
+        />
+      )}
+
+      <div className="relative z-10 flex flex-col items-center gap-4">
+        {data.icon && (
+          <motion.span
+            animate={
+              isSelected
+                ? {
+                    scale: [1, 1.14, 1],
+                    rotate: side === "left" ? [0, 5, -5, 0] : [0, -5, 5, 0],
+                  }
+                : {}
+            }
+            transition={{ duration: 0.6 }}
+          >
+            <Icon emoji={data.icon} size={iconSize} />
+          </motion.span>
+        )}
+
+        <h3
+          className={cn(
+            "m-0 font-semibold leading-tight",
+            isKiosk ? "text-3xl" : "text-xl sm:text-2xl",
+            isKiosk && isSelected
+              ? "bg-[linear-gradient(90deg,#f6f1e3_0%,#d6c98d_50%,#bda96a_100%)] bg-clip-text text-transparent"
+              : "text-[var(--color-foreground)]"
+          )}
+        >
+          {data.label}
+        </h3>
+
+        {/* subtle helper line (fills space + feels kiosk-friendly) */}
+        <p
+          className={cn(
+            "m-0 text-muted",
+            isKiosk ? "text-sm" : "text-xs sm:text-sm"
+          )}
+        >
+          برای انتخاب، لمس کنید
+        </p>
+
+        {isSelected && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className={cn(
+              "glass-chip glass-chip--compact glass-chip--accent font-semibold",
+              isKiosk ? "text-sm px-4 py-2" : "text-xs"
+            )}
+          >
+            ✓ {data.label} انتخاب شد
+          </motion.div>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+
+function NotSureCard({ className, selected, onSelect, isKiosk, itemVariants }: CardProps & {
+className?: string;
+}) {
+  const isSelected = selected === "none";
+
+  return (
+    <motion.button
+      type="button"
+      onClick={() => onSelect("none")}
+      variants={itemVariants}
+      whileHover={{ y: -2, scale: isSelected ? 1.01 : 1.008 }}
+      whileTap={{ scale: 0.995 }}
+      className={cn(
+        baseCard,
+        // make it match the two big cards in kiosk
+        isKiosk
+          ? kioskCardSize
+          : "mx-auto w-full max-w-md rounded-2xl px-6 py-4",
+        // style
+        isSelected
+          ? "border-2 border-[var(--color-accent)] bg-[var(--color-accent-soft)]/22 shadow-soft"
+          : "border border-[var(--color-border)] hover:bg-white/10",
+        // dashed feel (kiosk request vibe)
+        isKiosk && "border-dashed",
+        className
+      )}
+    >
+      <div className="relative z-10 flex flex-col items-center gap-3">
+        <span
+          className={cn(
+            "font-semibold text-[var(--color-foreground)]",
+            isKiosk ? "text-xl" : "text-sm sm:text-base"
+          )}
+        >
+          ترجیح نمی‌دهم
+        </span>
+
+        <p className={cn("m-0 text-muted", isKiosk ? "text-sm" : "text-xs")}>
+          می‌توانید این مرحله را رد کنید
+        </p>
+
+        {isSelected && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className={cn(
+              "glass-chip glass-chip--compact glass-chip--accent font-semibold",
+              isKiosk ? "text-sm px-4 py-2" : "text-xs"
+            )}
+          >
+            ✓ رد شد
+          </motion.div>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+
 export default function PairwiseChoice({
   pair,
   selected,
@@ -28,181 +209,7 @@ export default function PairwiseChoice({
     blur: 8,
   }) as Variants;
 
-  const baseCard = cn(
-    "glass-card backdrop-blur-xl glass-button-gradient-border group relative",
-    "flex flex-col items-center justify-center text-center",
-    "rounded-3xl transition-all duration-500",
-    "tap-highlight touch-target touch-feedback",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(255,255,255,0.45)]"
-  );
-
-  const selectedTone =
-    "border-2 border-[var(--color-accent)] bg-gradient-to-br from-white/95 via-[var(--color-accent-soft)]/26 to-white/95 shadow-strong";
-
-  const idleTone =
-    "border border-[var(--color-border)] hover:border-[var(--color-accent)]/40 hover:shadow-soft";
-
-  const kioskCardSize =
-    "h-full min-h-[420px] lg:min-h-[480px] 2xl:min-h-[520px] gap-8 p-12";
-  const normalCardSize = "min-h-[180px] sm:min-h-[200px] gap-4 p-8";
-
-  const iconSize = isKiosk ? 112 : 64;
-
-  function ChoiceCard({ side }: { side: "left" | "right" }) {
-    const isSelected = selected === side;
-    const data = side === "left" ? pair.left : pair.right;
-
-    return (
-      <motion.button
-        type="button"
-        onClick={() => onSelect(side)}
-        variants={itemVariants}
-        whileHover={{ y: -4, scale: isSelected ? 1.02 : 1.015 }}
-        whileTap={{ scale: 0.99, y: -1 }}
-        className={cn(
-          baseCard,
-          isKiosk ? kioskCardSize : normalCardSize,
-          isSelected
-            ? cn(selectedTone, "z-10 scale-[1.02]")
-            : cn(idleTone, "hover:scale-[1.01]")
-        )}
-      >
-        {/* Selected overlay */}
-        {isSelected && (
-          <motion.div
-            layoutId="pairwise-selection"
-            className="pointer-events-none absolute inset-0 rounded-3xl bg-[var(--color-accent)]/10"
-            initial={false}
-            transition={{ type: "spring", stiffness: 280, damping: 28 }}
-          />
-        )}
-
-        {/* kiosk-only premium glow */}
-        {isKiosk && isSelected && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_0%,rgba(212,175,55,0.24),transparent_55%)]"
-          />
-        )}
-
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          {data.icon && (
-            <motion.span
-              animate={
-                isSelected
-                  ? {
-                      scale: [1, 1.14, 1],
-                      rotate: side === "left" ? [0, 5, -5, 0] : [0, -5, 5, 0],
-                    }
-                  : {}
-              }
-              transition={{ duration: 0.6 }}
-            >
-              <Icon emoji={data.icon} size={iconSize} />
-            </motion.span>
-          )}
-
-          <h3
-            className={cn(
-              "m-0 font-semibold leading-tight",
-              isKiosk ? "text-3xl" : "text-xl sm:text-2xl",
-              isKiosk && isSelected
-                ? "bg-[linear-gradient(90deg,#f6f1e3_0%,#d6c98d_50%,#bda96a_100%)] bg-clip-text text-transparent"
-                : "text-[var(--color-foreground)]"
-            )}
-          >
-            {data.label}
-          </h3>
-
-          {/* subtle helper line (fills space + feels kiosk-friendly) */}
-          <p
-            className={cn(
-              "m-0 text-muted",
-              isKiosk ? "text-sm" : "text-xs sm:text-sm"
-            )}
-          >
-            برای انتخاب، لمس کنید
-          </p>
-
-          {isSelected && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={cn(
-                "glass-chip glass-chip--compact glass-chip--accent font-semibold",
-                isKiosk ? "text-sm px-4 py-2" : "text-xs"
-              )}
-            >
-              ✓ {data.label} انتخاب شد
-            </motion.div>
-          )}
-        </div>
-      </motion.button>
-    );
-  }
-
-  function NotSureCard({
-    className,
-    hidden = false,
-  }: {
-    className?: string;
-    hidden?: boolean;
-  }) {
-    if (!showNotSure || hidden) return null;
-    const isSelected = selected === "none";
-
-    return (
-      <motion.button
-        type="button"
-        onClick={() => onSelect("none")}
-        variants={itemVariants}
-        whileHover={{ y: -2, scale: isSelected ? 1.01 : 1.008 }}
-        whileTap={{ scale: 0.995 }}
-        className={cn(
-          baseCard,
-          // make it match the two big cards in kiosk
-          isKiosk
-            ? kioskCardSize
-            : "mx-auto w-full max-w-md rounded-2xl px-6 py-4",
-          // style
-          isSelected
-            ? "border-2 border-[var(--color-accent)] bg-[var(--color-accent-soft)]/22 shadow-soft"
-            : "border border-[var(--color-border)] hover:bg-white/10",
-          // dashed feel (kiosk request vibe)
-          isKiosk && "border-dashed",
-          className
-        )}
-      >
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <span
-            className={cn(
-              "font-semibold text-[var(--color-foreground)]",
-              isKiosk ? "text-xl" : "text-sm sm:text-base"
-            )}
-          >
-            ترجیح نمی‌دهم
-          </span>
-
-          <p className={cn("m-0 text-muted", isKiosk ? "text-sm" : "text-xs")}>
-            می‌توانید این مرحله را رد کنید
-          </p>
-
-          {isSelected && (
-            <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={cn(
-                "glass-chip glass-chip--compact glass-chip--accent font-semibold",
-                isKiosk ? "text-sm px-4 py-2" : "text-xs"
-              )}
-            >
-              ✓ رد شد
-            </motion.div>
-          )}
-        </div>
-      </motion.button>
-    );
-  }
+  const cardProps = { selected, onSelect, isKiosk, itemVariants };
 
   return (
     <motion.div
@@ -232,20 +239,20 @@ export default function PairwiseChoice({
               : "relative flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:gap-6"
           )}
         >
-          <ChoiceCard side="left" />
+          <ChoiceCard side="left" pair={pair} {...cardProps} />
 
           {/* kiosk center card */}
-          {isKiosk ? <NotSureCard /> : null}
+          {isKiosk && showNotSure ? <NotSureCard {...cardProps} /> : null}
 
           {/* mobile in-between (non-kiosk) */}
-          {!isKiosk ? <NotSureCard className="sm:hidden" /> : null}
+          {!isKiosk && showNotSure ? <NotSureCard className="sm:hidden" {...cardProps} /> : null}
 
-          <ChoiceCard side="right" />
+          <ChoiceCard side="right" pair={pair} {...cardProps} />
         </div>
       </div>
 
       {/* desktop below (non-kiosk) */}
-      {!isKiosk ? <NotSureCard className="hidden sm:block" /> : null}
+      {!isKiosk && showNotSure ? <NotSureCard className="hidden sm:block" {...cardProps} /> : null}
 
       {/* Footer hint */}
       <div

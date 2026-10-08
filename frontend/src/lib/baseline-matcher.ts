@@ -9,11 +9,8 @@ const RECOMMEND_ENDPOINT = `${BACKEND_BASE_URL}/api/recommend/`;
 interface BackendRecommendResult {
   profile_text?: string;
   results: Array<{
-    id: number | string;
     score: number;
-    // Full perfume data from backend
-    [key: string]: any;
-  }>;
+  } & BackendPerfumeData>;
 }
 
 export async function getBaselineRankings(
@@ -42,8 +39,7 @@ export async function getBaselineRankings(
     const rankedPerfumes: RankedPerfume[] = [];
     for (const result of data.results || []) {
       // Backend now returns full perfume data, convert it using toPerfume
-      const perfumeData = result as BackendPerfumeData;
-      const perfume = toPerfume(perfumeData);
+      const perfume = toPerfume(result);
       
       const score = typeof result.score === "number" ? result.score : 0;
       const matchPercentage = Math.max(0, Math.min(100, Math.round(score * 100)));

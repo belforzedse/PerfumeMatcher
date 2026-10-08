@@ -9,7 +9,7 @@ import {
   useMotionValue,
   useReducedMotion,
 } from "framer-motion";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useSyncExternalStore } from "react";
 
 type AuroraAnimationKeyframes = {
   opacity: number[];
@@ -169,43 +169,28 @@ const useAuroraAnimation = (
  * the base palette so that the fallback shapes remain subtle behind glass cards while
  * still echoing the warm brand accent on tablets and other low-power devices.
  */
+function getLowCapabilitySnapshot() {
+  const prefersStatic = new URLSearchParams(window.location.search).has("staticBackground");
+  const deviceMemory = (window.navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  const isLowMemory = typeof deviceMemory === "number" && deviceMemory > 0 && deviceMemory <= 4;
+  return prefersStatic || isLowMemory || (window.matchMedia?.("(pointer: coarse)").matches ?? false);
+}
+
+function subscribeToCapabilityChanges(onChange: () => void) {
+  const coarsePointerQuery = window.matchMedia?.("(pointer: coarse)");
+  coarsePointerQuery?.addEventListener("change", onChange);
+  return () => coarsePointerQuery?.removeEventListener("change", onChange);
+}
+
+const getServerCapabilitySnapshot = () => false;
+
 const AnimatedBackground = memo(function AnimatedBackground() {
   const shouldReduceMotion = useReducedMotion();
-  const [isLowCapability, setIsLowCapability] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const searchParams = new URLSearchParams(window.location.search);
-    const prefersStatic = searchParams.has("staticBackground");
-
-    const coarsePointerQuery = window.matchMedia?.("(pointer: coarse)");
-
-    const nav = window.navigator as Navigator & { deviceMemory?: number };
-    const deviceMemory = nav.deviceMemory;
-    const isLowMemory = typeof deviceMemory === "number" && deviceMemory > 0 && deviceMemory <= 4;
-
-    const computeCapability = (hasCoarsePointer: boolean) =>
-      prefersStatic || isLowMemory || hasCoarsePointer;
-
-    setIsLowCapability(computeCapability(coarsePointerQuery?.matches ?? false));
-
-    if (!coarsePointerQuery) {
-      return;
-    }
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsLowCapability(computeCapability(event.matches));
-    };
-
-    coarsePointerQuery.addEventListener("change", handleChange);
-
-    return () => {
-      coarsePointerQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
+  const isLowCapability = useSyncExternalStore(
+    subscribeToCapabilityChanges,
+    getLowCapabilitySnapshot,
+    getServerCapabilitySnapshot,
+  );
 
   const isAnimated = !(shouldReduceMotion || isLowCapability);
 

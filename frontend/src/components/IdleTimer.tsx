@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { durations, signatureTransitions, useFadeScaleVariants } from "@/lib/motion";
 
@@ -11,8 +11,12 @@ interface IdleTimerProps {
 }
 
 export default function IdleTimer({ timeoutMs, onIdle, isActive }: IdleTimerProps) {
+  return <Countdown key={timeoutMs} timeoutMs={timeoutMs} onIdle={onIdle} isActive={isActive} />;
+}
+
+function Countdown({ timeoutMs, onIdle, isActive }: IdleTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(timeoutMs);
-  const [isVisible, setIsVisible] = useState(false);
+  const remainingRef = useRef(timeoutMs);
   const timerVariants = useFadeScaleVariants({
     y: 16,
     scale: 0.92,
@@ -21,40 +25,23 @@ export default function IdleTimer({ timeoutMs, onIdle, isActive }: IdleTimerProp
     ease: signatureTransitions.surface.ease,
   });
 
-  // Reset when component mounts or timeoutMs changes
   useEffect(() => {
-    setTimeRemaining(timeoutMs);
-    setIsVisible(false);
-  }, [timeoutMs]);
-
-  useEffect(() => {
-    if (!isActive || timeoutMs === 0) {
-      setIsVisible(false);
-      return;
-    }
+    if (!isActive || timeoutMs === 0 || remainingRef.current === 0) return;
 
     const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        const next = Math.max(0, prev - 1000);
-
-        // Show widget in last 30 seconds
-        if (next <= 30000 && next > 0) {
-          setIsVisible(true);
-        } else {
-          setIsVisible(false);
-        }
-
-        if (next <= 0 && onIdle) {
-          onIdle();
-        }
-
-        return next;
-      });
+      const next = Math.max(0, remainingRef.current - 1000);
+      remainingRef.current = next;
+      setTimeRemaining(next);
+      if (next === 0) {
+        clearInterval(interval);
+        onIdle?.();
+      }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [timeoutMs, isActive, onIdle]);
 
+  const isVisible = timeRemaining < timeoutMs && timeRemaining <= 30000 && timeRemaining > 0;
   if (!isVisible || !isActive || timeoutMs === 0) return null;
 
   const seconds = Math.max(0, Math.ceil(timeRemaining / 1000));

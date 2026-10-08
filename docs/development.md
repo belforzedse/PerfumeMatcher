@@ -1,5 +1,7 @@
 # Local development on Linux and Windows
 
+[فارسی](development.fa.md)
+
 Use Node.js 22, npm, Git, and Python 3.12 or later. Django 6 requires Python
 3.12+. The frontend uses its committed `package-lock.json`; do not generate a
 pnpm/yarn lockfile. Python dependencies are currently bounded in
@@ -10,7 +12,7 @@ pnpm/yarn lockfile. Python dependencies are currently bounded in
 These commands work in Bash and PowerShell:
 
 ```bash
-glab repo clone bel4/gandom-kiosk
+glab repo clone alp/gandom-kiosk
 cd gandom-kiosk
 node scripts/setup-dev-env.mjs
 npm --prefix frontend ci
@@ -36,13 +38,13 @@ python manage.py runserver 127.0.0.1:8000
 ```powershell
 Set-Location backend
 py -3.12 -m venv .venv
-.venvScriptsActivate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver 127.0.0.1:8000
 ```
 
-If activation is blocked, use `.venvScriptspython.exe` instead of `python`.
+If activation is blocked, use `.\.venv\Scripts\python.exe` instead of `python`.
 No global execution-policy change is needed. WSL2 can also use the Linux steps;
 keep dependencies inside the same OS checkout.
 

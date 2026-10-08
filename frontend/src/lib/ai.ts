@@ -145,7 +145,7 @@ export async function getPerfumeRecommendations(
       characters: prompt.length,
       inputTokens,
     });
-  } catch (err) {
+  } catch {
     console.warn("[AI] WARNING: Tokenizer failed, using fallback estimate.");
     console.log("[AI] Estimated tokens:", Math.ceil(prompt.length / 4));
   }
@@ -179,21 +179,27 @@ export async function getPerfumeRecommendations(
 
   console.log("[AI] Parsing OpenAI response...");
 
-  const parsed = JSON.parse(content);
-  const rankings = Array.isArray(parsed.rankings)
-    ? parsed.rankings
-    : Array.isArray(parsed)
+  const parsed: unknown = JSON.parse(content);
+  const rankings: unknown[] = Array.isArray(parsed)
     ? parsed
-    : [];
+    : parsed && typeof parsed === "object" && "rankings" in parsed && Array.isArray(parsed.rankings)
+      ? parsed.rankings
+      : [];
 
-  const normalizedRankings = rankings.map((item: any) => ({
-    id: Number(item.id) || 0,
-    matchPercentage: Math.max(
-      0,
-      Math.min(100, Number(item.matchPercentage) || 0)
-    ),
-    reasons: Array.isArray(item.reasons) ? item.reasons : [],
-  }));
+  const normalizedRankings = rankings.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const ranking = item as Record<string, unknown>;
+    return [{
+      id: Number(ranking.id) || 0,
+      matchPercentage: Math.max(
+        0,
+        Math.min(100, Number(ranking.matchPercentage) || 0)
+      ),
+      reasons: Array.isArray(ranking.reasons)
+        ? ranking.reasons.filter((reason): reason is string => typeof reason === "string")
+        : [],
+    }];
+  });
 
   return {
     rankings: normalizedRankings,

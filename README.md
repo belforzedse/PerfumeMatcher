@@ -1,4 +1,6 @@
 <p align="center">
+
+[راهنمای شروع فارسی](docs/development.fa.md) · [English quick start](docs/development.md) · [روش کار تیم](https://git.alpagency.net/alp/team/-/blob/main/docs/workflow.fa.md)
   <img src="docs/branding/logo.png" alt="Gandom Perfume" width="220">
 </p>
 
@@ -19,7 +21,7 @@ Use Node.js 22 and npm for the frontend, Python 3.12 or later for Django 6, and
 the committed frontend npm lockfile. The local setup does not require Docker.
 
 ```bash
-glab repo clone bel4/gandom-kiosk
+glab repo clone alp/gandom-kiosk
 cd gandom-kiosk
 node scripts/setup-dev-env.mjs
 npm --prefix frontend ci

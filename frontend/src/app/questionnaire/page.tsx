@@ -1,19 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toPersianNumbers } from "@/lib/locale";
 import { useRouter } from "next/navigation";
 import KioskFrame from "@/components/KioskFrame";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  serializeAnswers,
-  type QuestionnaireAnswers,
-} from "@/lib/questionnaire";
+import { serializeAnswers } from "@/lib/questionnaire";
 import { GENDER_CHOICES } from "@/lib/kiosk-options";
-import {
-  signatureTransitions,
-  useFadeScaleVariants,
-} from "@/lib/motion";
+import { signatureTransitions } from "@/lib/motion";
 import {
   createInitialFlowState,
   initializeFlow,
@@ -109,11 +103,22 @@ const MICRO_REWARDS = [
   "خیلی خوب",
 ];
 
+function updateResponses(state: FlowState, responses: UserResponses): FlowState {
+  return updateConfidence({ ...state, responses }, mapResponsesToAnswers(responses));
+}
+
+function isCurrentQuestion(state: FlowState, renderedState: FlowState): boolean {
+  return state.steps === renderedState.steps && state.currentStep === renderedState.currentStep;
+}
+
 export default function Questionnaire() {
   const router = useRouter();
   const isKiosk = useKioskMode();
-  const [flowState, setFlowState] = useState<FlowState>(createInitialFlowState());
-  const [answers, setAnswers] = useState<QuestionnaireAnswers | null>(null);
+  const [flowState, setFlowState] = useState<FlowState>(createInitialFlowState);
+  const answers = useMemo(
+    () => flowState.path ? mapResponsesToAnswers(flowState.responses) : null,
+    [flowState.path, flowState.responses],
+  );
   const [microReward, setMicroReward] = useState<string | null>(null);
   const questionSectionRef = useRef<HTMLElement | null>(null);
   const headingId = "questionnaire-heading";
@@ -122,18 +127,25 @@ export default function Questionnaire() {
   const currentStep = getCurrentStep(flowState);
   const progress = getProgress(flowState);
 
+  const committedFlowRef = useRef(flowState);
+  useLayoutEffect(() => {
+    committedFlowRef.current = flowState;
+  }, [flowState]);
+
+  const updateCurrentResponses = useCallback((update: (responses: UserResponses) => UserResponses) => {
+    // AnimatePresence retains outgoing children with their old event handlers.
+    if (!isCurrentQuestion(committedFlowRef.current, flowState)) return false;
+    setFlowState((previous) => isCurrentQuestion(previous, flowState)
+      ? updateResponses(previous, update(previous.responses))
+      : previous);
+    return true;
+  }, [flowState]);
+
   const sceneChoices = useMemo(() => getSceneChoices(), []);
   const vibePairs = useMemo(() => getVibePairs(), []);
   const intensityChoices = useMemo(() => getIntensityChoices(), []);
   const safetyChoices = useMemo(() => getSafetyChoices(), []);
   const genderChoices = useMemo(() => GENDER_CHOICES, []);
-
-  useEffect(() => {
-    if (answers) {
-      const updated = updateConfidence(flowState, answers);
-      setFlowState(updated);
-    }
-  }, [answers]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -170,12 +182,15 @@ export default function Questionnaire() {
       const qs = new URLSearchParams({ answers: serializeAnswers(answers) });
       router.push(`/recommendations?${qs.toString()}`);
     } else {
-      setFlowState((prev) => ({ ...prev, currentStep: nextStepIndex }));
+      setFlowState((prev) => isCurrentQuestion(prev, flowState)
+        ? { ...prev, currentStep: getNextStep(prev) ?? prev.currentStep }
+        : prev);
     }
   }, [flowState, answers, router]);
 
   // Auto-advance helper - uses current state via setFlowState callback
-  const autoAdvance = useCallback(() => {
+  const autoAdvance = useCallback((renderedState: FlowState) => {
+    if (!isCurrentQuestion(committedFlowRef.current, renderedState)) return;
     // Cancel any pending auto-advance
     if (autoAdvanceTimeoutRef.current) {
       clearTimeout(autoAdvanceTimeoutRef.current);
@@ -187,6 +202,7 @@ export default function Questionnaire() {
 
     autoAdvanceTimeoutRef.current = setTimeout(() => {
       setFlowState((prev) => {
+        if (!isCurrentQuestion(prev, renderedState)) return prev;
         // Don't auto-advance on review page, safety step (optional), or if can't proceed
         const currentStep = getCurrentStep(prev);
         if (currentStep?.type === "review" ||
@@ -194,174 +210,116 @@ export default function Questionnaire() {
             !canProceed(prev)) return prev;
 
         const nextStepIndex = getNextStep(prev);
-        if (nextStepIndex === null) {
-          // Get latest answers from state
-          const latestAnswers = mapResponsesToAnswers(prev.responses);
-          if (latestAnswers) {
-            const qs = new URLSearchParams({ answers: serializeAnswers(latestAnswers) });
-            router.push(`/recommendations?${qs.toString()}`);
-          }
-          return prev;
-        }
+        if (nextStepIndex === null) return prev;
         return { ...prev, currentStep: nextStepIndex };
       });
       autoAdvanceTimeoutRef.current = null;
     }, delay); // Delay to show feedback (longer in kiosk mode)
-  }, [router, isKiosk]);
+  }, [isKiosk]);
+
+  useEffect(() => () => {
+    if (autoAdvanceTimeoutRef.current) clearTimeout(autoAdvanceTimeoutRef.current);
+  }, []);
 
   const handlePathSelect = useCallback((path: QuestionPath) => {
-    const newState = initializeFlow(path);
-    setFlowState(newState);
+    if (!isCurrentQuestion(committedFlowRef.current, flowState)) return;
+    setFlowState((previous) => isCurrentQuestion(previous, flowState) ? initializeFlow(path) : previous);
     showMicroReward();
-  }, [showMicroReward]);
+  }, [flowState, showMicroReward]);
 
   const handleSceneToggle = useCallback(
     (sceneId: string) => {
-      setFlowState((prev) => {
-        const scenes = prev.responses.scenes.includes(sceneId)
-          ? prev.responses.scenes.filter((id) => id !== sceneId)
-          : [...prev.responses.scenes, sceneId].slice(0, 3);
-
-        const newResponses = { ...prev.responses, scenes };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-        showMicroReward();
-
-        const newState = { ...prev, responses: newResponses };
-
-        // Auto-advance if max selections reached (delay handled in autoAdvance)
-        if (scenes.length >= 3 && !prev.responses.scenes.includes(sceneId)) {
-          setTimeout(() => {
-            autoAdvance();
-          }, 100);
-        }
-
-        return newState;
-      });
+      const responses = committedFlowRef.current.responses;
+      const wasSelected = responses.scenes.includes(sceneId);
+      if (!updateCurrentResponses((previous) => ({
+        ...previous,
+        scenes: previous.scenes.includes(sceneId)
+          ? previous.scenes.filter((id) => id !== sceneId)
+          : [...previous.scenes, sceneId].slice(0, 3),
+      }))) return;
+      showMicroReward();
+      if (responses.scenes.length >= 2 && !wasSelected) {
+        setTimeout(() => autoAdvance(flowState), 100);
+      }
     },
-    [showMicroReward, autoAdvance]
+    [flowState, updateCurrentResponses, showMicroReward, autoAdvance]
   );
 
   const handleGenderSelect = useCallback(
     (gender: string) => {
-      setFlowState((prev) => {
-        const newResponses = { ...prev.responses, gender };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-        showMicroReward();
-
-        if (prev.responses.gender !== gender) {
-          setTimeout(() => {
-            autoAdvance();
-          }, 100);
-        }
-
-        return { ...prev, responses: newResponses };
-      });
+      const previousGender = committedFlowRef.current.responses.gender;
+      if (!updateCurrentResponses((previous) => ({ ...previous, gender }))) return;
+      showMicroReward();
+      if (previousGender !== gender) {
+        setTimeout(() => autoAdvance(flowState), 100);
+      }
     },
-    [showMicroReward, autoAdvance]
+    [flowState, updateCurrentResponses, showMicroReward, autoAdvance]
   );
 
   const handleSafetyToggle = useCallback(
     (safetyId: string) => {
-      setFlowState((prev) => {
-        const safetyChecks = prev.responses.safetyChecks.includes(safetyId)
-          ? prev.responses.safetyChecks.filter((id) => id !== safetyId)
-          : [...prev.responses.safetyChecks, safetyId];
-
-        const newResponses = { ...prev.responses, safetyChecks };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-
-        return { ...prev, responses: newResponses };
-      });
+      updateCurrentResponses((previous) => ({
+        ...previous,
+        safetyChecks: previous.safetyChecks.includes(safetyId)
+          ? previous.safetyChecks.filter((id) => id !== safetyId)
+          : [...previous.safetyChecks, safetyId],
+      }));
     },
-    []
+    [updateCurrentResponses]
   );
 
   const handleVibeSelect = useCallback(
     (choice: "left" | "right" | "none") => {
-      setFlowState((prev) => {
-        const pairwiseIndex = prev.steps
-          .slice(0, prev.currentStep + 1)
-          .filter((s) => s.type === "pairwise").length - 1;
+      const pairwiseIndex = flowState.steps
+        .slice(0, flowState.currentStep + 1)
+        .filter((step) => step.type === "pairwise").length - 1;
+      const vibePair = vibePairs[pairwiseIndex % vibePairs.length];
+      if (!vibePair) return;
 
-        const vibePair = vibePairs[pairwiseIndex % vibePairs.length];
-        if (!vibePair) return prev;
-
-        const newVibePairs = [...prev.responses.vibePairs];
-        if (choice === "none") {
-          newVibePairs[pairwiseIndex] = `${vibePair.id}:none`;
-        } else {
-          newVibePairs[pairwiseIndex] = `${vibePair.id}:${choice}`;
-        }
-
-        const newResponses = { ...prev.responses, vibePairs: newVibePairs };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-        showMicroReward();
-
-        const newState = { ...prev, responses: newResponses };
-
-        // Auto-advance after selection (unless "none") (delay handled in autoAdvance)
-        if (choice !== "none") {
-          setTimeout(() => {
-            autoAdvance();
-          }, 100);
-        }
-
-        return newState;
-      });
+      if (!updateCurrentResponses((previous) => {
+        const newVibePairs = [...previous.vibePairs];
+        newVibePairs[pairwiseIndex] = `${vibePair.id}:${choice}`;
+        return { ...previous, vibePairs: newVibePairs };
+      })) return;
+      showMicroReward();
+      if (choice !== "none") {
+        setTimeout(() => autoAdvance(flowState), 100);
+      }
     },
-    [vibePairs, showMicroReward, autoAdvance]
+    [flowState, vibePairs, updateCurrentResponses, showMicroReward, autoAdvance]
   );
 
   const handleIntensitySelect = useCallback(
     (intensityId: string) => {
-      setFlowState((prev) => {
-        const newResponses = { ...prev.responses, intensity: intensityId };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-        showMicroReward();
-
-        return { ...prev, responses: newResponses };
-      });
+      if (!updateCurrentResponses((previous) => ({ ...previous, intensity: intensityId }))) return;
+      showMicroReward();
     },
-    [showMicroReward]
+    [updateCurrentResponses, showMicroReward]
   );
 
   const handleQuickFireLike = useCallback(
     (noteId: string) => {
-      setFlowState((prev) => {
-        const likes = prev.responses.quickFireLikes.includes(noteId)
-          ? prev.responses.quickFireLikes.filter((id) => id !== noteId)
-          : [...prev.responses.quickFireLikes, noteId].slice(0, 3);
-
-        const newResponses = { ...prev.responses, quickFireLikes: likes };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-
-        return { ...prev, responses: newResponses };
-      });
+      updateCurrentResponses((previous) => ({
+        ...previous,
+        quickFireLikes: previous.quickFireLikes.includes(noteId)
+          ? previous.quickFireLikes.filter((id) => id !== noteId)
+          : [...previous.quickFireLikes, noteId].slice(0, 3),
+      }));
     },
-    []
+    [updateCurrentResponses]
   );
 
   const handleQuickFireDislike = useCallback(
     (noteId: string) => {
-      setFlowState((prev) => {
-        const dislikes = prev.responses.quickFireDislikes.includes(noteId)
-          ? prev.responses.quickFireDislikes.filter((id) => id !== noteId)
-          : [...prev.responses.quickFireDislikes, noteId].slice(0, 3);
-
-        const newResponses = { ...prev.responses, quickFireDislikes: dislikes };
-        const newAnswers = mapResponsesToAnswers(newResponses);
-        setAnswers(newAnswers);
-
-        return { ...prev, responses: newResponses };
-      });
+      updateCurrentResponses((previous) => ({
+        ...previous,
+        quickFireDislikes: previous.quickFireDislikes.includes(noteId)
+          ? previous.quickFireDislikes.filter((id) => id !== noteId)
+          : [...previous.quickFireDislikes, noteId].slice(0, 3),
+      }));
     },
-    []
+    [updateCurrentResponses]
   );
 
   const handleBack = useCallback(() => {
@@ -380,13 +338,18 @@ export default function Questionnaire() {
   }, []);
 
   const handleReset = useCallback(() => {
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
     setFlowState(createInitialFlowState());
-    setAnswers(null);
     setMicroReward(null);
   }, []);
 
   const handleEdit = useCallback((section: string) => {
+    if (!isCurrentQuestion(committedFlowRef.current, flowState)) return;
     setFlowState((prev) => {
+      if (!isCurrentQuestion(prev, flowState)) return prev;
       let targetStep = 0;
       switch (section) {
         case "scenes":
@@ -413,7 +376,7 @@ export default function Questionnaire() {
       }
       return prev;
     });
-  }, []);
+  }, [flowState]);
 
   const currentVibePairIndex = useMemo(
     () =>
