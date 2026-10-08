@@ -1,0 +1,42 @@
+stages: [validate]
+
+default:
+  tags: [alp]
+  interruptible: true
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - when: never
+
+frontend:validate:
+  stage: validate
+  image: node:22-bookworm
+  variables:
+    NEXT_TELEMETRY_DISABLED: "1"
+    NEXT_PUBLIC_BACKEND_BASE_URL: "http://localhost:8000"
+  before_script:
+    - cd frontend
+    - npm ci --no-audit --no-fund
+  script:
+    - npm run lint
+    - npx tsc --noEmit
+    - npm run test -- --run
+    - npm run build
+
+backend:validate:
+  stage: validate
+  image: python:3.12-bookworm
+  variables:
+    DEBUG: "True"
+    SECRET_KEY: "synthetic-ci-key-never-use-for-a-running-service"
+    ADMIN_ACCESS_KEY: "synthetic-ci-admin-key"
+    OPENAI_API_KEY: ""
+    ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+  before_script:
+    - cd backend
+    - python -m pip install -r requirements.txt
+  script:
+    - python manage.py check
+    - python manage.py test

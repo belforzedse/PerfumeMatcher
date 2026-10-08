@@ -238,3 +238,15 @@ backend/media/uploads/*
 frontend/public/uploads/*
 !frontend/public/uploads/.gitkeep
 
+
+# Local tools and generated captures
+.claude/settings.local.json
+/output/
+/outputs/
+/artifacts/
+**/test-results/
+**/playwright-report/
+!**/.env.example
+
+# Serialized local environment setup
+/.dev-env-setup.lock/
