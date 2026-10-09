@@ -1,0 +1,91 @@
+{
+  "name": "gandom-kiosk",
+  "nodeMajor": 22,
+  "nodeMinimum": "22.0.0",
+  "env": {
+    "backend/.env": {
+      "required": [
+        "SECRET_KEY",
+        "ADMIN_ACCESS_KEY"
+      ],
+      "localUrls": [
+        "CORS_ALLOWED_ORIGINS"
+      ],
+      "exact": {
+        "DEBUG": "True"
+      },
+      "empty": [
+        "OPENAI_API_KEY"
+      ],
+      "secrets": [
+        "SECRET_KEY"
+      ],
+      "localPaths": {
+        "SQLITE_PATH": "^(?:\\.data/)?[a-zA-Z0-9_-]+\\.sqlite3$"
+      }
+    },
+    "frontend/.env.local": {
+      "required": [],
+      "localUrls": [
+        "NEXT_PUBLIC_BACKEND_BASE_URL"
+      ],
+      "exact": {},
+      "empty": [
+        "OPENAI_API_KEY"
+      ],
+      "secrets": []
+    }
+  },
+  "tools": [
+    {
+      "command": "git",
+      "args": [
+        "--version"
+      ],
+      "label": "Git"
+    },
+    {
+      "command": "npm",
+      "args": [
+        "--version"
+      ],
+      "label": "npm"
+    },
+    {
+      "command": "python",
+      "args": [
+        "--version"
+      ],
+      "label": "Python",
+      "minimum": "3.12.0"
+    }
+  ],
+  "ports": [
+    {
+      "label": "API",
+      "port": 8000
+    },
+    {
+      "label": "Web",
+      "port": 3000
+    }
+  ],
+  "health": [
+    {
+      "label": "Perfume API",
+      "url": "http://localhost:8000/api/perfumes/"
+    }
+  ],
+  "matches": {
+    "Local admin key": [
+      [
+        "backend/.env",
+        "ADMIN_ACCESS_KEY"
+      ],
+      [
+        "frontend/.env.local",
+        "NEXT_PUBLIC_ADMIN_KEY"
+      ]
+    ]
+  }
+}
