@@ -188,3 +188,19 @@ validates changes rather than running that inherited release path.
 
 See the [repository workflow](gitlab-workflow.md), [contributing guide](../CONTRIBUTING.md)
 and [security policy](../SECURITY.md) for review expectations.
+
+## Local doctor
+
+From the repo root, before starting services:
+
+```bash
+node scripts/dev-doctor.mjs --before-start
+```
+
+After starting the services described in this guide:
+
+```bash
+node scripts/dev-doctor.mjs --running
+```
+
+The doctor reads the explicit local env files, validates local targets and tools, and checks ports. Before startup, required ports should be free. Running checks require the documented storage/API/web processes; optional apps are not included. Exit codes: `0` passed, `2` tools or configuration need attention, `3` a port or service does not match the selected state. It prints key names and versions, never secret values, and does not install packages, change configuration, start/stop services, follow redirects, or call providers. Follow the reported failed check, then rerun.

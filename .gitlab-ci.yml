@@ -66,3 +66,20 @@ team:docs:
         - .gitlab/merge_request_templates/**/*
         - scripts/check-team-docs.mjs
     - when: never
+
+# Verify local onboarding helpers without starting applications or external services.
+team:onboarding:
+  stage: .pre
+  image: docker.arvancloud.ir/library/node:22-bookworm
+  tags:
+  - alp
+  interruptible: true
+  timeout: 5m
+  before_script: []
+  services: []
+  cache: []
+  script:
+  - node --test scripts/dev-doctor.test.mjs
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  - when: never
