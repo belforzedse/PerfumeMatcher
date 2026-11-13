@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import StartQuestionnaireButton from "@/components/StartQuestionnaireButton";
 import KioskFrame from "@/components/KioskFrame";
@@ -80,6 +81,10 @@ export default function HomePage() {
               className="pointer-events-none absolute inset-0 -z-10 opacity-80 bg-[radial-gradient(1200px_circle_at_50%_0%,rgba(212,175,55,0.12),transparent_60%)]"
             />
           )}
+
+          <Link href="/en" lang="en" dir="ltr" className="self-end text-sm underline underline-offset-4">
+            English
+          </Link>
 
           {/* TOP: Logo */}
           <div className="relative flex items-center justify-center">

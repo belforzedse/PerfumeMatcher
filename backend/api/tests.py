@@ -1,5 +1,8 @@
-from django.test import TestCase
+from unittest.mock import patch
 
+from django.test import TestCase, override_settings
+
+from .models import Perfume
 from .serializers import QuestionnaireSerializer
 
 
@@ -27,3 +30,24 @@ class QuestionnaireSerializerTests(TestCase):
         serializer = QuestionnaireSerializer(data=payload)
         self.assertFalse(serializer.is_valid())
         self.assertIn("moods", serializer.errors)
+
+@override_settings(OPENAI_API_KEY="")
+class SampleCatalogTests(TestCase):
+    fixtures = ["sample_catalog"]
+
+    def test_english_kiosk_can_rank_the_sample_catalog_without_an_api_key(self):
+        with patch("matcher.vectorizer._engine_instance", None):
+            response = self.client.post(
+                "/api/recommend/rerank/?lang=en",
+                {"moments": ["evening"], "intensity": ["strong"], "noteLikes": ["spicy"]},
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["fallback"])
+        self.assertTrue(body["rankings"])
+        catalog_ids = set(Perfume.objects.values_list("pk", flat=True))
+        ranking_ids = [item["id"] for item in body["rankings"]]
+        self.assertEqual(len(ranking_ids), len(set(ranking_ids)))
+        self.assertTrue(set(ranking_ids) <= catalog_ids)
+        self.assertTrue(all(0 <= item["matchPercentage"] <= 100 for item in body["rankings"]))

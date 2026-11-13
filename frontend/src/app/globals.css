@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "rc-slider/assets/index.css";
 
 /* Peyda Font Face Declarations */
@@ -215,12 +215,7 @@
     box-sizing: border-box;
   }
 
-  * {
-    direction: rtl;
-  }
-
   html {
-    direction: rtl;
     scroll-behavior: smooth;
     min-height: 100%;
     min-height: 100dvh;

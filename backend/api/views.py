@@ -128,11 +128,11 @@ def recommend(request):
     return Response(result)
 
 
-def _build_compact_perfume_json(perfume: Perfume) -> Dict[str, Any]:
+def _build_compact_perfume_json(perfume: Perfume, english: bool = False) -> Dict[str, Any]:
     """Build compact JSON for OpenAI prompt."""
     return {
         "id": perfume.id,
-        "name": perfume.name_fa or perfume.name_en or perfume.name or "",
+        "name": (perfume.name_en if english else perfume.name_fa) or perfume.name or perfume.name_en or perfume.name_fa,
         "brand": perfume.brand or "",
         "gender": perfume.gender or "",
         "family": perfume.family or "",
@@ -141,7 +141,7 @@ def _build_compact_perfume_json(perfume: Perfume) -> Dict[str, Any]:
     }
 
 
-def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]]) -> str:
+def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]], language: str = "Persian") -> str:
     """Build prompt for OpenAI rerank."""
     user_prefs = {
         "gender": answers.get("gender"),
@@ -161,11 +161,11 @@ def _build_rerank_prompt(answers: Dict[str, Any], perfumes: List[Dict[str, Any]]
 Task: Return JSON with rankings array. Each ranking must have:
 - "id": perfume ID number
 - "matchPercentage": 0-100 score
-- "reasons": array of 1-2 SHORT phrases (max 5 words each) explaining the match in PERSIAN (Farsi)
+- "reasons": array of 1-2 SHORT phrases (max 5 words each) explaining the match in {language}
 
 IMPORTANT:
-- All reasons must be in PERSIAN (Farsi) language
-- Keep reasons concise. Examples: "مطابق با نت‌های مورد علاقه", "مناسب برای شب", "مطابق با شدت مورد نظر"
+- Write every reason in {language}
+- Keep each reason concise and ground it in the listed catalog notes and user preferences
 - Return ONLY valid JSON
 
 userPreferences: {json.dumps(user_prefs, ensure_ascii=False)}
@@ -190,6 +190,8 @@ def recommend_rerank(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     answers = serializer.validated_data
+    english = request.GET.get("lang") == "en"
+    language = "English" if english else "Persian"
     top_k = min(int(request.GET.get("k", 30)), 50)  # Cap at 50
     timeout_ms = int(request.GET.get("timeout", 90000))  # Default 90s to test if OpenAI can respond
     timeout_ms = min(timeout_ms, 120000)  # Cap at 120s max
@@ -216,7 +218,7 @@ def recommend_rerank(request):
 
     # Build compact JSON for OpenAI
     compact_perfumes = [
-        _build_compact_perfume_json(perfume_map[pid])
+        _build_compact_perfume_json(perfume_map[pid], english)
         for pid in candidate_ids
         if pid in perfume_map
     ]
@@ -282,7 +284,7 @@ def recommend_rerank(request):
             ),
             max_retries=0,  # Disable retries to avoid wasting tokens on retries
         )
-        prompt = _build_rerank_prompt(answers, compact_perfumes)
+        prompt = _build_rerank_prompt(answers, compact_perfumes, language)
         prompt_tokens_estimate = len(prompt.split()) * 1.3  # Rough estimate: ~1.3 tokens per word
         logger.info(f"Prompt length: {len(prompt)} chars, {len(compact_perfumes)} perfumes, ~{int(prompt_tokens_estimate)} tokens (estimate)")
 
@@ -292,7 +294,7 @@ def recommend_rerank(request):
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a perfume recommendation expert. Analyze user preferences and match them with perfumes. Return ONLY valid JSON. All reasons must be in PERSIAN (Farsi) language. Keep reasons SHORT (1-2 phrases, max 5 words each).",
+                    "content": f"You are a perfume recommendation expert. Analyze user preferences and match them with perfumes. Return ONLY valid JSON. All reasons must be in {language} language. Keep reasons SHORT (1-2 phrases, max 5 words each).",
                 },
                 {"role": "user", "content": prompt},
             ],

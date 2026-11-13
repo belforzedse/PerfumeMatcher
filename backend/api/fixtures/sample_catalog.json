@@ -1,0 +1,452 @@
+[
+  {
+    "model": "api.perfume",
+    "pk": 7001,
+    "fields": {
+      "name_en": "Bergamot Press",
+      "name": "Bergamot Press",
+      "brand": "Sample Catalog",
+      "family": "Citrus aromatic",
+      "gender": "unisex",
+      "strength": "soft",
+      "notes_top": [
+        "bergamot",
+        "lemon"
+      ],
+      "notes_middle": [
+        "green tea",
+        "basil"
+      ],
+      "notes_base": [
+        "cedar"
+      ],
+      "all_notes": [
+        "bergamot",
+        "lemon",
+        "green tea",
+        "basil",
+        "cedar"
+      ],
+      "occasions": [
+        "everyday",
+        "office"
+      ],
+      "main_accords": [
+        "citrus",
+        "green"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7002,
+    "fields": {
+      "name_en": "Cedar After Rain",
+      "name": "Cedar After Rain",
+      "brand": "Sample Catalog",
+      "family": "Green woods",
+      "gender": "unisex",
+      "strength": "moderate",
+      "notes_top": [
+        "juniper"
+      ],
+      "notes_middle": [
+        "vetiver",
+        "violet leaf"
+      ],
+      "notes_base": [
+        "cedar",
+        "musk"
+      ],
+      "all_notes": [
+        "juniper",
+        "vetiver",
+        "violet leaf",
+        "cedar",
+        "musk"
+      ],
+      "occasions": [
+        "everyday",
+        "outdoors"
+      ],
+      "main_accords": [
+        "woody",
+        "green"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7003,
+    "fields": {
+      "name_en": "Orris Linen",
+      "name": "Orris Linen",
+      "brand": "Sample Catalog",
+      "family": "Powdery floral",
+      "gender": "unisex",
+      "strength": "soft",
+      "notes_top": [
+        "violet"
+      ],
+      "notes_middle": [
+        "iris"
+      ],
+      "notes_base": [
+        "sandalwood",
+        "musk"
+      ],
+      "all_notes": [
+        "violet",
+        "iris",
+        "sandalwood",
+        "musk"
+      ],
+      "occasions": [
+        "office",
+        "everyday"
+      ],
+      "main_accords": [
+        "powdery",
+        "floral"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7004,
+    "fields": {
+      "name_en": "Saffron Room",
+      "name": "Saffron Room",
+      "brand": "Sample Catalog",
+      "family": "Spiced amber",
+      "gender": "unisex",
+      "strength": "strong",
+      "notes_top": [
+        "saffron"
+      ],
+      "notes_middle": [
+        "cardamom"
+      ],
+      "notes_base": [
+        "amber",
+        "vanilla"
+      ],
+      "all_notes": [
+        "saffron",
+        "cardamom",
+        "amber",
+        "vanilla"
+      ],
+      "occasions": [
+        "night_out",
+        "formal"
+      ],
+      "main_accords": [
+        "amber",
+        "spicy"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7005,
+    "fields": {
+      "name_en": "Breakwater",
+      "name": "Breakwater",
+      "brand": "Sample Catalog",
+      "family": "Marine citrus",
+      "gender": "unisex",
+      "strength": "moderate",
+      "notes_top": [
+        "grapefruit"
+      ],
+      "notes_middle": [
+        "sea salt"
+      ],
+      "notes_base": [
+        "vetiver"
+      ],
+      "all_notes": [
+        "grapefruit",
+        "sea salt",
+        "vetiver"
+      ],
+      "occasions": [
+        "outdoors",
+        "everyday"
+      ],
+      "main_accords": [
+        "aquatic",
+        "citrus"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7006,
+    "fields": {
+      "name_en": "Night Fig",
+      "name": "Night Fig",
+      "brand": "Sample Catalog",
+      "family": "Green amber",
+      "gender": "unisex",
+      "strength": "strong",
+      "notes_top": [
+        "fig"
+      ],
+      "notes_middle": [
+        "fig leaf"
+      ],
+      "notes_base": [
+        "amber",
+        "cedar"
+      ],
+      "all_notes": [
+        "fig",
+        "fig leaf",
+        "amber",
+        "cedar"
+      ],
+      "occasions": [
+        "night_out",
+        "date"
+      ],
+      "main_accords": [
+        "amber",
+        "green"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7007,
+    "fields": {
+      "name_en": "Silver Steam",
+      "name": "Silver Steam",
+      "brand": "Sample Catalog",
+      "family": "Tea floral",
+      "gender": "unisex",
+      "strength": "soft",
+      "notes_top": [
+        "lemon"
+      ],
+      "notes_middle": [
+        "jasmine",
+        "green tea"
+      ],
+      "notes_base": [
+        "musk"
+      ],
+      "all_notes": [
+        "lemon",
+        "jasmine",
+        "green tea",
+        "musk"
+      ],
+      "occasions": [
+        "office",
+        "everyday"
+      ],
+      "main_accords": [
+        "green",
+        "floral"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7008,
+    "fields": {
+      "name_en": "Vanilla Bark",
+      "name": "Vanilla Bark",
+      "brand": "Sample Catalog",
+      "family": "Woody gourmand",
+      "gender": "unisex",
+      "strength": "moderate",
+      "notes_top": [
+        "clove"
+      ],
+      "notes_middle": [
+        "oak"
+      ],
+      "notes_base": [
+        "vanilla",
+        "benzoin"
+      ],
+      "all_notes": [
+        "clove",
+        "oak",
+        "vanilla",
+        "benzoin"
+      ],
+      "occasions": [
+        "everyday",
+        "date"
+      ],
+      "main_accords": [
+        "sweet",
+        "woody"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7009,
+    "fields": {
+      "name_en": "Cold Tide",
+      "name": "Cold Tide",
+      "brand": "Sample Catalog",
+      "family": "Marine musk",
+      "gender": "unisex",
+      "strength": "soft",
+      "notes_top": [
+        "sea salt"
+      ],
+      "notes_middle": [
+        "sage"
+      ],
+      "notes_base": [
+        "musk"
+      ],
+      "all_notes": [
+        "sea salt",
+        "sage",
+        "musk"
+      ],
+      "occasions": [
+        "outdoors",
+        "office"
+      ],
+      "main_accords": [
+        "aquatic",
+        "musky"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7010,
+    "fields": {
+      "name_en": "Apricot Hour",
+      "name": "Apricot Hour",
+      "brand": "Sample Catalog",
+      "family": "Floral amber",
+      "gender": "unisex",
+      "strength": "moderate",
+      "notes_top": [
+        "apricot"
+      ],
+      "notes_middle": [
+        "osmanthus"
+      ],
+      "notes_base": [
+        "vanilla"
+      ],
+      "all_notes": [
+        "apricot",
+        "osmanthus",
+        "vanilla"
+      ],
+      "occasions": [
+        "date",
+        "everyday"
+      ],
+      "main_accords": [
+        "floral",
+        "sweet"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7011,
+    "fields": {
+      "name_en": "Pepper Orchard",
+      "name": "Pepper Orchard",
+      "brand": "Sample Catalog",
+      "family": "Citrus spice",
+      "gender": "unisex",
+      "strength": "strong",
+      "notes_top": [
+        "bitter orange"
+      ],
+      "notes_middle": [
+        "black pepper"
+      ],
+      "notes_base": [
+        "cedar"
+      ],
+      "all_notes": [
+        "bitter orange",
+        "black pepper",
+        "cedar"
+      ],
+      "occasions": [
+        "night_out",
+        "outdoors"
+      ],
+      "main_accords": [
+        "citrus",
+        "spicy"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.perfume",
+    "pk": 7012,
+    "fields": {
+      "name_en": "Tea Cabinet",
+      "name": "Tea Cabinet",
+      "brand": "Sample Catalog",
+      "family": "Tea woods",
+      "gender": "unisex",
+      "strength": "moderate",
+      "notes_top": [
+        "black tea"
+      ],
+      "notes_middle": [
+        "cinnamon"
+      ],
+      "notes_base": [
+        "cedar"
+      ],
+      "all_notes": [
+        "black tea",
+        "cinnamon",
+        "cedar"
+      ],
+      "occasions": [
+        "office",
+        "formal"
+      ],
+      "main_accords": [
+        "woody",
+        "spicy"
+      ],
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+]
