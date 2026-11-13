@@ -67,18 +67,20 @@ function toRankedPerfume(perfumeData: BackendPerfumeData, matchPercentage: numbe
 }
 
 export async function POST(request: Request) {
+  const english = new URL(request.url).searchParams.get("lang") === "en";
+  const rerankEndpoint = english ? `${RERANK_ENDPOINT}?lang=en` : RERANK_ENDPOINT;
   let answers: QuestionnaireAnswers;
   try {
     answers = (await request.json()) as QuestionnaireAnswers;
   } catch {
-    return NextResponse.json({ error: "بدنه درخواست نامعتبر است." }, { status: 400 });
+    return NextResponse.json({ error: english ? "Invalid request body." : "بدنه درخواست نامعتبر است." }, { status: 400 });
   }
 
   try {
     // First: ask backend for rerank results (fast payload).
     const rerankController = new AbortController();
     const rerankTimeoutId = setTimeout(() => rerankController.abort(), 120_000);
-    const rerankRes = await fetch(RERANK_ENDPOINT, {
+    const rerankRes = await fetch(rerankEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(answers),
@@ -132,7 +134,7 @@ export async function POST(request: Request) {
       console.error("[/api/recommendations] rerank failed:", rerankError);
       console.error("[/api/recommendations] baseline failed:", baselineError);
       return NextResponse.json(
-        { error: "در دریافت پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید." },
+        { error: english ? "Recommendations are temporarily unavailable." : "در دریافت پیشنهادها خطایی رخ داد. لطفاً دوباره تلاش کنید." },
         { status: 502 },
       );
     }
