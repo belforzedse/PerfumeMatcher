@@ -1662,3 +1662,49 @@ input.slider-thumb-accent::-moz-range-track {
 }
 
 }
+
+.trait-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.trait-slider:focus {
+  outline: none;
+}
+
+.trait-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #2f2f2f;
+}
+
+.trait-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: none;
+  margin-top: -6px; /* مهم: دایره را دقیق وسط ترک می‌آورد */
+  cursor: pointer;
+}
+
+.trait-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #2f2f2f;
+}
+
+.trait-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: none;
+  cursor: pointer;
+}

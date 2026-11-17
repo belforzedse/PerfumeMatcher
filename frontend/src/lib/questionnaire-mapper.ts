@@ -31,9 +31,31 @@ export interface SafetyChoice {
   weight: number;
 }
 
+export type ScentTraitId =
+  | "sweetness"
+  | "freshness"
+  | "warmth"
+  | "bitterness"
+  | "powdery"
+  | "woody";
+
+export type ScentTraits = Partial<Record<ScentTraitId, number>>;
+
+export type FavoriteReason =
+  | "overall"
+  | "sweetness"
+  | "freshness"
+  | "warmth"
+  | "woody"
+  | "projection"
+  | "longevity";
+
+
+
 export interface UserResponses {
   scenes: string[];
   vibePairs: string[];
+  scentTraits: ScentTraits;
   intensity?: string;
   safetyChecks: string[];
   quickFireLikes: string[];
@@ -161,45 +183,73 @@ const INTENSITY_MAPPINGS: Record<string, IntensityChoice> = {
 };
 
 const SAFETY_MAPPINGS: Record<string, SafetyChoice> = {
-  "too-sweet": {
-    id: "too-sweet",
-    label: "خیلی شیرین",
-    noteDislikes: ["sweet", "gourmand"],
+  "sweet-vanilla": {
+    id: "sweet-vanilla",
+    label: "وانیل",
+    noteDislikes: ["وانیل"],
     weight: 2,
   },
-  "too-smoky-leathery": {
-    id: "too-smoky-leathery",
-    label: "خیلی دودی یا چرمی",
-    noteDislikes: ["woody", "leather", "tobacco"],
+
+  oud: {
+    id: "oud",
+    label: "عود",
+    noteDislikes: ["عود"],
     weight: 2,
   },
-  "too-floral": {
-    id: "too-floral",
-    label: "خیلی گلی",
-    noteDislikes: ["floral"],
-    weight: 1.5,
+
+  leather: {
+    id: "leather",
+    label: "چرم",
+    noteDislikes: ["چرم"],
+    weight: 2,
   },
-  "too-spicy": {
-    id: "too-spicy",
-    label: "خیلی تند",
-    noteDislikes: ["spicy"],
-    weight: 1.5,
+
+  patchouli: {
+    id: "patchouli",
+    label: "نعناع هندی",
+    noteDislikes: ["نعناع هندی", "پاتچولی"],
+    weight: 2,
   },
-  "headaches-strong": {
-    id: "headaches-strong",
-    label: "سردرد از بوی قوی",
-    noteDislikes: [],
-    weight: 1,
+
+  "white-floral": {
+    id: "white-floral",
+    label: "گل‌های سفید",
+    noteDislikes: [
+      "یاس",
+      "یاسمن",
+      "مریم",
+      "گاردنیا",
+      "بهار نارنج"
+    ],
+    weight: 2,
   },
+
+  "sharp-citrus": {
+    id: "sharp-citrus",
+    label: "مرکبات",
+    noteDislikes: ["ترنج", "گریپ فروت", "لیمو"],
+    weight: 2,
+   },
+
+   musk: {
+    id: "musk",
+    label: "مشک",
+    noteDislikes: ["مشک"],
+    weight: 2,
+    },
+
+
   none: {
     id: "none",
-    label: "هیچ‌کدام",
+    label: "نمی‌دانم",
     noteDislikes: [],
     weight: 0,
   },
 };
 
-export function mapResponsesToAnswers(responses: UserResponses): QuestionnaireAnswers {
+export function mapResponsesToAnswers(
+  responses: UserResponses
+): QuestionnaireAnswers {
   const answers: QuestionnaireAnswers = {
     gender: responses.gender ?? null,
     moods: [],
@@ -209,13 +259,17 @@ export function mapResponsesToAnswers(responses: UserResponses): QuestionnaireAn
     styles: [],
     noteLikes: [],
     noteDislikes: [],
+    scentTraits: responses.scentTraits ?? {},
+
   };
 
   const moodSet = new Set<string>();
   const momentSet = new Set<string>();
 
+  // Process selected scenes
   responses.scenes.forEach((sceneId) => {
     const scene = SCENE_MAPPINGS[sceneId];
+
     if (scene) {
       scene.moods.forEach((mood) => moodSet.add(mood));
       scene.moments.forEach((moment) => momentSet.add(moment));
@@ -225,48 +279,62 @@ export function mapResponsesToAnswers(responses: UserResponses): QuestionnaireAn
   answers.moods = Array.from(moodSet).slice(0, 2);
   answers.moments = Array.from(momentSet).slice(0, 3);
 
+  // Determine preferred time
   if (responses.times) {
     answers.times = [responses.times];
+  } else if (answers.moments.includes("evening")) {
+    answers.times = ["night"];
+  } else if (
+    answers.moments.includes("daily") ||
+    answers.moments.includes("outdoor")
+  ) {
+    answers.times = ["day"];
   } else {
-    if (answers.moments.includes("evening")) {
-      answers.times = ["night"];
-    } else if (answers.moments.includes("daily") || answers.moments.includes("outdoor")) {
-      answers.times = ["day"];
-    } else {
-      answers.times = ["anytime"];
-    }
+    answers.times = ["anytime"];
   }
 
+  // Determine preferred intensity
   if (responses.intensity) {
-    const intensityMapping = INTENSITY_MAPPINGS[responses.intensity];
+    const intensityMapping =
+      INTENSITY_MAPPINGS[responses.intensity];
+
     if (intensityMapping) {
       answers.intensity = [intensityMapping.value];
     }
   }
 
+  // Keep compatibility with existing style logic
   const styleSet = new Set<string>();
+
   responses.vibePairs.forEach((vibeEntry) => {
     if (!vibeEntry) return;
+
     const [vibeId, choice] = vibeEntry.split(":");
+
     if (choice === "none") return;
+
     const vibe = VIBE_PAIR_MAPPINGS[vibeId];
+
     if (vibe) {
       vibe.styles.forEach((style) => styleSet.add(style));
     }
   });
 
   if (styleSet.size > 0) {
-    const styleArray = Array.from(styleSet);
-    answers.styles = [styleArray[0]];
+    answers.styles = [Array.from(styleSet)[0]];
   } else {
     answers.styles = ["unisex"];
   }
 
-  answers.noteLikes = responses.quickFireLikes.slice(0, 3);
+  // Process liked notes
+  answers.noteLikes = responses.quickFireLikes.slice(0, 5);
 
+  // Process disliked notes
   const dislikeMap = new Map<string, number>();
+
   responses.safetyChecks.forEach((safetyId) => {
     const safety = SAFETY_MAPPINGS[safetyId];
+
     if (safety && safety.noteDislikes.length > 0) {
       safety.noteDislikes.forEach((note) => {
         const current = dislikeMap.get(note) || 0;
@@ -282,7 +350,7 @@ export function mapResponsesToAnswers(responses: UserResponses): QuestionnaireAn
 
   const sortedDislikes = Array.from(dislikeMap.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 12)
     .map(([note]) => note);
 
   answers.noteDislikes = sortedDislikes;

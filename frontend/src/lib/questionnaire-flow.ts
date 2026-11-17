@@ -30,40 +30,47 @@ export interface FlowState {
 }
 
 const QUICK_STEPS: QuestionStep[] = [
+
   {
     type: "path-selection",
     id: "path",
     title: "راه خود را انتخاب کنید",
     description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
   },
+
   {
     type: "gender",
     id: "gender",
     title: "جنسیت شما چیست؟",
     description: "این انتخاب نتایج را به‌صورت قطعی فیلتر می‌کند.",
   },
+
   {
     type: "scene-cards",
     id: "scenes-1",
     title: "کدام صحنه بیشتر با شما هماهنگ است؟",
-    description: "حداکثر ۳ مورد را انتخاب کنید.",
+    description: "حداکثر ۵ مورد را انتخاب کنید.",
   },
+
   {
     type: "safety-step",
     id: "safety",
     title: "چیزی هست که اصلاً نمی‌پسندید؟",
     description: "اختیاری — برای اینکه پیشنهادها از موارد نامطلوب دور بمانند.",
   },
+
   {
     type: "pairwise",
     id: "vibe-1",
     title: "کدام را ترجیح می‌دهید؟",
   },
+
   {
     type: "intensity",
     id: "intensity",
     title: "چقدر دوست دارید عطرتان جلب توجه کند؟",
   },
+
   {
     type: "review",
     id: "review",
@@ -73,60 +80,67 @@ const QUICK_STEPS: QuestionStep[] = [
 ];
 
 const DEEP_STEPS: QuestionStep[] = [
+
+
   {
     type: "path-selection",
     id: "path",
     title: "راه خود را انتخاب کنید",
     description: "می‌خواهید سریع پیش بروید یا عمیق‌تر ادامه دهیم؟",
   },
+
   {
     type: "gender",
     id: "gender",
     title: "جنسیت شما چیست؟",
     description: "این انتخاب نتایج را به‌صورت قطعی فیلتر می‌کند.",
   },
+
   {
     type: "scene-cards",
     id: "scenes-1",
     title: "کدام صحنه بیشتر با شما هماهنگ است؟",
     description: "حداکثر ۳ مورد را انتخاب کنید.",
   },
+
   {
     type: "safety-step",
     id: "safety",
     title: "چیزی هست که اصلاً نمی‌پسندید؟",
     description: "اختیاری — برای اینکه پیشنهادها از موارد نامطلوب دور بمانند.",
   },
+
   {
-    type: "pairwise",
-    id: "vibe-1",
-    title: "کدام را ترجیح می‌دهید؟",
+  type: "pairwise",
+  id: "vibe-1",
+  title: "دوست دارید عطرتان چه ویژگی‌هایی داشته باشد؟",
+  description: "میزان علاقه خود را به شیرینی، تازگی، گرمی، تلخی، پودری‌بودن و چوبی‌بودن مشخص کنید.",
   },
-  {
-    type: "pairwise",
-    id: "vibe-2",
-    title: "و این یکی چطور؟",
-  },
+
   {
     type: "intensity",
     id: "intensity",
     title: "چقدر دوست دارید عطرتان جلب توجه کند؟",
   },
+
   {
     type: "quick-fire-notes",
     id: "notes",
     title: "رایحه‌های آشنا",
     description: "سریع بگویید: دوست دارید یا نه؟",
   },
+
   {
-    type: "review",
-    id: "review",
-    title: "بازبینی پاسخ‌ها",
-    description: "آیا این موارد درست است؟",
-  },
+  type: "review",
+  id: "review",
+  title: "بازبینی پاسخ‌ها",
+  description: "پاسخ‌های خود را بررسی کنید.",
+},
+
 ];
 
 export function createInitialFlowState(): FlowState {
+
   return {
     path: null,
     currentStep: 0,
@@ -141,6 +155,7 @@ export function createInitialFlowState(): FlowState {
     responses: {
       scenes: [],
       vibePairs: [],
+      scentTraits: {},
       safetyChecks: [],
       quickFireLikes: [],
       quickFireDislikes: [],
@@ -154,6 +169,7 @@ export function createInitialFlowState(): FlowState {
 export function initializeFlow(path: QuestionPath): FlowState {
   const baseSteps = path === "quick" ? QUICK_STEPS : DEEP_STEPS;
   const steps = baseSteps.slice(1);
+
   return {
     path,
     currentStep: 0,
@@ -161,6 +177,7 @@ export function initializeFlow(path: QuestionPath): FlowState {
     responses: {
       scenes: [],
       vibePairs: [],
+      scentTraits: {},
       safetyChecks: [],
       quickFireLikes: [],
       quickFireDislikes: [],
@@ -192,12 +209,31 @@ export function canProceed(state: FlowState): boolean {
     case "safety-step":
       return true;
     case "pairwise": {
+      if (step.id === "vibe-1") {
+        const traits = state.responses.scentTraits ?? {};
+
+        return Object.values(traits).some(
+          (value) =>
+            typeof value === "number" &&
+            Number.isInteger(value) &&
+            value >= 1 &&
+            value <= 5
+        );
+      }
+
       const pairwiseIndex = state.steps
         .slice(0, state.currentStep + 1)
         .filter((s) => s.type === "pairwise").length - 1;
-      const hasSelection = state.responses.vibePairs.length > pairwiseIndex;
-      return hasSelection && state.responses.vibePairs[pairwiseIndex] !== undefined;
-    }
+
+      return state.responses.vibePairs[pairwiseIndex] !== undefined;
+      }
+
+ const pairwiseIndex = state.steps
+   .slice(0, state.currentStep + 1)
+   .filter((s) => s.type === "pairwise").length - 1;
+
+ return state.responses.vibePairs[pairwiseIndex] !== undefined;
+
     case "intensity":
       return state.responses.intensity !== undefined;
     case "quick-fire-notes":

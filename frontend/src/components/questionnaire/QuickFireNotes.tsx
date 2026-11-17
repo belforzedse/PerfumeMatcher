@@ -50,7 +50,7 @@ export default function QuickFireNotes({
   onToggleLike,
   onToggleDislike,
 }: QuickFireNotesProps) {
-  const notes = useMemo(() => NOTE_CHOICES.slice(0, 12), []);
+  const notes = useMemo(() => NOTE_CHOICES, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const isKiosk = useKioskMode();
 
@@ -255,12 +255,12 @@ export default function QuickFireNotes({
 
             <div
               className={cn(
-                "mt-4 grid min-h-0 flex-1",
+                "mt-4 grid min-h-0 flex-1 content-start overflow-y-auto auto-rows-[minmax(75px,auto)]",
                 !isKiosk &&
                   "grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2.5 md:grid-cols-6",
                 // ✅ kiosk: fewer per row (3) BUT make rows tall so tiles are bigger
                 isKiosk &&
-                  "grid-cols-3 grid-rows-[repeat(4,minmax(120px,1fr))] gap-5"
+                  "grid-cols-3 auto-rows-[minmax(110px,1fr)] gap-3"
               )}
             >
               {availableNotes.map((note) => (

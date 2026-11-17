@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toPersianNumbers } from "@/lib/locale";
 import { useRouter } from "next/navigation";
@@ -27,7 +26,9 @@ import {
   getIntensityChoices,
   getSafetyChoices,
   type UserResponses,
+  type ScentTraitId,
 } from "@/lib/questionnaire-mapper";
+import ScentTraitsStep from "@/components/questionnaire/ScentTraitsStep";
 import { useKioskMode } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import PathSelector from "@/components/questionnaire/PathSelector";
@@ -188,6 +189,7 @@ export default function Questionnaire() {
     }
   }, [flowState, answers, router]);
 
+
   // Auto-advance helper - uses current state via setFlowState callback
   const autoAdvance = useCallback((renderedState: FlowState) => {
     if (!isCurrentQuestion(committedFlowRef.current, renderedState)) return;
@@ -196,6 +198,25 @@ export default function Questionnaire() {
       clearTimeout(autoAdvanceTimeoutRef.current);
       autoAdvanceTimeoutRef.current = null;
     }
+setFlowState((prev) => {
+  const step = prev.steps[prev.currentStep];
+
+  if (
+    !step ||
+    step.type === "review" ||
+    step.type === "safety-step" ||
+    !canProceed(prev)
+  ) {
+    return prev;
+  }
+
+  return {
+    ...prev,
+    currentStep: prev.currentStep + 1,
+  };
+});
+
+
 
     // Longer delay in kiosk mode for better UX
     const delay = isKiosk ? 2200 : 1200;
@@ -205,9 +226,6 @@ export default function Questionnaire() {
         if (!isCurrentQuestion(prev, renderedState)) return prev;
         // Don't auto-advance on review page, safety step (optional), or if can't proceed
         const currentStep = getCurrentStep(prev);
-        if (currentStep?.type === "review" ||
-            currentStep?.type === "safety-step" ||
-            !canProceed(prev)) return prev;
 
         const nextStepIndex = getNextStep(prev);
         if (nextStepIndex === null) return prev;
@@ -227,6 +245,7 @@ export default function Questionnaire() {
     showMicroReward();
   }, [flowState, showMicroReward]);
 
+
   const handleSceneToggle = useCallback(
     (sceneId: string) => {
       const responses = committedFlowRef.current.responses;
@@ -235,12 +254,10 @@ export default function Questionnaire() {
         ...previous,
         scenes: previous.scenes.includes(sceneId)
           ? previous.scenes.filter((id) => id !== sceneId)
-          : [...previous.scenes, sceneId].slice(0, 3),
+          : [...previous.scenes, sceneId].slice(0, 5),
       }))) return;
       showMicroReward();
-      if (responses.scenes.length >= 2 && !wasSelected) {
-        setTimeout(() => autoAdvance(flowState), 100);
-      }
+
     },
     [flowState, updateCurrentResponses, showMicroReward, autoAdvance]
   );
@@ -289,6 +306,18 @@ export default function Questionnaire() {
     },
     [flowState, vibePairs, updateCurrentResponses, showMicroReward, autoAdvance]
   );
+  const handleScentTraitChange = useCallback(
+   (trait: ScentTraitId, value: number) => {
+     updateCurrentResponses((previous) => ({
+       ...previous,
+      scentTraits: {
+         ...(previous.scentTraits ?? {}),
+         [trait]: value,
+       },
+     }));
+   },
+   [updateCurrentResponses]
+   );
 
   const handleIntensitySelect = useCallback(
     (intensityId: string) => {
@@ -304,7 +333,7 @@ export default function Questionnaire() {
         ...previous,
         quickFireLikes: previous.quickFireLikes.includes(noteId)
           ? previous.quickFireLikes.filter((id) => id !== noteId)
-          : [...previous.quickFireLikes, noteId].slice(0, 3),
+          : [...previous.quickFireLikes, noteId].slice(0, 5),
       }));
     },
     [updateCurrentResponses]
@@ -316,7 +345,7 @@ export default function Questionnaire() {
         ...previous,
         quickFireDislikes: previous.quickFireDislikes.includes(noteId)
           ? previous.quickFireDislikes.filter((id) => id !== noteId)
-          : [...previous.quickFireDislikes, noteId].slice(0, 3),
+          : [...previous.quickFireDislikes, noteId].slice(0, 5),
       }));
     },
     [updateCurrentResponses]
@@ -547,7 +576,7 @@ export default function Questionnaire() {
                   <SceneCard
                     scenes={sceneChoices}
                     selected={flowState.responses.scenes}
-                    maxSelections={3}
+                    maxSelections={5}
                     onToggle={handleSceneToggle}
                   />
                 )}
@@ -560,12 +589,10 @@ export default function Questionnaire() {
                   />
                 )}
 
-                {currentStep.type === "pairwise" && currentVibePair && (
-                  <PairwiseChoice
-                    pair={currentVibePair}
-                    selected={selectedVibeChoice}
-                    onSelect={handleVibeSelect}
-                    showNotSure={true}
+                {currentStep.type === "pairwise" && currentStep.id === "vibe-1" && (
+                  <ScentTraitsStep
+                    values={flowState.responses.scentTraits ?? {}}
+                    onChange={handleScentTraitChange}
                   />
                 )}
 
@@ -576,24 +603,24 @@ export default function Questionnaire() {
                     onSelect={handleIntensitySelect}
                   />
                 )}
-
                 {currentStep.type === "quick-fire-notes" && shouldShowQuickFire(flowState) && (
                   <QuickFireNotes
                     selectedLikes={flowState.responses.quickFireLikes}
                     selectedDislikes={flowState.responses.quickFireDislikes}
-                    maxSelections={3}
+                    maxSelections={5}
                     onToggleLike={handleQuickFireLike}
                     onToggleDislike={handleQuickFireDislike}
                   />
                 )}
-
                 {currentStep.type === "review" && answers && (
-                  <ReviewScreen
-                    responses={flowState.responses}
-                    answers={answers}
-                    onEdit={handleEdit}
+                 <ReviewScreen
+                  responses={flowState.responses}
+                  answers={answers}
+                  onEdit={handleEdit}
                   />
                 )}
+
+
               </motion.section>
             </motion.div>
           </AnimatePresence>
@@ -727,7 +754,7 @@ export default function Questionnaire() {
                 onClick={handleNext}
                 disabled={!canProceedNow}
                 aria-label={
-                  currentStep.type === "review"
+                  currentStep.type === "quick-fire-notes"
                     ? "مشاهده پیشنهادها"
                     : "مرحله بعدی"
                 }
@@ -778,8 +805,7 @@ export default function Questionnaire() {
                   />
                 </svg>
                 <span>
-                  {currentStep.type === "review" ? "مشاهده پیشنهادها" : "مرحله بعدی"}
-                </span>
+مرحله بعدی                </span>
               </button>
             </div>
           </div>
