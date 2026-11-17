@@ -75,9 +75,13 @@ it("ignores outgoing scene and vibe interactions without changing review answers
   fireEvent.click(outgoing().getByRole("button", { name: /شب در مهمانی/ }));
   expect(current().getByRole("heading", { name: "چیزی هست که اصلاً نمی‌پسندید؟" })).toBeInTheDocument();
   next();
-  fireEvent.click(current().getAllByRole("button", { name: /ترجیح نمی‌دهم/ })[0]);
+fireEvent.change(current().getByRole("slider", { name: "شیرینی" }), {
+  target: { value: "4" },
+});
   next();
-  fireEvent.click(outgoing().getByRole("button", { name: new RegExp(getVibePairs()[0].left.label) }));
+fireEvent.change(outgoing().getByRole("slider", { name: "شیرینی" }), {
+  target: { value: "1" },
+});
   expect(current().getByRole("heading", { name: "چقدر دوست دارید عطرتان جلب توجه کند؟" })).toBeInTheDocument();
   fireEvent.click(current().getByRole("button", { name: /قابل توجه/ }));
   next();
@@ -117,7 +121,13 @@ it("keeps quick-path review and submitted answers current after edits under Stri
   next();
   expect(screen.getByRole("heading", { name: "چیزی هست که اصلاً نمی‌پسندید؟" })).toBeInTheDocument();
   next();
-  fireEvent.click(screen.getAllByRole("button", { name: /ترجیح نمی‌دهم/ })[0]);
+  console.log(
+  "CURRENT STEP:",
+  screen.getAllByRole("heading").map((h) => h.textContent)
+);
+fireEvent.change(screen.getByRole("slider", { name: "شیرینی" }), {
+  target: { value: "4" },
+});
   next();
   fireEvent.click(screen.getByRole("button", { name: /قابل توجه/ }));
   next();

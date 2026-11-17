@@ -754,7 +754,8 @@ setFlowState((prev) => {
                 onClick={handleNext}
                 disabled={!canProceedNow}
                 aria-label={
-                  currentStep.type === "quick-fire-notes"
+                  currentStep.type === "review" ||
+                    currentStep.type === "quick-fire-notes"
                     ? "مشاهده پیشنهادها"
                     : "مرحله بعدی"
                 }
@@ -805,7 +806,11 @@ setFlowState((prev) => {
                   />
                 </svg>
                 <span>
-مرحله بعدی                </span>
+  {currentStep.type === "review" ||
+  currentStep.type === "quick-fire-notes"
+    ? "مشاهده پیشنهادها"
+    : "مرحله بعدی"}
+</span>
               </button>
             </div>
           </div>
