@@ -44,7 +44,7 @@ backend:validate:
     ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
   before_script:
     - cd backend
-    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements.txt -c constraints.txt
   script:
     - python manage.py check
     - python manage.py test
