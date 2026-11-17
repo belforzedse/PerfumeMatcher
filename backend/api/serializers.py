@@ -43,8 +43,41 @@ NOTE_CHOICES = [
     "powdery",
     "tobacco",
     "leather",
+    "vanilla",
+    "white-floral",
+    "soapy",
+]
+SPECIFIC_DISLIKED_NOTES = [
+    "وانیل",
+    "عود",
+    "چرم",
+    "نعناع هندی",
+    "پاتچولی",
+    "پچولی",
+    "یاس",
+    "یاسمن",
+    "مریم",
+    "گاردنیا",
+    "بهار نارنج",
+    "بهارنارنج",
+    "ترنج",
+    "گریپ فروت",
+    "لیمو",
+    "مشک",
 ]
 
+NOTE_CHOICES = list(
+    dict.fromkeys(NOTE_CHOICES + SPECIFIC_DISLIKED_NOTES)
+)
+
+SCENT_TRAIT_IDS = (
+    "sweetness",
+    "freshness",
+    "warmth",
+    "bitterness",
+    "powdery",
+    "woody",
+)
 # Legacy fields kept for backward compatibility with older clients
 LEGACY_CONTEXT_CHOICES = [
     "office",
@@ -117,6 +150,78 @@ class QuestionnaireSerializer(serializers.Serializer):
         required=False,
         default=list,
     )
+    scentTraits = serializers.DictField(
+        child=serializers.IntegerField(
+            min_value=1,
+            max_value=5,
+        ),
+        required=False,
+        default=dict,
+    )
+    maxBudgetToman = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=1_000_000_000,
+        default=None,
+    )
+
+    def validate_scentTraits(self, values):
+        unexpected = set(values) - set(SCENT_TRAIT_IDS)
+
+        if unexpected:
+            raise serializers.ValidationError(
+                f"Unsupported scent traits: "
+                f"{', '.join(sorted(unexpected))}"
+            )
+
+        return values
+
+
+    def validate_favoritePerfumes(self, value):
+        allowed_reasons = {
+            "overall",
+            "sweetness",
+            "freshness",
+            "warmth",
+            "woody",
+            "projection",
+            "longevity",
+        }
+
+        cleaned = []
+        seen_ids = set()
+
+        for item in value:
+            perfume_id = str(item.get("id", "")).strip()
+            name = str(item.get("name", "")).strip()
+            reasons = item.get("likedFeatures", [])
+
+            if (
+                not perfume_id.isdigit()
+                or not name
+                or not isinstance(reasons, list)
+                or any(
+                    not isinstance(reason, str)
+                    or reason not in allowed_reasons
+                    for reason in reasons
+                )
+            ):
+                raise serializers.ValidationError(
+                    "Invalid favorite perfume data."
+                )
+
+            if perfume_id in seen_ids:
+                continue
+
+            seen_ids.add(perfume_id)
+            cleaned.append({
+                "id": perfume_id,
+                "name": name[:200],
+                "likedFeatures": list(dict.fromkeys(reasons)),
+            })
+
+        return cleaned
 
     # Legacy fields (optional, ignored by new frontend)
     contexts = serializers.ListField(
@@ -188,75 +293,75 @@ class PerfumeSerializer(serializers.ModelSerializer):
             "middle": obj.notes_middle or [],
             "base": obj.notes_base or [],
         }
-    
+
     def validate_notes_field(self, notes: list) -> list:
         """Validate notes against predefined list."""
         if not isinstance(notes, list):
             raise serializers.ValidationError("Notes must be a list")
-        
+
         if not notes:
             return []
-        
+
         valid_notes, invalid_notes = validate_notes(notes)
-        
+
         # Log invalid notes but don't fail - just return valid ones
         # This allows Persian notes that aren't in the predefined list
         if invalid_notes:
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Some notes not in predefined list (will be skipped): {', '.join(invalid_notes)}")
-        
+
         return valid_notes
-    
+
     def validate_notes_top(self, value):
         if value is None:
             return []
         if not isinstance(value, list):
             return []
         return self.validate_notes_field(value) if value else []
-    
+
     def validate_notes_middle(self, value):
         if value is None:
             return []
         if not isinstance(value, list):
             return []
         return self.validate_notes_field(value) if value else []
-    
+
     def validate_notes_base(self, value):
         if value is None:
             return []
         if not isinstance(value, list):
             return []
         return self.validate_notes_field(value) if value else []
-    
+
     def create(self, validated_data):
         # Extract notes fields if provided
         notes_top = validated_data.pop("notes_top", [])
         notes_middle = validated_data.pop("notes_middle", [])
         notes_base = validated_data.pop("notes_base", [])
-        
+
         perfume = Perfume.objects.create(**validated_data)
         perfume.notes_top = notes_top
         perfume.notes_middle = notes_middle
         perfume.notes_base = notes_base
         perfume.save()
         return perfume
-    
+
     def update(self, instance, validated_data):
         # Extract notes fields if provided
         notes_top = validated_data.pop("notes_top", None)
         notes_middle = validated_data.pop("notes_middle", None)
         notes_base = validated_data.pop("notes_base", None)
-        
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         if notes_top is not None:
             instance.notes_top = notes_top
         if notes_middle is not None:
             instance.notes_middle = notes_middle
         if notes_base is not None:
             instance.notes_base = notes_base
-        
+
         instance.save()
         return instance

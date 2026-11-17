@@ -250,3 +250,47 @@ frontend/public/uploads/*
 
 # Serialized local environment setup
 /.dev-env-setup.lock/
+
+
+# Python
+.venv/
+.venv-old/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Local data
+.cache/
+*.sqlite3
+media/
+
+# Logs and temporary files
+*.log
+project-files.txt
+old-code-report.txt
+cleanup-references.txt
+
+# Editor
+.vscode/
+.idea/
+
+# Historical price update scripts and backups
+/backend/price_update/
+
+# Local project archive
+/gandom-source-review.zip
+
+# Temporary shell output
+/k with Scento integration*

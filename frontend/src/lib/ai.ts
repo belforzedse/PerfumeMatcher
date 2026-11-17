@@ -49,6 +49,67 @@ function isGenderCompatible(
 
   return true;
 }
+type ScentTrait =
+  | "sweetness"
+  | "freshness"
+  | "warmth"
+  | "bitterness"
+  | "powdery"
+  | "woody";
+
+const SCENT_TRAIT_KEYWORDS: Record<ScentTrait, string[]> = {
+  sweetness: [
+    "وانیل", "کارامل", "عسل", "شکلات",
+    "vanilla", "caramel", "honey", "chocolate",
+  ],
+  freshness: [
+    "ترنج", "لیمو", "گریپ فروت", "نعناع",
+    "bergamot", "lemon", "grapefruit", "mint",
+  ],
+  warmth: [
+    "کهربا", "دارچین", "بنزوئین", "عود",
+    "amber", "cinnamon", "benzoin", "oud",
+  ],
+  bitterness: [
+    "قهوه", "چرم", "وتیور",
+    "coffee", "leather", "vetiver",
+  ],
+  powdery: [
+    "پودری", "زنبق", "ریشه زنبق",
+    "powdery", "iris", "orris",
+  ],
+  woody: [
+    "چوب صندل", "سدر", "عود", "چوب گایاک",
+    "sandalwood", "cedar", "oud", "guaiac",
+  ],
+};
+
+function estimateScentTraits(
+  perfume: Perfume
+): Record<ScentTrait, number | null> {
+  const text = [
+    ...(perfume.allNotes ?? []),
+    perfume.family ?? "",
+    perfume.character ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const result = {} as Record<ScentTrait, number | null>;
+
+  for (const [trait, keywords] of Object.entries(
+    SCENT_TRAIT_KEYWORDS
+  ) as [ScentTrait, string[]][]) {
+    const matches = keywords.filter((keyword) =>
+      text.includes(keyword.toLowerCase())
+    ).length;
+
+    result[trait] =
+      matches === 0 ? null : Math.min(5, 2 + matches);
+  }
+
+  return result;
+}
 
 function scorePerfume(answers: QuestionnaireAnswers, perfume: Perfume): number {
   let score = 0;
@@ -98,7 +159,34 @@ function scorePerfume(answers: QuestionnaireAnswers, perfume: Perfume): number {
 
   if (wantsMasculine && (g === "male" || g === "unisex")) score += 2;
   if (wantsFeminine && (g === "female" || g === "unisex")) score += 2;
+    // Match user's preferred scent characteristics
+  const estimatedTraits = estimateScentTraits(perfume);
 
+  const scentTraits = answers.scentTraits ?? {};
+
+  for (const [trait, preferredValue] of Object.entries(
+    scentTraits
+  ) as [ScentTrait, number][]) {
+    if (
+      !Number.isInteger(preferredValue) ||
+      preferredValue < 1 ||
+      preferredValue > 5
+    ) {
+      continue;
+    }
+
+    const perfumeValue = estimatedTraits[trait];
+
+    // Unknown perfume characteristics should not be guessed
+    if (perfumeValue === null || perfumeValue === undefined) {
+      continue;
+    }
+
+    const difference = Math.abs(preferredValue - perfumeValue);
+
+    // Maximum +3 points for each close match
+    score += 3 - difference * 1.5;
+  }
   return score;
 }
 
@@ -222,6 +310,7 @@ function buildRecommendationPrompt(
     styles: limit(answers.styles),
     likedNotes: limit(answers.noteLikes),
     dislikedNotes: limit(answers.noteDislikes),
+    scentTraits: answers.scentTraits ?? {},
   };
 
   const perfumeLines = perfumes

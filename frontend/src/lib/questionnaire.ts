@@ -10,6 +10,7 @@ import {
 } from "@/lib/kiosk-options";
 
 export type QuestionType = "multiple" | "single";
+
 export interface QuestionnaireAnswers {
   gender: string | null;
   moods: string[];
@@ -19,10 +20,23 @@ export interface QuestionnaireAnswers {
   styles: string[];
   noteLikes: string[];
   noteDislikes: string[];
+  scentTraits?: Partial<Record<
+  "sweetness" | "freshness" | "warmth" | "bitterness" | "powdery" | "woody",
+  number
+>>;
 }
 
 export type AnswerKey = keyof QuestionnaireAnswers;
-type ArrayAnswerKey = Exclude<AnswerKey, "gender">;
+type ArrayAnswerKey =
+  | "moods"
+  | "moments"
+  | "times"
+  | "intensity"
+  | "styles"
+  | "noteLikes"
+  | "noteDislikes";
+
+
 const ARRAY_KEYS: ArrayAnswerKey[] = [
   "moods",
   "moments",
@@ -155,9 +169,10 @@ export const parseAnswers = (
     } else {
       base.gender = null;
     }
-    return base;
-  } catch (error) {
-    console.error("Failed to parse questionnaire answers:", error);
-    return null;
-  }
+
+  return base;
+} catch {
+  return null;
+}
 };
+
